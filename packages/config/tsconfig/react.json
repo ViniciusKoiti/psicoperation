@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment": "Base TS para pacotes/apps React (DOM + JSX automático). Consumir via \"extends\": \"@psiops/config/tsconfig/react.json\".",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "useDefineForClassFields": true
+  }
+}
