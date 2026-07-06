@@ -1,29 +1,35 @@
 id: PSI-028
-title: "clinic: autenticação e sessão"
-project: clinic
+title: "api: captura de leads (lista de espera)"
+project: api
 shared_change: false
-branch: "agent/psi-028-clinic-autenticacao-sessao"
-commit_message: "feat(clinic): autenticação e gestão de sessão [PSI-028]"
-pr_title: "PSI-028: clinic: autenticação e sessão"
+branch: "agent/psi-028-captura-leads"
+commit_message: "feat(api): implementa captura pública de leads com dedupe [PSI-028]"
+pr_title: "PSI-028: api: captura de leads (lista de espera)"
 description: |
-  Implementa no app clinic (Vite + React + Mantine) as telas de login e
-  registro e toda a gestão de sessão do lado do cliente. As telas seguem os
-  tokens de design de @psiops/ui e validam os formulários no cliente usando
-  os mesmos schemas de auth de @psiops/contracts consumidos pela API, sem
-  duplicar validação. A sessão mantém o access token apenas em memória
-  (nunca em localStorage) com refresh transparente quando o token expira, e
-  rotas protegidas redirecionam para o login preservando o destino
-  original. O acesso à autenticação passa por uma interface AuthAdapter com
-  duas implementações: MockAuthAdapter, padrão em dev e test, simulando o
-  comportamento do backend em memória com fidelidade aos contratos; e
-  HttpAuthAdapter, totalmente tipado pelos contratos mas ainda sem uso real
-  — a ligação com a API real acontece somente na PSI-039. A seleção do
-  adapter é feita por variável de ambiente. Nenhuma dependência nova é
-  instalada; usa-se o que o scaffold do clinic (PSI-011) já provê.
+  Implementa em apps/api o endpoint público POST /leads para a lista de espera
+  alimentada pelo formulário da landing page (nome, WhatsApp, e-mail),
+  validado pelo contrato de packages/contracts (DTOs de gen/java) e
+  persistindo na tabela leads criada na migration V1 (PSI-010).
+
+  Características:
+  - Endpoint público: explicitamente fora do guard JWT na configuração do
+    Spring Security, sem exigir autenticação (a configuração de segurança é
+    da PSI-022; esta tarefa apenas registra a rota como pública — ver
+    dependências nas inconsistências do lote).
+  - Deduplicação por e-mail (normalizado): reenvio do mesmo e-mail é
+    idempotente e responde sucesso sem criar registro duplicado nem revelar
+    que o e-mail já estava cadastrado.
+  - Rate-limit no endpoint para conter abuso/spam de formulário público.
+  - Validação de payload conforme o contrato (formato de e-mail, campos
+    obrigatórios), com erros no formato Problem Details.
+
+  Testes com MockMvc + Testcontainers: captura com sucesso, dedupe por e-mail
+  (mesmo e-mail duas vezes resulta em um único registro e resposta
+  idempotente), payload inválido (400) e acesso sem token permitido.
 dependencies:
-  - "PSI-011"
+  - "PSI-010"
 allowed_paths:
-  - "apps/clinic/**"
+  - "apps/api/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
@@ -33,37 +39,30 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Telas de login e registro implementadas com componentes Mantine, seguindo os tokens de design de @psiops/ui"
-  - "Validação client-side dos formulários usa os schemas de auth de @psiops/contracts; erros de validação aparecem inline por campo antes de qualquer chamada ao adapter"
-  - "Access token vive apenas em memória (estado da aplicação); nada de token em localStorage ou sessionStorage"
-  - "Refresh transparente: quando o access token expira, a sessão é renovada sem interação da usuária; falha no refresh encerra a sessão e leva ao login"
-  - "Rotas protegidas redirecionam usuária não autenticada para o login e retornam ao destino original após autenticar"
-  - "Interface AuthAdapter definida com MockAuthAdapter (padrão em dev/test) simulando registro, login, refresh e logout com respostas conformes aos contratos, incluindo casos de erro (credenciais inválidas)"
-  - "HttpAuthAdapter existe, é tipado integralmente pelos contratos de @psiops/contracts e não é usado em nenhum fluxo real nesta tarefa"
-  - "A escolha do adapter é controlada por variável de ambiente, com o mock como padrão em dev e test"
-  - "Testes cobrem com o MockAuthAdapter: login com sucesso, credenciais inválidas, registro, redirecionamento de rota protegida, refresh transparente e logout"
+  - "POST /leads implementado conforme o contrato, consumindo DTOs de gen/java, acessível sem autenticação (fora do guard JWT)"
+  - "Deduplicação por e-mail normalizado (trim + lowercase): reenvio é idempotente, não cria duplicata e responde sucesso sem revelar cadastro prévio"
+  - "Rate-limit aplicado ao endpoint com resposta adequada ao exceder o limite"
+  - "Payload inválido (e-mail malformado, campos obrigatórios ausentes) responde 400 com Problem Details conforme o contrato"
+  - "Persistência na tabela leads existente da V1, sem nova migration"
+  - "Testes MockMvc + Testcontainers: sucesso, dedupe, payload inválido e acesso público sem token"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
-  - "pnpm --filter @psiops/clinic test"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "MockAuthAdapter que diverge dos contratos cria falsa confiança e quebra na integração real (PSI-039); a fidelidade aos schemas é o ponto crítico"
-  - "Token apenas em memória significa perda de sessão em refresh de página; a experiência de reautenticação/refresh inicial deve ser definida e testada"
-  - "Lógica de refresh concorrente (várias chamadas expirando juntas) pode disparar múltiplos refreshes; deve haver deduplicação da renovação"
-  - "HttpAuthAdapter sem uso real pode apodrecer silenciosamente; a tipagem estrita pelos contratos é a única proteção nesta fase"
+  - "Se a configuração de segurança da PSI-022 ainda não existir quando esta tarefa rodar, a liberação da rota pública muda de forma (sem guard global não há o que excluir); coordenar ordem de merge"
+  - "Endpoint público é alvo natural de bots; rate-limit em memória é mitigação mínima aceitável no MVP"
+  - "Dedupe sem constraint de unicidade no banco fica sujeito a corrida; se a V1 não tiver índice único de e-mail, tratar a corrida na aplicação e registrar a limitação no PR"
+  - "Resposta diferente para e-mail já cadastrado permitiria enumeração de leads; a resposta deve ser indistinguível"
 out_of_scope:
-  - "Integração com a API real (HttpAuthAdapter só entra em uso na PSI-039)"
-  - "Alterar packages/contracts, packages/database ou packages/ui"
-  - "Recuperação de senha, verificação de email e MFA"
-  - "Onboarding pós-registro (tratado na PSI-029)"
-  - "Instalação de novas dependências no workspace"
+  - "Novas migrations Flyway (a tabela leads é a da V1) e alterações em packages/contracts"
+  - "Envio de e-mail de confirmação/boas-vindas ao lead"
+  - "Painel administrativo ou listagem de leads"
+  - "Integração da landing page com o endpoint (frontend)"
+  - "CAPTCHA ou verificação anti-bot avançada"
 assumptions:
-  - "O scaffold do clinic (PSI-011) já provê roteador, ferramentas de teste e acesso a @psiops/ui e @psiops/contracts como dependências de workspace"
-  - "Os schemas de auth de @psiops/contracts são reutilizáveis no browser (Zod isomórfico)"
-  - "Ao recarregar a página, a sessão tenta um refresh silencioso na inicialização; se não houver mecanismo de refresh persistível no mock, a usuária volta ao login — comportamento registrado"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+  - "A tabela leads da V1 comporta nome, WhatsApp e e-mail conforme o contrato; divergência de schema deve ser reportada, nunca resolvida com migration nesta tarefa"
+  - "O WhatsApp chega como string já mascarada pela landing ((XX) XXXXX-XXXX) e é armazenado normalizado (somente dígitos)"
 open_questions:
-  - "Onde o refresh token deve viver no cliente quando a API real chegar (cookie httpOnly vs memória) — decisão de segurança a alinhar antes da PSI-039; o mock não deve travar essa escolha"
+  - "As dependências especificadas listam apenas PSI-010, mas a exclusão da rota do guard JWT pressupõe a configuração de segurança da PSI-022; confirmar se a ordem de execução garante isso ou se a tarefa deve criar configuração de segurança mínima própria"

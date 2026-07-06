@@ -39,8 +39,7 @@ const LIST_KEYS = new Set([
 // Caminhos proibidos por padrão para tarefas sem shared_change.
 const SHARED_PATHS = [
   'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json',
-  '.github/workflows/**', 'packages/contracts/**', 'packages/database/**',
-  '**/migrations/**',
+  '.github/workflows/**', 'packages/contracts/**', '**/db/migration/**',
 ];
 // Sempre proibidos, para qualquer tarefa.
 const ALWAYS_FORBIDDEN = ['project/**', 'tasks/**'];

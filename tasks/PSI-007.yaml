@@ -2,24 +2,31 @@ id: PSI-007
 title: "packages/ui: tokens de design e primitivas"
 project: ui
 shared_change: true
-branch: "agent/psi-007-ui-tokens"
-commit_message: "feat(ui): tokens de design e primitivas [PSI-007]"
+branch: "agent/psi-007-ui-tokens-primitivas"
+commit_message: "feat(ui): tokens de design multi-alvo e componentes primitivos [PSI-007]"
 pr_title: "PSI-007: packages/ui — tokens de design e primitivas"
 description: |
-  Cria o pacote @psiops/ui em packages/ui, materializando o design system
-  do PsiOps a partir da referência visual documentada em
-  docs/design/landing-page-spec.md. Os tokens extraídos são: paletas
-  psi-primary (roxo, escalas 50–900), psi-accent (terracota, 50–900) e
-  psi-neutral (cinza quente, 0–950); cores semânticas success, warning,
-  error e info (cada uma com variantes light, medium e dark); paleta calm
-  (teal: soft, base e deep); sombras soft, lift e card; e tipografia com
-  DM Sans (display/títulos), Inter (corpo) e Fraunces itálico (acentos
-  serifados). Os tokens são publicados em duas formas equivalentes: CSS
-  custom properties e objeto TypeScript. Deles derivam um tema Mantine
-  (consumido pelo app clinic) e um preset Tailwind (consumido pelo app
-  landing), garantindo consistência visual entre stacks distintas. O
-  pacote também entrega os componentes primitivos Button (variantes
-  primary, ghost e white), Card e Pill, todos com testes.
+  Cria o pacote @psiops/ui, dono do design system do PsiOps. Os tokens são
+  extraídos de docs/design/landing-page-spec.md — paletas psi-primary
+  (roxo), psi-accent (terracota), psi-neutral (cinza quente), semânticas
+  (success/warning/error/info com variantes light/medium/dark), calm (teal),
+  sombras (soft/lift/card) e tipografia (DM Sans para display, Inter para
+  corpo, Fraunces itálico para acentos serifados).
+
+  A mesma fonte de tokens é exportada em múltiplos alvos, um por superfície
+  da stack:
+
+  - CSS custom properties (variáveis --psi-*) para uso direto;
+  - objeto TypeScript tipado para consumo programático;
+  - tema Mantine para o apps/clinic;
+  - preset Tailwind para o apps/landing;
+  - tokens.json canônico e agnóstico de plataforma, que será a fonte do tema
+    Flutter na PSI-013.
+
+  Todos os alvos derivam da mesma definição para impedir divergência.
+  Além dos tokens, o pacote entrega componentes primitivos React: Button
+  (variantes primary, ghost e white), Card e Pill, com testes unitários
+  cobrindo variantes e acessibilidade básica.
 dependencies:
   - "PSI-002"
 allowed_paths:
@@ -28,30 +35,38 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "O pacote @psiops/ui existe em packages/ui e consome as configurações de @psiops/config via workspace:*"
-  - "Tokens de cor cobrem psi-primary (50–900), psi-accent (50–900), psi-neutral (0–950), semânticas success/warning/error/info (com light/medium/dark) e calm (soft/base/deep), com valores idênticos aos da referência visual"
-  - "Tokens de sombra soft, lift e card estão definidos conforme a referência"
-  - "Tokens de tipografia declaram DM Sans (display), Inter (corpo) e Fraunces itálico (serif de acento)"
-  - "Os tokens são exportados como CSS custom properties e também como objeto TypeScript tipado, sem divergência de valores entre as duas formas"
-  - "Um tema Mantine derivado dos tokens é exportado pelo pacote"
-  - "Um preset Tailwind derivado dos tokens é exportado pelo pacote"
-  - "Componentes Button (primary/ghost/white), Card e Pill estão implementados e cobertos por testes"
-  - "pnpm --filter @psiops/ui test executa com todos os testes passando"
-  - "pnpm --filter @psiops/ui build gera os artefatos do pacote sem erros"
+  - "Tokens extraídos fielmente de docs/design/landing-page-spec.md: paletas psi-primary, psi-accent, psi-neutral, semânticas (com variantes light/medium/dark), calm, sombras e tipografia DM Sans/Inter/Fraunces"
+  - "Export CSS: custom properties --psi-* prontas para injeção em :root"
+  - "Export TS: objeto de tokens tipado e tree-shakeable"
+  - "Export de tema Mantine derivado dos tokens, pronto para o MantineProvider do apps/clinic"
+  - "Export de preset Tailwind derivado dos tokens, consumível pelo apps/landing"
+  - "tokens.json canônico comitado no pacote, documentado como fonte para o tema Flutter (PSI-013)"
+  - "Todos os alvos derivam da mesma definição de tokens (sem valores duplicados à mão entre alvos)"
+  - "Componentes Button (primary/ghost/white), Card e Pill implementados com testes de renderização e variantes"
+  - "pnpm --filter @psiops/ui test e pnpm --filter @psiops/ui build passam"
 validation_commands:
+  - "pnpm install"
   - "pnpm --filter @psiops/ui test"
   - "pnpm --filter @psiops/ui build"
 risks:
-  - "Transcrição manual dos valores de cor a partir da referência é propensa a erros sutis; divergências só seriam percebidas visualmente nas telas"
-  - "Manter tema Mantine e preset Tailwind derivados da mesma fonte exige disciplina; qualquer valor hardcoded em um dos lados quebra a paridade visual entre clinic e landing"
-  - "Escalas do Mantine (tuplas de 10 cores) e do Tailwind têm formatos distintos; o mapeamento das escalas 50–900 / 0–950 para cada formato pode gerar perdas ou aproximações que precisam ser documentadas no pacote"
+  - "Transcrição manual de valores da spec é propensa a erro; um dígito errado em hex se propaga para web, clinic e mobile"
+  - "Manter quatro alvos (CSS/TS/Mantine/Tailwind) + tokens.json sincronizados exige geração a partir de fonte única; qualquer atalho manual cria divergência silenciosa"
+  - "Estrutura do tokens.json mal pensada dificulta o consumo pelo Flutter na PSI-013"
+  - "Componentes primitivos genéricos demais ou específicos demais podem exigir retrabalho quando landing e clinic os consumirem"
 out_of_scope:
-  - "Consumo do preset Tailwind pelo app landing (PSI-009)"
-  - "Telas ou componentes de página completos (apenas primitivas Button, Card e Pill)"
-  - "Alterar a referência visual em project/** (somente leitura)"
+  - "Geração do tema Flutter em si (PSI-013 consome o tokens.json)"
+  - "Componentes complexos (formulários, accordion de FAQ, mockups de dashboard)"
+  - "Consumo dos tokens pelos apps (PSI-009 e seguintes)"
+  - "Alterações em docs/design/landing-page-spec.md"
 assumptions:
-  - "Os valores exatos das cores, sombras e fontes vêm do arquivo project/PsiOps Landing.html, usado somente como leitura; docs/design/landing-page-spec.md documenta essa mesma referência"
-  - "Os componentes primitivos são implementados em React, dado que ambos os apps consumidores (landing e clinic) usam React"
-open_questions:
-  - "docs/design/landing-page-spec.md é citado como fonte da especificação, mas nenhuma tarefa deste lote o cria nem o inclui em allowed_paths; caso não exista, a fonte efetiva é project/PsiOps Landing.html"
+  - "docs/design/landing-page-spec.md é a fonte canônica e completa dos valores de token; valores ausentes serão registrados como open question em PR, nunca inventados"
+  - "Os componentes primitivos são React puros (sem dependência de Mantine), estilizados via tokens, para servirem tanto à landing quanto a contextos futuros"
+  - "As fontes (DM Sans/Inter/Fraunces) não são embarcadas no pacote; cada app carrega as fontes e o pacote só referencia as famílias"
+open_questions: []

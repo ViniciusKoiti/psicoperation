@@ -1,56 +1,67 @@
 id: PSI-006
-title: "packages/database: Prisma e schema inicial"
-project: database
+title: "packages/contracts: codegen Java e Dart"
+project: contracts
 shared_change: true
-branch: "agent/psi-006-database-prisma"
-commit_message: "feat(database): prisma e schema inicial [PSI-006]"
-pr_title: "PSI-006: packages/database — Prisma e schema inicial"
+branch: "agent/psi-006-contracts-java-dart"
+commit_message: "feat(contracts): codegen java e dart a partir da spec openapi [PSI-006]"
+pr_title: "PSI-006: packages/contracts — codegen Java e Dart"
 description: |
-  Cria o pacote @psiops/database em packages/database com Prisma
-  configurado para PostgreSQL (a instância local provisionada na
-  PSI-003). O schema inicial contém três modelos: User (a psicóloga:
-  nome, email único e hash de senha — nunca a senha em claro), Settings
-  (perfil profissional e valor padrão de sessão, vinculado à User) e
-  Lead (lista de espera: nome, whatsapp, email único, origem e
-  criadoEm). A migration 0001 é gerada e deve ser aplicável no Postgres
-  local. O pacote exporta um singleton de PrismaClient em
-  @psiops/database, evitando múltiplas conexões em desenvolvimento e
-  servindo de ponto único de acesso ao banco para a API. Fica registrada
-  a restrição operacional do monorepo: migrations são sequenciais e
-  imutáveis, e somente tarefas do projeto database podem alterá-las.
+  Estende o pacote @psiops/contracts com os dois alvos de codegen restantes,
+  completando a cobertura das três linguagens do monorepo a partir da mesma
+  spec OpenAPI 3.1 criada na PSI-005:
+
+  - Java: DTOs gerados com openapi-generator, comitados em
+    packages/contracts/gen/java, consumíveis pelo build Maven do apps/api.
+    O mecanismo de consumo deve ser escolhido e documentado nesta tarefa:
+    módulo Maven local (pom.xml próprio em gen/java referenciado pelo build
+    do api) ou instalação via install-file. A PSI-010 seguirá exatamente o
+    mecanismo documentado aqui;
+  - Dart: modelos gerados em packages/contracts/gen/dart estruturados como
+    um package Dart local (pubspec.yaml próprio), consumível pelo
+    apps/mobile via path dependency.
+
+  Os scripts de regeneração devem ser reprodutíveis: versão do
+  openapi-generator fixada (jar com versão exata ou imagem docker com tag
+  fixa) e output determinístico. A verificação de drift criada na PSI-005 é
+  ampliada para cobrir os três alvos (ts, java, dart): regenerar tudo e
+  falhar se git diff --exit-code acusar diferença em gen/.
 dependencies:
-  - "PSI-002"
-  - "PSI-003"
+  - "PSI-005"
 allowed_paths:
-  - "packages/database/**"
+  - "packages/contracts/**"
   - "pnpm-lock.yaml"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "O pacote @psiops/database existe em packages/database com Prisma configurado para PostgreSQL via variável de ambiente de conexão"
-  - "Modelo User contém nome, email com constraint de unicidade e campo de hash de senha"
-  - "Modelo Settings contém perfil profissional e valor padrão de sessão, relacionado à User"
-  - "Modelo Lead contém nome, whatsapp, email com constraint de unicidade, origem e criadoEm"
-  - "A migration 0001 está gerada no repositório e aplica sem erros no Postgres local da PSI-003"
-  - "@psiops/database exporta um singleton de PrismaClient reutilizável pelos apps"
-  - "pnpm --filter @psiops/database exec prisma validate executa sem erros"
-  - "pnpm --filter @psiops/database exec prisma migrate dev aplica a migration no banco local sem erros"
+  - "DTOs Java gerados por openapi-generator e comitados em packages/contracts/gen/java"
+  - "gen/java é consumível pelo Maven do apps/api; o mecanismo escolhido (módulo Maven local ou install-file) está documentado no README do pacote com passos exatos"
+  - "Modelos Dart gerados e comitados em packages/contracts/gen/dart como package Dart local válido (pubspec.yaml), consumível por path dependency"
+  - "A versão do openapi-generator é fixada (jar com versão exata ou docker com tag imutável) e registrada nos scripts"
+  - "Script de regeneração único cobre os três alvos (ts, java, dart) e é idempotente"
+  - "Verificação de drift cobre os três alvos: regenerar + git diff --exit-code em gen/ falha em caso de dessincronização"
+  - "Modelos gerados representam corretamente os schemas comuns: dinheiro em centavos como inteiro e datas ISO 8601"
 validation_commands:
-  - "pnpm --filter @psiops/database exec prisma validate"
-  - "pnpm --filter @psiops/database exec prisma migrate dev"
+  - "pnpm install"
+  - "pnpm --filter @psiops/contracts generate"
+  - "pnpm --filter @psiops/contracts test"
 risks:
-  - "A validação com prisma migrate dev exige o Postgres local da PSI-003 em execução; sem ele a tarefa não pode ser validada por completo"
-  - "Migrations são sequenciais e imutáveis: qualquer erro na 0001 exigirá migration corretiva posterior, nunca edição retroativa"
-  - "Decisões de modelagem (nomes de campos, tipos, unicidade) tomadas aqui condicionam os contratos e a API; renomeações futuras exigem migrations adicionais"
+  - "openapi-generator produz output com timestamps/metadata variáveis se não configurado para geração determinística, quebrando o teste de drift"
+  - "Suporte do openapi-generator a OpenAPI 3.1 tem lacunas em construções específicas (ex.: type arrays para nullable); pode exigir ajustes na spec ou flags do gerador"
+  - "O mecanismo de consumo Java escolhido aqui vira contrato para a PSI-010; mudança posterior exige retrabalho coordenado nas duas pontas"
+  - "Executar o gerador via docker exige Docker disponível também no CI"
 out_of_scope:
-  - "Modelos do domínio clínico — pacientes, sessões, mensalidades"
-  - "Seeds de dados (fixtures de teste ficam na PSI-008)"
-  - "Consumo do PrismaClient pela API (PSI-010)"
-  - "Alterar migrations a partir de qualquer tarefa fora do projeto database"
+  - "Alterações no conteúdo funcional da spec (novos endpoints/domínios)"
+  - "Scaffold e configuração do apps/api (PSI-010) e do apps/mobile"
+  - "Clientes HTTP gerados (apenas DTOs/modelos de dados nesta fase)"
 assumptions:
-  - "O valor padrão de sessão em Settings é armazenado em centavos como inteiro, coerente com a convenção de dinheiro BRL definida nos contratos (PSI-005)"
-  - "A string de conexão padrão de desenvolvimento aponta para o Postgres do docker-compose documentado em .env.example (PSI-003)"
-  - "O relacionamento User–Settings é um-para-um, dado que o produto atende psicólogas solo"
+  - "openapi-generator será executado via jar com versão fixada, baixado por script com verificação de versão; docker com tag fixa é alternativa aceitável se documentada"
+  - "Para Java, o alvo de geração é apenas de modelos (generator java com models-only ou equivalente), sem stubs de servidor/cliente"
+  - "O package Dart gerado declara SDK constraint compatível com o Flutter estável corrente"
 open_questions:
-  - "A especificação não define se whatsapp em Lead deve ser único como o email; assumiu-se não único até decisão de produto"
+  - "O toolchain Java (JDK) estará disponível em todos os ambientes que rodam o generate? Caso contrário, padronizar execução via docker"

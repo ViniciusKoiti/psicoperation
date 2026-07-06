@@ -18,8 +18,8 @@ fazem refatorações oportunistas e quebram contratos alheios.
    na branch `agent/<task-id>-<slug>`, abre **um PR draft** e nunca faz merge,
    force-push ou commit na `main`.
 3. Arquivos compartilhados (raiz do workspace, lockfile, workflows, `packages/contracts`,
-   `packages/database`, migrations, `project/PsiOps Landing.html`) são proibidos por
-   padrão; somente tarefas com **`shared_change: true`** os alteram, e apenas
+   migrations Flyway `**/db/migration/**`, `project/PsiOps Landing.html`) são proibidos
+   por padrão; somente tarefas com **`shared_change: true`** os alteram, e apenas
    **uma tarefa shared_change executa por vez**.
 4. A conformidade é verificada mecanicamente por `scripts/validate-task-scope.mjs`
    (localmente e no CI em branches `agent/*`): diff contra a base deve casar com

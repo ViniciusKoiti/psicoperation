@@ -2,23 +2,29 @@ id: PSI-009
 title: "apps/landing: scaffold Next.js"
 project: landing
 shared_change: true
-branch: "agent/psi-009-landing-scaffold"
-commit_message: "feat(landing): scaffold next.js [PSI-009]"
+branch: "agent/psi-009-landing-scaffold-nextjs"
+commit_message: "feat(landing): scaffold next.js com tailwind e tokens do design system [PSI-009]"
 pr_title: "PSI-009: apps/landing — scaffold Next.js"
 description: |
-  Cria o scaffold do app landing em apps/landing usando Next.js com App
-  Router e TypeScript. O Tailwind é configurado com pipeline própria de
-  build, consumindo o preset de tokens exportado por @psiops/ui — o uso
-  de Tailwind via CDN é proibido, diferentemente do protótipo de
-  referência. As fontes da marca (DM Sans para display, Inter para corpo
-  e Fraunces para acentos serifados em itálico) são carregadas via
-  next/font, garantindo self-hosting e ausência de layout shift. A página
-  inicial é um placeholder que comprova a integração dos tokens e das
-  fontes; a implementação real da landing (seções, formulário, FAQ) fica
-  para tarefas futuras. O Vitest é configurado para testes unitários e o
-  Playwright é instalado e configurado com webServer apontando para o
-  app, deixando a base de E2E pronta — os specs reais ficam para a
-  PSI-018.
+  Cria o esqueleto do apps/landing, o site de marketing do PsiOps, em Next.js
+  com App Router e TypeScript. Esta tarefa entrega apenas a fundação técnica;
+  a implementação fiel das seções da landing page (hero, problema, solução,
+  FAQ, formulário de lista de espera) fica para a PSI-019.
+
+  Pontos-chave do scaffold:
+
+  - Tailwind com pipeline própria de build (PostCSS), consumindo o preset de
+    tokens exportado por @psiops/ui — é proibido qualquer uso de Tailwind
+    via CDN, que é artefato do protótipo;
+  - fontes DM Sans, Inter e Fraunces carregadas via next/font (self-hosted,
+    sem requisição a serviços externos em runtime), expostas como variáveis
+    CSS para casar com a tipografia dos tokens;
+  - página inicial placeholder simples que comprova o pipeline: usa tokens
+    (cores/sombras) e as três famílias tipográficas;
+  - Vitest configurado com o preset de @psiops/config para testes unitários;
+  - Playwright instalado e configurado com webServer apontando para o build
+    do Next (specs reais de e2e chegam na PSI-019; aqui basta um smoke spec
+    provando que a configuração funciona).
 dependencies:
   - "PSI-002"
   - "PSI-007"
@@ -28,29 +34,35 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "O app landing existe em apps/landing com Next.js (App Router) e TypeScript, consumindo as configurações de @psiops/config"
-  - "Tailwind está configurado com pipeline própria de build e consome o preset de tokens de @psiops/ui; não há nenhuma referência a Tailwind via CDN"
-  - "As fontes DM Sans, Inter e Fraunces são carregadas via next/font"
-  - "A página inicial placeholder renderiza usando os tokens e as fontes configuradas"
-  - "Vitest está configurado e executa ao menos um teste do app"
-  - "Playwright está instalado e configurado com webServer que sobe o app automaticamente para os testes E2E"
-  - "pnpm --filter @psiops/landing build gera o build de produção sem erros"
-  - "pnpm --filter @psiops/landing test executa com todos os testes passando"
+  - "App Next.js com App Router e TypeScript estrito (estendendo o tsconfig de @psiops/config) em apps/landing, registrado no workspace pnpm como @psiops/landing"
+  - "Tailwind com pipeline própria (PostCSS) consumindo o preset de tokens de @psiops/ui; nenhuma referência a Tailwind via CDN"
+  - "Fontes DM Sans, Inter e Fraunces carregadas via next/font e expostas como variáveis CSS"
+  - "Página inicial placeholder renderiza usando tokens do design system e as três famílias tipográficas"
+  - "Vitest configurado com o preset de @psiops/config e ao menos um teste unitário passando"
+  - "Playwright instalado e configurado com webServer (sobe o app automaticamente); um smoke spec valida a configuração"
+  - "pnpm --filter @psiops/landing build conclui sem erros"
+  - "pnpm --filter @psiops/landing test passa"
 validation_commands:
+  - "pnpm install"
   - "pnpm --filter @psiops/landing build"
   - "pnpm --filter @psiops/landing test"
 risks:
-  - "Compatibilidade entre a versão do Tailwind escolhida e o formato do preset exportado por @psiops/ui (a API de presets difere entre majors do Tailwind)"
-  - "Fraunces em itálico via next/font exige configurar os eixos/estilos corretos da fonte variável; configuração incompleta degrada os acentos serifados"
-  - "Coexistência de Vitest e Playwright no mesmo app pode causar colisão de globs de teste se os diretórios não forem bem separados"
+  - "Integração Tailwind + preset de tokens depende do formato exportado pela PSI-007; incompatibilidade de versão major do Tailwind entre os dois pacotes quebra o build"
+  - "next/font exige que as fontes estejam disponíveis (Google Fonts em build time ou arquivos locais); ambientes de CI sem rede podem exigir fontes vendorizadas"
+  - "Playwright baixa browsers pesados; a configuração deve permitir pular a instalação de browsers onde e2e não roda"
 out_of_scope:
-  - "Implementação real das seções da landing page (hero, problema, solução, FAQ etc.)"
-  - "Specs E2E de Playwright (ficam para a PSI-018)"
-  - "Formulário de captura de leads e integração com a API"
-  - "Deploy ou configuração de hospedagem"
+  - "Implementação pixel-perfect das seções da landing page e specs e2e reais (PSI-019)"
+  - "Integração do formulário de lead com a API"
+  - "SEO avançado, analytics e deploy"
 assumptions:
-  - "O nome do package do app é landing (sem escopo @psiops/), conforme o filtro usado nos comandos de validação"
-  - "A página placeholder não precisa reproduzir o design da referência; basta evidenciar tokens e fontes funcionando"
-open_questions:
-  - "PSI-018 é referenciada como destino dos specs E2E, mas não faz parte deste lote; o escopo exato desses specs será definido quando ela for especificada"
+  - "O smoke spec de Playwright não roda no job padrão de CI nesta fase; execução local documentada no README do app"
+  - "A versão do Tailwind segue a suportada pelo preset de @psiops/ui (PSI-007)"
+  - "next/font/google é aceitável para as três fontes; se o build exigir offline, migrar para next/font/local com arquivos vendorizados"
+open_questions: []

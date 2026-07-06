@@ -3,19 +3,28 @@ title: "packages/testing: fixtures e utilitários de teste"
 project: testing
 shared_change: true
 branch: "agent/psi-008-testing-fixtures"
-commit_message: "feat(testing): fixtures e utilitários de teste [PSI-008]"
+commit_message: "feat(testing): builders deterministicos e utilitarios de teste [PSI-008]"
 pr_title: "PSI-008: packages/testing — fixtures e utilitários de teste"
 description: |
-  Cria o pacote @psiops/testing em packages/testing, concentrando a
-  infraestrutura de testes compartilhada do monorepo. Entrega três
-  frentes: builders de fixtures determinísticos (com seed fixo, para que
-  execuções repetidas produzam exatamente os mesmos dados) para as
-  entidades já definidas nos contratos existentes — user e lead;
-  infraestrutura de mock adapters em memória reutilizável, permitindo que
-  apps testem casos de uso sem depender de banco, filas ou serviços
-  externos; e helpers de Vitest que reduzam boilerplate nos testes dos
-  demais pacotes. O próprio pacote possui testes que garantem o
-  determinismo dos builders e o comportamento dos adapters em memória.
+  Cria o pacote @psiops/testing, caixa de ferramentas de teste compartilhada
+  pelo lado JS/TS do monorepo. O objetivo é que apps e pacotes não dupliquem
+  fábricas de dados nem mocks ad hoc, e que todos os dados de teste sejam
+  tipados pelos contratos reais.
+
+  Entregas:
+
+  - builders determinísticos para as entidades atuais dos contratos (user e
+    lead), tipados pelos tipos gerados de @psiops/contracts. Determinismo por
+    seed fixo: a mesma seed produz sempre os mesmos dados, permitindo testes
+    reprodutíveis e snapshots estáveis. Cada builder aceita overrides
+    parciais tipados;
+  - infraestrutura reutilizável de mock adapters em memória (padrão genérico
+    de repositório/adapter fake com estado em memória e reset), para que
+    apps testem lógica sem rede ou banco;
+  - helpers Vitest de uso comum (setup/reset entre testes, utilitários de
+    asserção recorrentes);
+  - testes do próprio pacote provando determinismo dos builders, aplicação
+    de overrides e comportamento dos mock adapters.
 dependencies:
   - "PSI-002"
   - "PSI-005"
@@ -25,29 +34,33 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "O pacote @psiops/testing existe em packages/testing e consome as configurações de @psiops/config via workspace:*"
-  - "Builders de fixtures existem para user e lead, produzindo dados válidos segundo os contratos existentes"
-  - "Os builders são determinísticos: com o mesmo seed fixo, execuções repetidas geram exatamente os mesmos dados"
-  - "Os builders aceitam overrides parciais para customizar campos específicos em cada teste"
-  - "Existe infraestrutura de mock adapters em memória reutilizável pelos apps, com contrato claro de leitura/escrita/reset"
-  - "Helpers de Vitest são exportados e documentados no próprio pacote"
-  - "O pacote possui testes cobrindo determinismo dos builders e comportamento dos mock adapters"
-  - "pnpm --filter @psiops/testing test executa com todos os testes passando"
-  - "pnpm --filter @psiops/testing typecheck executa sem erros"
+  - "Builders de user e lead tipados pelos tipos gerados de @psiops/contracts (importados do pacote, nunca redeclarados localmente)"
+  - "Builders são determinísticos: mesma seed produz exatamente os mesmos dados em qualquer máquina"
+  - "Builders aceitam overrides parciais tipados que sobrepõem os valores gerados"
+  - "Infra de mock adapters em memória com API genérica reutilizável (criação, consulta, reset de estado entre testes)"
+  - "Helpers Vitest exportados e documentados no README do pacote"
+  - "Dados gerados respeitam os formatos dos contratos: WhatsApp brasileiro válido, e-mail válido, datas ISO 8601"
+  - "Testes do pacote cobrem determinismo, overrides e mock adapters; pnpm --filter @psiops/testing test passa"
 validation_commands:
+  - "pnpm install"
   - "pnpm --filter @psiops/testing test"
   - "pnpm --filter @psiops/testing typecheck"
 risks:
-  - "Se os builders não espelharem fielmente os schemas de @psiops/contracts, testes dos apps passarão com dados que a validação real rejeitaria"
-  - "Mock adapters com semântica diferente das implementações reais (ex.: unicidade de email não aplicada) mascaram bugs de integração"
-  - "Dependência da PSI-005 é indireta (via contratos existentes); se este pacote rodar antes dos contratos estarem publicados, os builders não terão tipos para consumir"
+  - "Se os builders divergirem dos formatos da spec (ex.: máscara de WhatsApp), testes dos consumidores passam com dados que a API real rejeitaria"
+  - "Biblioteca de dados fake sem suporte confiável a seed compromete o determinismo; escolher dependência com seed explícita e versão fixada"
+  - "Acoplamento à forma dos tipos gerados: mudanças na spec (PSI-005/PSI-006) exigem atualização coordenada dos builders"
 out_of_scope:
-  - "Fixtures do domínio clínico antes da PSI-019 (extensão registrada como open_question de sequenciamento)"
-  - "Testes de integração com banco real ou Redis (os adapters são exclusivamente em memória)"
-  - "Configuração de testes dos apps (cada scaffold cuida da própria configuração)"
+  - "Fixtures para o domínio clínico/financeiro futuro (pacientes, mensalidades) — chegam junto com os contratos correspondentes"
+  - "Utilitários de teste para Java (apps/api usa JUnit/Testcontainers) e Flutter"
+  - "Mocks de rede nível HTTP (ex.: MSW) — podem entrar em tarefa futura se os apps precisarem"
 assumptions:
-  - "As entidades dos contratos existentes referem-se a user e lead conforme definidos em @psiops/contracts (PSI-005); embora PSI-005 não esteja listada como dependência direta, os builders tipam contra esses contratos"
-open_questions:
-  - "Sequenciamento: as fixtures do domínio clínico serão adicionadas em qual tarefa após a PSI-019 definir os contratos clínicos — extensão desta ou tarefa nova?"
-  - "PSI-005 não consta das dependências declaradas, mas os builders de user e lead pressupõem os contratos dela; confirmar se a dependência deveria ser explícita no grafo"
+  - "O pacote é devDependency dos consumidores e nunca entra em bundle de produção"
+  - "Faker com seed fixa (ex.: @faker-js/faker) ou geração própria simples são estratégias aceitáveis, desde que determinísticas"
+open_questions: []

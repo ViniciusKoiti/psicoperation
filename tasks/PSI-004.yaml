@@ -3,19 +3,30 @@ title: "CI com GitHub Actions"
 project: infra
 shared_change: true
 branch: "agent/psi-004-ci-github-actions"
-commit_message: "ci(infra): workflow de ci com github actions [PSI-004]"
+commit_message: "ci(infra): pipeline github actions para js, api, mobile e escopo [PSI-004]"
 pr_title: "PSI-004: CI com GitHub Actions"
 description: |
-  Cria o workflow de integração contínua do monorepo em GitHub Actions.
-  O workflow ci.yml dispara em pull_request e em push na main, instala as
-  dependências com pnpm (com cache do store) e executa a suíte completa
-  via Turborepo: lint, typecheck, test e build. Além disso, um job
-  adicional roda somente em branches agent/*: ele extrai o id da tarefa a
-  partir do nome da branch e executa
-  "node scripts/validate-task-scope.mjs --task <id> --base origin/main",
-  garantindo que agentes só alterem arquivos permitidos pelo manifesto da
-  tarefa correspondente. A versão de Node usada no CI deve respeitar o
-  .nvmrc definido na PSI-001.
+  Cria o pipeline de integração contínua do monorepo em .github/workflows/,
+  cobrindo os três ecossistemas da stack pós-pivô e a validação de escopo das
+  tarefas de agente.
+
+  O workflow ci.yml dispara em pull_request e em push para main, com jobs
+  independentes:
+
+  - js: setup de Node 22 + pnpm com cache, pnpm install e execução de
+    "turbo run lint typecheck test build" — o Turborepo orquestra apenas o
+    lado JS;
+  - api: JDK 21 via actions/setup-java (com cache Maven) executando
+    "./mvnw -f apps/api verify". Como o scaffold do apps/api só chega na
+    PSI-010, o job é condicionado à existência de apps/api (path filter e/ou
+    guard step que verifica o diretório) para o CI não quebrar antes disso;
+  - mobile: Flutter via subosito/flutter-action executando flutter analyze e
+    flutter test em apps/mobile, com o mesmo mecanismo de condicionamento à
+    existência do diretório;
+  - scope: em branches agent/*, roda
+    "node scripts/validate-task-scope.mjs --task <id extraído da branch>
+    --base origin/main" para garantir que o diff da tarefa respeita
+    allowed_paths/forbidden_paths do manifesto correspondente.
 dependencies:
   - "PSI-001"
   - "PSI-002"
@@ -24,28 +35,36 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Existe .github/workflows/ci.yml disparado em pull_request e em push na branch main"
-  - "O workflow instala dependências com pnpm usando cache do store para acelerar execuções subsequentes"
-  - "O workflow executa lint, typecheck, test e build via turbo run"
-  - "A versão do Node no CI é derivada do .nvmrc (ou equivalente), mantendo paridade com o ambiente local"
-  - "Um job adicional executa apenas em branches com prefixo agent/ e roda node scripts/validate-task-scope.mjs --task <id> --base origin/main, com o id extraído do nome da branch"
-  - "O job de validação de escopo faz checkout com histórico suficiente para diffar contra origin/main"
-  - "Falha em qualquer etapa (lint, typecheck, test, build ou validação de escopo) falha o workflow"
-  - "node scripts/validate-task-scope.mjs --lint-all executa sem erros contra os manifestos existentes"
+  - "ci.yml dispara em pull_request e em push para a branch main"
+  - "Job js: usa Node 22 (respeitando .nvmrc), cache de pnpm, e roda lint, typecheck, test e build via turbo"
+  - "Job api: usa actions/setup-java com JDK 21 (distribuição temurin ou equivalente) e executa ./mvnw -f apps/api verify"
+  - "Job api é condicionado à existência de apps/api (path filter e/ou guard) e não falha enquanto o scaffold da PSI-010 não existir"
+  - "Job mobile: usa subosito/flutter-action e executa flutter analyze e flutter test em apps/mobile, igualmente condicionado à existência do diretório"
+  - "Job scope: em branches agent/*, extrai o id da tarefa do nome da branch e executa node scripts/validate-task-scope.mjs --task <id> --base origin/main"
+  - "Checkout do job scope tem profundidade suficiente (fetch-depth adequado) para calcular o diff contra origin/main"
+  - "node scripts/validate-task-scope.mjs --lint-all passa localmente, confirmando que todos os manifestos são parseáveis pelo validador usado no CI"
 validation_commands:
   - "node scripts/validate-task-scope.mjs --lint-all"
 risks:
-  - "Extração incorreta do id da tarefa a partir do nome da branch (ex.: casing psi-0NN vs PSI-0NN) pode invocar o validador com id inexistente"
-  - "Checkout raso (fetch-depth padrão) sem origin/main disponível quebra o diff do validador de escopo"
-  - "Cache de pnpm mal chaveado pode mascarar problemas de lockfile ou desacelerar o CI em vez de acelerar"
-  - "Enquanto houver poucos workspaces, o CI pode passar trivialmente e dar falsa confiança sobre as pipelines"
+  - "Guards de existência mal escritos podem mascarar falhas reais quando apps/api/apps/mobile passarem a existir — o guard deve apenas pular o job, nunca engolir erro de build"
+  - "Extração do id da tarefa a partir do nome da branch depende da convenção agent/psi-0NN-slug; branches fora do padrão devem falhar de forma explícita e legível"
+  - "Cache de pnpm/Maven mal configurado degrada o tempo de CI sem quebrar builds, dificultando a detecção"
+  - "Workflows não são testáveis localmente por completo; erros de sintaxe só aparecem no primeiro run remoto"
 out_of_scope:
-  - "Criar ou alterar o script scripts/validate-task-scope.mjs (assumido preexistente no repositório)"
-  - "Deploy ou publicação de artefatos"
-  - "Workflows de release, changelog ou versionamento"
+  - "Deploy/CD de qualquer aplicação"
+  - "Criação ou alteração do script scripts/validate-task-scope.mjs (já existente no repositório)"
+  - "Scaffold de apps/api e apps/mobile (PSI-010 e tarefas futuras)"
+  - "Configuração de branch protection e required checks no GitHub"
 assumptions:
-  - "O script scripts/validate-task-scope.mjs já existe no repositório e suporta as flags --task, --base e --lint-all; esta tarefa apenas o invoca"
-  - "O id da tarefa é extraído do padrão de branch agent/psi-0NN-slug e normalizado para o formato PSI-0NN antes de ser passado ao validador"
+  - "O script scripts/validate-task-scope.mjs já existe no repositório e suporta as flags --task, --base e --lint-all"
+  - "O runner ubuntu-latest é suficiente para os três ecossistemas"
+  - "A versão do Flutter será fixada no workflow (channel stable com versão explícita) para reprodutibilidade"
 open_questions:
-  - "Nenhuma tarefa deste lote cria scripts/validate-task-scope.mjs e scripts/** não está em allowed_paths; se o script não existir na main, quem o entrega e em qual tarefa?"
+  - "Os jobs api e mobile devem virar required checks quando os scaffolds existirem? Decisão de branch protection fica com o orquestrador"

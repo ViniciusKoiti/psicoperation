@@ -1,51 +1,74 @@
 id: PSI-012
-title: "apps/automation: scaffold do worker BullMQ"
-project: automation
+title: "apps/clinic: scaffold Vite + React + Mantine"
+project: clinic
 shared_change: true
-branch: "agent/psi-012-automation-scaffold"
-commit_message: "feat(automation): scaffold do worker BullMQ [PSI-012]"
-pr_title: "PSI-012: apps/automation: scaffold do worker BullMQ"
+branch: "agent/psi-012-clinic-scaffold"
+commit_message: "feat(clinic): scaffold Vite + React + Mantine com tema de tokens [PSI-012]"
+pr_title: "PSI-012: apps/clinic: scaffold Vite + React + Mantine"
 description: |
-  Cria o esqueleto do serviço de automação: um worker Node + TypeScript
-  baseado em BullMQ, conectado ao Redis local através de variáveis de
-  ambiente validadas na inicialização. A tarefa estabelece os padrões que
-  todas as filas futuras (cobranças atrasadas, lembretes etc.) vão seguir:
-  a conexão com o Redis fica atrás de uma abstração injetável, de modo que
-  os processors possam ser testados sem um Redis real; o processo trata
-  SIGTERM com graceful shutdown, fechando workers e conexões antes de sair.
-  Como prova do padrão, é criada uma fila de exemplo "heartbeat" com seu
-  processor e testes. Nenhuma regra de negócio é implementada aqui.
+  Cria o scaffold do app web da clínica (apps/clinic), o produto principal
+  usado pela psicóloga no dia a dia. Stack: Vite + React + TypeScript com
+  Mantine como biblioteca de UI, tematizado a partir dos design tokens de
+  @psiops/ui para manter coerência visual com a landing e o app mobile.
+
+  Entrega a espinha dorsal de navegação e organização de código sobre a
+  qual as features de domínio (carteira de pacientes, mensalidades,
+  cobranças) serão construídas: React Router com separação entre rotas
+  públicas e protegidas (guards placeholder, sem autenticação real),
+  layout shell com sidebar e topbar, e estrutura de pastas por feature
+  (src/features/*), com adapters de acesso a dados isolados em
+  src/adapters/* e componentes compartilhados em src/components/*.
+
+  Os tipos de payloads e recursos da API vêm exclusivamente de
+  @psiops/contracts (código gerado comitado em gen/ts) — nenhum DTO é
+  redefinido localmente. Testes com Vitest + Testing Library, incluindo
+  smoke test de renderização do shell.
+
+  shared_change: true porque a criação do workspace exige atualizar o
+  pnpm-lock.yaml na raiz do monorepo.
 dependencies:
-  - "PSI-003"
   - "PSI-005"
+  - "PSI-007"
 allowed_paths:
-  - "apps/automation/**"
+  - "apps/clinic/**"
   - "pnpm-lock.yaml"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "App em apps/automation criado como worker Node + TypeScript integrado ao workspace, com build sem erros"
-  - "Variáveis de ambiente (incluindo conexão Redis) validadas na inicialização; configuração inválida falha rápido com mensagem clara"
-  - "Fila de exemplo 'heartbeat' registrada com processor funcional demonstrando o padrão de definição de filas"
-  - "Conexão com Redis abstraída atrás de interface injetável; os testes dos processors executam sem Redis real, usando injeção/mocks"
-  - "Graceful shutdown implementado: ao receber SIGTERM o worker para de aceitar jobs, aguarda o encerramento e fecha as conexões antes de sair"
-  - "Testes do processor de heartbeat cobrindo o comportamento esperado, executando sem dependências externas"
-  - "pnpm --filter @psiops/automation test e pnpm --filter @psiops/automation build executam com sucesso"
+  - "App Vite + React + TypeScript criado em apps/clinic com nome de pacote @psiops/clinic, integrado ao workspace pnpm existente"
+  - "Mantine instalado e configurado com MantineProvider cujo tema (cores, tipografia, radius, espaçamentos) é derivado dos tokens de @psiops/ui, sem valores hardcoded duplicando tokens"
+  - "React Router configurado com ao menos uma rota pública (ex.: /login placeholder) e uma área protegida placeholder (guard simples que hoje sempre permite, com ponto de extensão claro para autenticação futura)"
+  - "Layout shell implementado com sidebar de navegação e topbar, usado pelas rotas protegidas"
+  - "Estrutura de pastas criada e exemplificada: src/features/* (ao menos uma feature placeholder), src/adapters/* (interface de adapter exemplo) e src/components/* (componente compartilhado exemplo)"
+  - "Tipos de contratos importados de @psiops/contracts (gen/ts) em ao menos um ponto real do código (ex.: assinatura do adapter exemplo), sem redefinição local de DTOs"
+  - "Vitest + Testing Library configurados, com smoke test que renderiza o shell e verifica elementos essenciais (sidebar, topbar)"
+  - "pnpm --filter @psiops/clinic build conclui sem erros e sem warnings de TypeScript bloqueantes"
+  - "pnpm --filter @psiops/clinic test passa com o smoke test verde"
 validation_commands:
-  - "pnpm --filter @psiops/automation test"
-  - "pnpm --filter @psiops/automation build"
+  - "pnpm --filter @psiops/clinic build"
+  - "pnpm --filter @psiops/clinic test"
 risks:
-  - "Abstração da conexão mal desenhada pode vazar detalhes do BullMQ e forçar Redis real nos testes"
-  - "Graceful shutdown incompleto pode perder jobs em andamento quando o processo for encerrado em produção"
-  - "Tarefa shared_change altera pnpm-lock.yaml; execução concorrente com outra tarefa shared_change gera conflito de lockfile"
-  - "Divergência entre a versão do BullMQ e a versão do Redis local pode causar falhas apenas em runtime"
+  - "Alteração do pnpm-lock.yaml pode conflitar com outras tarefas; por ser shared_change: true, esta tarefa deve executar isoladamente"
+  - "Divergência entre o formato dos tokens exportados por @psiops/ui e o shape de tema esperado pelo Mantine pode exigir camada de mapeamento; mapear explicitamente em um único módulo de tema"
+  - "Guards de rota placeholder podem ser esquecidos e ir a produção como estão; deixar TODO explícito e teste que documenta o comportamento provisório"
+  - "Versões de Mantine e React precisam ser compatíveis entre si e com o restante do workspace (peer dependencies)"
 out_of_scope:
-  - "Filas de negócio reais (cobranças, lembretes) e consumo de eventos de domínio"
-  - "Provisionamento ou configuração de infraestrutura Redis (docker-compose, deploy)"
-  - "Agendamento recorrente (repeatable jobs) além do necessário para o exemplo heartbeat"
-  - "Observabilidade avançada (métricas, dashboards de fila)"
+  - "Autenticação e autorização reais (login, sessão, tokens)"
+  - "Features de domínio (pacientes, mensalidades, cobranças) além de placeholders estruturais"
+  - "Integração real com a API de apps/api (adapters concretos com fetch/HTTP)"
+  - "Alterações em packages/ui ou packages/contracts (consumo somente)"
+  - "Testes E2E (ficam para tarefa própria de testing)"
 assumptions:
-  - "PSI-003 disponibiliza um Redis local para desenvolvimento acessível via variáveis de ambiente"
-  - "O filtro pnpm do app é 'automation' (nome do package apps/automation)"
-open_questions: []
+  - "PSI-005 disponibilizou @psiops/ui com tokens consumíveis em TS/CSS e PSI-007 disponibilizou @psiops/contracts com gen/ts comitado e importável via workspace"
+  - "O registro do novo app no pnpm-workspace.yaml já cobre apps/* (padrão glob), portanto não é necessário editar pnpm-workspace.yaml, que permanece proibido"
+  - "O package.json da raiz não precisa de alteração; apenas o pnpm-lock.yaml muda ao instalar as dependências do novo app"
+open_questions:
+  - "Haverá convenção de nomenclatura de rotas/URLs definida por produto (pt-BR vs. inglês) antes das primeiras features?"
+  - "O guard de rotas protegidas deve prever integração com qual mecanismo de auth (a definir em tarefa futura de autenticação)?"

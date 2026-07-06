@@ -1,52 +1,73 @@
 id: PSI-011
-title: "apps/clinic: scaffold Vite + React + Mantine"
-project: clinic
-shared_change: true
-branch: "agent/psi-011-clinic-scaffold"
-commit_message: "feat(clinic): scaffold Vite + React + Mantine [PSI-011]"
-pr_title: "PSI-011: apps/clinic: scaffold Vite + React + Mantine"
+title: "api: fundação Axon Framework"
+project: api
+shared_change: false
+branch: "agent/psi-011-axon-fundacao"
+commit_message: "feat(api): fundação Axon Framework com event store JPA [PSI-011]"
+pr_title: "PSI-011: api: fundação Axon Framework"
 description: |
-  Cria o esqueleto do app clinic (painel da psicóloga) dentro do monorepo,
-  usando Vite + React + TypeScript com Mantine como biblioteca de UI. O tema
-  do Mantine deve ser derivado dos tokens de design expostos por @psiops/ui,
-  garantindo consistência visual com o restante do produto desde o primeiro
-  commit. A tarefa entrega apenas a fundação: roteamento com separação entre
-  rotas públicas e protegidas (placeholders), um layout shell com sidebar e
-  topbar, a estrutura de pastas padrão (features, adapters, components) e a
-  base de testes com Vitest + Testing Library. Nenhuma funcionalidade de
-  negócio é implementada aqui; o objetivo é que tarefas futuras encontrem um
-  app que compila, testa e segue as convenções do workspace.
+  Integra o Axon Framework ao backend Spring Boot 3 (Java 21) de apps/api,
+  estabelecendo a fundação de CQRS que todo o domínio financeiro do PsiOps
+  usará daqui em diante. O event store é o embutido via JPA, persistido no
+  PostgreSQL da aplicação — o connector do Axon Server deve ficar
+  explicitamente desabilitado, pois não haverá Axon Server no MVP nem em
+  produção.
+
+  Decisão arquitetural a registrar no código (comentário/ADR local no
+  pacote de configuração): os agregados são state-stored (estado persistido
+  via JPA), e não event-sourced; os eventos publicados servem para
+  projeções, integrações e auditoria, mas não são a fonte de verdade do
+  estado do agregado. Event sourcing completo fica fora do MVP.
+
+  A tarefa entrega também as convenções de nomenclatura e organização de
+  comandos, eventos e queries documentadas no próprio código (package-info
+  ou classes de exemplo comentadas), um fluxo exemplo fim-a-fim que serve
+  de gabarito para as próximas tarefas de domínio (comando → agregado
+  state-stored → evento → projeção/handler de query), e a configuração do
+  DeadlineManager do Axon, que será a base do agendamento de lembretes de
+  cobrança na PSI-029.
 dependencies:
-  - "PSI-005"
-  - "PSI-007"
+  - "PSI-010"
 allowed_paths:
-  - "apps/clinic/**"
-  - "pnpm-lock.yaml"
+  - "apps/api/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "App em apps/clinic criado com Vite + React + TypeScript, integrado ao workspace pnpm/Turborepo, sem erros de type-check no build"
-  - "MantineProvider configurado com tema derivado dos tokens de design de @psiops/ui (cores, tipografia e demais tokens aplicáveis), sem valores de marca hardcoded duplicados"
-  - "React Router configurado com pelo menos uma rota pública e uma rota protegida, ambas como placeholders, com o mecanismo de proteção isolado para ser substituído por autenticação real depois"
-  - "Layout shell com sidebar e topbar renderizando as rotas filhas"
-  - "Estrutura de pastas src/features/*, src/adapters/* e src/components/* criada e utilizada pelos arquivos do scaffold"
-  - "Vitest + Testing Library configurados com ao menos um teste de smoke que renderiza o app/shell e passa"
-  - "pnpm --filter @psiops/clinic build e pnpm --filter @psiops/clinic test executam com sucesso"
+  - "Dependências do Axon (axon-spring-boot-starter e módulos necessários) adicionadas ao pom.xml de apps/api, com versão fixada (BOM ou propriedade), sem uso do Axon Server"
+  - "Connector do Axon Server explicitamente desabilitado (exclusão da dependência de connector e/ou propriedade de configuração), com a aplicação subindo sem tentar conectar a um Axon Server"
+  - "Event store JPA embutido configurado usando o PostgreSQL da aplicação como storage de eventos (entidades/JPA do Axon registradas e funcionais em ambiente de teste)"
+  - "Convenções de comandos, eventos e queries (nomenclatura, imutabilidade, pacotes por contexto, uso de identificadores) documentadas no código, em package-info.java ou classes de referência comentadas"
+  - "Fluxo exemplo fim-a-fim implementado: um comando despachado via CommandGateway alcança um agregado state-stored anotado, que aplica um evento consumido por uma projeção/handler, consultável via QueryGateway"
+  - "Testes do agregado exemplo escritos com AggregateTestFixture cobrindo caminho feliz e ao menos um caso de rejeição de comando"
+  - "DeadlineManager configurado (implementação compatível com o setup sem Axon Server) e coberto por teste que agenda e dispara um deadline no agregado exemplo, servindo de base para os lembretes da PSI-029"
+  - "Decisão 'agregados state-stored, sem event sourcing completo no MVP' registrada por escrito no código de configuração/documentação interna de apps/api"
+  - "cd apps/api && ./mvnw verify executa com sucesso, incluindo todos os testes novos"
 validation_commands:
-  - "pnpm --filter @psiops/clinic build"
-  - "pnpm --filter @psiops/clinic test"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Incompatibilidade de versões entre Mantine, Vite e React pode exigir ajuste de versões dentro do próprio app"
-  - "Derivar o tema dos tokens de @psiops/ui incorretamente cria divergência visual difícil de corrigir depois que features forem construídas em cima"
-  - "Tarefa shared_change altera pnpm-lock.yaml; execução concorrente com outra tarefa shared_change gera conflito de lockfile"
-  - "Estrutura de pastas mal definida agora induz acoplamento errado nas features futuras"
+  - "Versões do Axon Framework e do Spring Boot 3 podem conflitar (auto-configuração); mitigar fixando versões compatíveis via BOM do Axon"
+  - "O starter do Axon puxa o connector do Axon Server por padrão; se a exclusão for incompleta a aplicação pode falhar ou demorar no boot tentando conectar"
+  - "Misturar semântica state-stored com expectativas de event sourcing pode confundir tarefas futuras; a documentação de convenções precisa ser inequívoca"
+  - "DeadlineManager persistente pode exigir infraestrutura adicional; se a escolha do MVP for uma implementação simples (ex.: SimpleDeadlineManager), a limitação de não sobreviver a restart deve ficar registrada"
+  - "Tabelas do event store JPA exigem schema no PostgreSQL; como migrations Flyway estão fora do escopo desta tarefa, os testes devem usar schema gerado/efêmero"
 out_of_scope:
-  - "Qualquer feature de negócio (pacientes, agenda, cobranças)"
-  - "Autenticação real ou integração com a API NestJS"
-  - "Componentes visuais além do shell (sidebar + topbar) e placeholders de rota"
-  - "Configuração de E2E (Playwright) para o app clinic"
+  - "Agregados reais de domínio (pacientes, mensalidades, cobranças) — esta tarefa entrega apenas o fluxo exemplo"
+  - "Migrations Flyway para as tabelas do event store (apps/api/src/main/resources/db/migration/** é caminho proibido aqui)"
+  - "Implementação dos lembretes de cobrança (PSI-029) — aqui apenas a base de DeadlineManager"
+  - "Event sourcing completo, snapshotting e upcasting de eventos"
+  - "Alterações em packages/contracts ou em qualquer arquivo compartilhado do monorepo"
 assumptions:
-  - "PSI-007 disponibiliza o pacote @psiops/ui com tokens de design consumíveis por outros apps do workspace"
-  - "O filtro pnpm do app é 'clinic' (nome do package apps/clinic)"
-open_questions: []
+  - "Dependências Maven podem ser adicionadas livremente ao pom.xml de apps/api sem tocar no lockfile pnpm, pois o build Java é independente do workspace pnpm"
+  - "O schema das tabelas do event store em ambiente de teste pode ser criado pelo próprio Hibernate/Axon (ddl-auto em testes), ficando a migration Flyway definitiva para tarefa própria"
+  - "PSI-010 deixou o esqueleto Spring Boot 3 de apps/api compilando com ./mvnw verify e com PostgreSQL disponível para testes (ex.: Testcontainers ou H2 em modo compatível)"
+open_questions:
+  - "Qual implementação de DeadlineManager será adotada no MVP sem Axon Server (SimpleDeadlineManager em memória vs. solução persistente como JobRunr/DbScheduler)?"
+  - "Resolvida pelo orquestrador: a migration Flyway definitiva das tabelas do Axon (event store, token, saga, deadline) pertence à PSI-021 (V2), que executa antes de qualquer feature de domínio; nos testes desta tarefa o schema pode ser efêmero"

@@ -1,12 +1,13 @@
 # ADR 0006 — Frontends desacoplados por adapters (mock e HTTP)
 
-- Status: aceito
+- Status: aceito (ampliado em 2026-07-05: vale também para o mobile Flutter;
+  tipos vêm do codegen OpenAPI — ADR 0008; integrações reais nas PSI-044/045)
 - Data: 2026-07-05
 
 ## Contexto
 
-Clinic e landing serão construídos em paralelo com a API. Esperar endpoints prontos
-serializaria as ondas 3–4 e destruiria o paralelismo planejado.
+Clinic (web), mobile e landing serão construídos em paralelo com a API. Esperar
+endpoints prontos serializaria as ondas e destruiria o paralelismo planejado.
 
 ## Decisão
 

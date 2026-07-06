@@ -2,19 +2,27 @@ id: PSI-003
 title: "Infraestrutura local com Docker Compose"
 project: infra
 shared_change: false
-branch: "agent/psi-003-docker-compose"
-commit_message: "chore(infra): docker compose para infraestrutura local [PSI-003]"
+branch: "agent/psi-003-docker-compose-local"
+commit_message: "feat(infra): docker compose local com postgresql 16 e mailpit [PSI-003]"
 pr_title: "PSI-003: Infraestrutura local com Docker Compose"
 description: |
-  Provisiona a infraestrutura de desenvolvimento local do PsiOps via
-  Docker Compose: PostgreSQL 16 (banco principal, consumido futuramente
-  pelo Prisma), Redis 7 (backend das filas BullMQ do app automation) e
-  Mailpit (captura de e-mails em desenvolvimento). Cada serviço deve ter
-  healthcheck configurado e persistência em volumes nomeados, permitindo
-  destruir e recriar containers sem perda de dados. As credenciais e
-  portas expostas ficam documentadas em .env.example na raiz, servindo de
-  contrato para os apps que se conectarem a esses serviços. Documentação
-  de uso (subir, derrubar, resetar volumes, portas) fica em docs/infra.
+  Define o ambiente de desenvolvimento local do PsiOps via Docker Compose,
+  provisionando exatamente os dois serviços de infraestrutura da stack
+  pós-pivô:
+
+  - PostgreSQL 16: banco único do sistema, usado pelo apps/api tanto para as
+    tabelas de leitura/escrita JPA quanto para o event store embutido do Axon
+    Framework (não há Axon Server nem Redis na arquitetura);
+  - Mailpit: captura de e-mails transacionais em desenvolvimento, com UI web
+    para inspeção.
+
+  Ambos os serviços declaram healthchecks (pg_isready para o PostgreSQL e
+  endpoint HTTP do Mailpit) para que dependências futuras possam usar
+  condition: service_healthy. Dados persistem em volumes nomeados. Nenhuma
+  credencial ou porta fica hardcoded no compose: tudo é parametrizado por
+  variáveis de ambiente com defaults documentados em .env.example. A
+  documentação de uso (subir, derrubar, resetar volumes, acessar a UI do
+  Mailpit) vai em docs/infra/.
 dependencies:
   - "PSI-001"
 allowed_paths:
@@ -31,29 +39,29 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "docker compose up -d sobe Postgres 16, Redis 7 e Mailpit sem erros"
-  - "Cada serviço declara healthcheck e atinge o estado healthy após a subida"
-  - "Postgres e Redis usam volumes nomeados, preservando dados entre recriações de containers"
-  - "As imagens fixam as versões maiores exigidas (Postgres 16 e Redis 7)"
-  - "Todas as credenciais e portas expostas estão documentadas em .env.example, com valores padrão funcionais para desenvolvimento local"
-  - "Mailpit expõe a interface web e a porta SMTP, ambas documentadas em .env.example"
-  - "docs/infra contém instruções de como subir, derrubar e resetar a infraestrutura local"
-  - "docker compose config valida o arquivo sem erros nem warnings de sintaxe"
+  - "docker compose up -d sobe PostgreSQL 16 e Mailpit sem erros"
+  - "Nenhum serviço Redis (ou outro broker/cache) está presente no compose"
+  - "PostgreSQL tem healthcheck baseado em pg_isready e Mailpit tem healthcheck HTTP; ambos atingem estado healthy"
+  - "Dados do PostgreSQL persistem em volume nomeado e sobrevivem a docker compose down (sem -v)"
+  - "Credenciais, nomes de banco e portas expostas são parametrizados por variáveis de ambiente com defaults em .env.example"
+  - ".env.example documenta todas as variáveis com comentários (host, porta, usuário, senha, database, portas SMTP/UI do Mailpit)"
+  - "docker compose config valida a composição sem warnings de sintaxe"
+  - "docs/infra/ contém instruções de uso: subir, derrubar, resetar dados e acessar a UI do Mailpit"
 validation_commands:
   - "docker compose config"
 risks:
-  - "Conflito de portas locais com serviços já em execução na máquina da desenvolvedora (Postgres/Redis nativos, outros composes)"
-  - "docker compose config valida apenas a sintaxe; problemas de runtime (imagem indisponível, healthcheck mal calibrado) só aparecem ao subir os serviços"
-  - "Credenciais padrão de desenvolvimento em .env.example podem ser copiadas por engano para ambientes não locais"
+  - "Portas padrão (5432, 8025, 1025) podem colidir com serviços já rodando na máquina do desenvolvedor — mitigado pela parametrização via .env"
+  - "Divergência futura entre as credenciais do .env.example e a configuração do apps/api (PSI-010) se os nomes das variáveis não forem estáveis"
+  - "Healthcheck do Mailpit varia conforme a versão da imagem; fixar tag de imagem para reprodutibilidade"
 out_of_scope:
-  - "Infraestrutura de produção ou provisionamento em nuvem"
-  - "Configuração do Prisma ou execução de migrations (PSI-006)"
-  - "Configuração de filas BullMQ no app automation"
-  - "CI/CD (PSI-004)"
+  - "Infraestrutura de produção, Kubernetes ou provisionamento em nuvem"
+  - "Serviços de aplicação no compose (api/landing/clinic rodam fora do Docker em dev)"
+  - "Migrations de banco (chegam com o Flyway na PSI-010)"
+  - "Qualquer serviço Redis, fila ou broker"
 assumptions:
-  - "As portas padrão dos serviços (5432, 6379, SMTP e web do Mailpit) são usadas, com possibilidade de override via variáveis do .env.example"
-  - "Arquivos auxiliares de inicialização (ex.: scripts de init do Postgres), se necessários, residem em infra/**"
+  - "Docker Engine com Compose v2 (comando docker compose, sem hífen) está disponível no ambiente"
+  - "Imagens oficiais postgres:16 e axllent/mailpit com tags fixadas são aceitáveis"
+  - "Um único banco PostgreSQL atende desenvolvimento; bancos extras de teste são criados pelo Testcontainers na PSI-010, não pelo compose"
 open_questions: []

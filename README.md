@@ -4,20 +4,20 @@ Monorepo do **PsiOps**, SaaS de gestão financeira e administrativa para psicól
 solo brasileiras, com foco em mensalidades.
 
 > Estado atual: **fundação de governança** (onda 0). As aplicações são implementadas
-> em 40 tarefas rastreáveis (PSI-001 a PSI-040) — ver `tasks/` e
+> em 46 tarefas rastreáveis (PSI-001 a PSI-046) — ver `tasks/` e
 > `docs/architecture/dependency-graph.md`.
 
 ## Estrutura
 
 | Caminho | Conteúdo |
 |---|---|
-| `apps/landing` | Landing page pública (Next.js) |
-| `apps/clinic` | Aplicação da psicóloga (Vite + React + Mantine) |
-| `apps/api` | Backend (NestJS + Prisma/PostgreSQL) |
-| `apps/automation` | Worker assíncrono (BullMQ + Redis) |
-| `packages/*` | contracts, database, ui, config, testing |
+| `apps/landing` | Landing page pública (Next.js/React) |
+| `apps/clinic` | Aplicação web da psicóloga (Vite + React + Mantine) |
+| `apps/mobile` | App companion da psicóloga (Flutter) |
+| `apps/api` | Backend único (Spring Boot 3 + Axon, JPA/Flyway + PostgreSQL) |
+| `packages/*` | contracts (OpenAPI + codegen TS/Java/Dart), ui, config, testing |
 | `docs/` | Escopo, glossário, arquitetura, ADRs, spec da landing |
-| `tasks/` | Manifestos das 40 tarefas (formato em `tasks/_FORMAT.md`) |
+| `tasks/` | Manifestos das 46 tarefas (formato em `tasks/_FORMAT.md`) |
 | `project/` | Referência visual da landing — **somente leitura** |
 
 ## Documentos de partida

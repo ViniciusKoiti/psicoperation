@@ -1,30 +1,39 @@
 id: PSI-038
-title: "automation: lembretes e envio de e-mail"
-project: automation
+title: "clinic: tarefas e lembretes"
+project: clinic
 shared_change: false
-branch: "agent/psi-038-automation-lembretes-email"
-commit_message: "feat(automation): filas de lembretes e envio de email [PSI-038]"
-pr_title: "PSI-038: automation — lembretes e envio de e-mail"
+branch: "agent/psi-038-tarefas-lembretes"
+commit_message: "feat(clinic): tarefas e lembretes por email [PSI-038]"
+pr_title: "PSI-038: clinic — tarefas e lembretes"
 description: |
-  Implementa no app automation (worker BullMQ) a entrega de lembretes por
-  email. Um poller lê a tabela Outbox via @psiops/database — estritamente
-  leitura e marcação de registro como processado — e publica jobs nas
-  filas do BullMQ. Duas famílias de fila são entregues: lembrete de
-  consulta (envios na véspera e no dia da consulta) e cobrança atrasada.
-  O envio usa SMTP apontando para o Mailpit do ambiente local, com
-  templates de texto simples em pt-BR. A idempotência é garantida por
-  jobId determinístico derivado do registro de origem, e falhas são
-  reprocessadas com retries e backoff exponencial. Restrição registrada
-  em código e documentação do app: automation não escreve regra de
-  negócio — quem decide o que lembrar e quando é a API via Outbox; o
-  worker apenas entrega. Os processors são testados com o transporte de
-  email mockado.
+  Implementa a gestão de tarefas e a configuração de lembretes no app
+  clinic, apoiando a rotina administrativa da psicóloga.
+
+  Tarefas: criação rápida (campo único com título e atalho de teclado),
+  vencimento opcional (data ISO 8601, exibida em pt-BR), conclusão com um
+  clique (checkbox) e reabertura. A listagem separa tarefas abertas e
+  concluídas, destaca as atrasadas e alimenta o bloco "tarefas do dia" do
+  dashboard (PSI-032) pela mesma interface de adapter.
+
+  Lembretes: vinculados a uma consulta (lembrete de sessão) ou a uma
+  cobrança/mensalidade (lembrete de pagamento), com canal email nesta fase.
+  A usuária configura antecedência e ativação por lembrete; o app registra
+  a intenção de envio via adapter — o disparo real de email é
+  responsabilidade do backend/automação e não acontece nesta tarefa. O
+  MockRemindersAdapter simula o agendamento e expõe o estado (agendado,
+  enviado, falho) para a UI exibir o histórico de lembretes de cada
+  consulta/cobrança.
+
+  Ambos os domínios usam adapters tipados (TasksAdapter, RemindersAdapter)
+  com mocks em memória como padrão em dev/test e seleção mock/http no ponto
+  único de composição. Nenhum conteúdo clínico aparece em tarefas ou
+  lembretes; os templates de lembrete são administrativos (data, horário,
+  valor) e não incluem qualquer decisão automatizada de saúde.
 dependencies:
-  - "PSI-012"
+  - "PSI-030"
   - "PSI-020"
-  - "PSI-026"
 allowed_paths:
-  - "apps/automation/**"
+  - "apps/clinic/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
@@ -34,40 +43,34 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Poller lê registros pendentes da tabela Outbox via @psiops/database, restrito a leitura e à marcação de processado, sem qualquer outra escrita no banco"
-  - "Cada registro pendente da Outbox vira um job publicado na fila BullMQ correspondente ao seu tipo"
-  - "Fila de lembrete de consulta cobre os dois momentos de envio: véspera e dia da consulta"
-  - "Fila de cobrança atrasada envia o email de cobrança correspondente"
-  - "Envio de email ocorre por SMTP configurável por variáveis de ambiente, apontando para o Mailpit no ambiente local"
-  - "Templates de email são texto simples em pt-BR, sem HTML, com os dados do lembrete/cobrança interpolados a partir dos payloads tipados por @psiops/contracts"
-  - "jobId determinístico derivado do registro de origem garante que reprocessar a mesma entrada da Outbox não gere envio duplicado"
-  - "Jobs com falha são reprocessados com retries e backoff exponencial configurados nas filas"
-  - "Testes dos processors usam transporte de email mockado e cobrem sucesso, falha com retry e idempotência por jobId"
-  - "A restrição 'automation não escreve regra de negócio, só entrega' está registrada na documentação interna do app"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Criação rápida de tarefa por campo único (Enter cria), com vencimento opcional e edição posterior de título/vencimento"
+  - "Conclusão e reabertura de tarefa com um clique; listagem separa abertas e concluídas e destaca atrasadas (vencimento no passado)"
+  - "Interface do TasksAdapter compatível com o bloco de tarefas do dia do dashboard (PSI-032), servindo como fonte única"
+  - "Lembrete vinculável a consulta ou a mensalidade, com canal email, antecedência configurável e ativação/desativação individual"
+  - "Nenhum email é disparado pelo app; o adapter registra a intenção/agendamento e o mock expõe estados (agendado, enviado, falho) exibidos na UI"
+  - "TasksAdapter e RemindersAdapter tipados com mocks em memória como padrão em dev/test; seleção mock/http no ponto único de composição; sem chamadas HTTP reais"
+  - "Textos e templates de lembrete são estritamente administrativos, em pt-BR, sem conteúdo clínico nem recomendação de saúde"
+  - "Estados de carregamento, lista vazia e erro tratados nas telas de tarefas e lembretes"
+  - "Testes cobrem criação rápida, vencimento, conclusão/reabertura, destaque de atraso, vínculo de lembrete a consulta e a cobrança e transições de estado no mock"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/automation lint"
-  - "pnpm --filter @psiops/automation typecheck"
-  - "pnpm --filter @psiops/automation test"
+  - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Poller e processors concorrentes podem processar o mesmo registro da Outbox; a marcação de processado precisa ser segura contra corrida dentro do que a interface do @psiops/database permitir"
-  - "jobId mal derivado (não determinístico ou colidente) causaria envio duplicado ou supressão indevida de lembretes"
-  - "Backoff mal calibrado pode atrasar lembretes sensíveis a tempo (véspera/dia) a ponto de perderem a utilidade"
-  - "Dependência do Mailpit local nos testes tornaria a suíte frágil; por isso os testes usam transporte mockado"
+  - "Lembretes dependem de entidades de consulta (PSI-035) e mensalidade (PSI-037) que podem ainda não existir; o vínculo é feito por identificadores tipados e o mock provê entidades semente, exigindo conciliação quando essas tarefas aterrissarem"
+  - "Divergência entre a semântica de 'agendado/enviado' do mock e o comportamento real do backend de envio pode frustrar expectativas na integração (PSI-044)"
+  - "Cálculo de atraso de tarefa e antecedência de lembrete sensível a fuso horário"
 out_of_scope:
-  - "Qualquer regra de negócio sobre quando e o que lembrar (responsabilidade da API, via Outbox)"
-  - "Escrita no banco além da marcação de processado na Outbox"
-  - "Templates HTML, tracking de abertura ou provedores de email de produção"
-  - "Canais além de email (WhatsApp, SMS, push)"
-  - "Alterações em packages/database ou em migrations"
-  - "Instalação de novas dependências"
+  - "Disparo real de emails e infraestrutura de envio (backend/automação)"
+  - "Canal WhatsApp ou SMS para lembretes (fase futura)"
+  - "Tarefas recorrentes, subtarefas, etiquetas e priorização"
+  - "Notificações push/in-app"
+  - "Integração real com a API (PSI-044)"
 assumptions:
-  - "O scaffold do app automation (PSI-012) já declara as dependências necessárias (BullMQ, cliente SMTP, @psiops/database, @psiops/contracts); esta tarefa não instala pacotes novos"
-  - "A tabela Outbox e sua API de leitura/marcação foram entregues por PSI-020/PSI-026 e definem os tipos de evento consumidos aqui"
-  - "Redis para o BullMQ e o Mailpit já estão disponíveis no docker compose do ambiente local; os testes não dependem de nenhum dos dois"
-  - "Os momentos véspera e dia são calculados pela API ao gravar na Outbox, ou vêm expressos no payload; o worker não recalcula regra de agendamento"
+  - "As preferências padrão de lembrete definidas no onboarding (PSI-031) servem de valor inicial para novos lembretes"
+  - "Enquanto não houver contratos de tarefas/lembretes em packages/contracts/gen/ts, os tipos ficam locais ao app, a serem alinhados quando os contratos forem publicados"
+  - "Lembrete de pagamento é enviado ao email da própria psicóloga ou da paciente conforme configuração; na ausência de definição, assume-se o email da paciente cadastrado na PSI-033"
 open_questions:
-  - "Registros da Outbox que esgotarem os retries devem ser marcados com um estado de falha permanente ou permanecer pendentes para intervenção manual?"
+  - "O destinatário do lembrete de pagamento (psicóloga como lembrete interno vs. paciente como cobrança) pede definição de produto"

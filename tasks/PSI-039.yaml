@@ -1,38 +1,38 @@
 id: PSI-039
-title: "Integração real e E2E dos fluxos principais"
-project: integration
+title: "clinic: configurações"
+project: clinic
 shared_change: false
-branch: "agent/psi-039-integracao-e2e"
-commit_message: "feat(integration): adapters http reais e suite e2e cross-app [PSI-039]"
-pr_title: "PSI-039: Integração real e E2E dos fluxos principais"
+branch: "agent/psi-039-configuracoes"
+commit_message: "feat(clinic): tela de configurações da conta [PSI-039]"
+pr_title: "PSI-039: clinic — configurações"
 description: |
-  Liga o front ao backend de verdade e prova os fluxos principais de
-  ponta a ponta. No app clinic, implementa os HttpAdapters correspondentes
-  aos adapters mock existentes (pacientes, agenda, financeiro, tarefas,
-  lembretes, configurações), conectados à API NestJS real; a seleção
-  entre mock e http é feita por variável de ambiente, e o build de
-  produção proíbe o mock — com verificação automatizada dessa proibição.
-  No app landing, o formulário de lead passa a enviar ao endpoint real em
-  ambiente de teste. Uma suíte Playwright cross-app, subindo a
-  infraestrutura via docker compose, cobre o caminho crítico do MVP:
-  registro → login → criar paciente → agendar consulta, além de verificar
-  que o lead capturado na landing persiste no banco. Nenhuma tela é
-  alterada: os adapters respeitam as interfaces derivadas de
-  @psiops/contracts já consumidas pelos componentes.
+  Implementa a tela de configurações do app clinic, permitindo revisar e
+  editar tudo o que foi definido no onboarding (PSI-031), agora em formato
+  de página permanente organizada em seções:
+
+  - Perfil profissional: nome de exibição e CRP (opcional, com validação
+    de formato);
+  - Financeiro: valor padrão de sessão em centavos BRL, exibido e editado
+    como moeda brasileira;
+  - Atendimento: dias da semana e janelas de horário;
+  - Lembretes: preferências padrão de canal (email nesta fase) e
+    antecedência;
+  - Sessão: ação de logout com confirmação, encerrando a sessão da PSI-030
+    e redirecionando ao login.
+
+  A tela reutiliza o SettingsAdapter definido no onboarding — mesmo
+  contrato, mesmas implementações Mock/Http, sem duplicação de interface —
+  garantindo que um dado editado aqui é o mesmo lido pelo onboarding e
+  pelas demais telas (ex.: valor padrão usado na geração de mensalidades).
+  Cada seção salva de forma independente com feedback de sucesso/erro
+  (notificação Mantine), validação client-side consistente com o contrato
+  do adapter e preservação dos demais campos. Estados de carregamento
+  inicial e erro de leitura com retry são tratados.
 dependencies:
-  - "PSI-018"
-  - "PSI-021"
-  - "PSI-022"
-  - "PSI-023"
-  - "PSI-027"
-  - "PSI-028"
+  - "PSI-030"
   - "PSI-031"
-  - "PSI-033"
 allowed_paths:
-  - "apps/clinic/src/adapters/**"
-  - "apps/clinic/e2e/**"
-  - "apps/landing/src/adapters/**"
-  - "e2e/**"
+  - "apps/clinic/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
@@ -42,40 +42,30 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "HttpAdapters do clinic implementados para os domínios já entregues (pacientes, agenda, financeiro, tarefas, lembretes, configurações), com as mesmas interfaces dos adapters mock"
-  - "Seleção entre adapter mock e http é controlada por variável de ambiente, sem alteração de componentes de tela"
-  - "Build de produção do clinic não contém o adapter mock, e uma verificação automatizada falha caso o mock seja selecionável ou incluído no bundle de produção"
-  - "Requisições e respostas dos HttpAdapters são validadas contra os schemas Zod de @psiops/contracts"
-  - "Landing envia o lead capturado ao endpoint real da API quando executada em ambiente de teste"
-  - "Suíte Playwright cross-app sobe a infraestrutura necessária via docker compose antes dos testes e a derruba ao final"
-  - "Cenário E2E cobre o fluxo completo: registro → login → criar paciente → agendar consulta, com asserções em cada etapa"
-  - "Cenário E2E da landing verifica que o lead submetido persiste no banco de dados"
-  - "A suíte E2E é executável localmente por um único comando documentado dentro de e2e/**"
+  - "Tela de configurações como rota protegida com seções: perfil profissional, valor padrão de sessão, dias/horários de atendimento e preferências de lembrete, UI Mantine com tokens @psiops/ui em pt-BR"
+  - "Reutiliza o SettingsAdapter da PSI-031 sem redefinir interface nem duplicar tipos; dados editados aqui são lidos consistentemente pelo restante do app"
+  - "Valor padrão de sessão editado como moeda brasileira e persistido em centavos BRL; CRP opcional com validação de formato"
+  - "Cada seção salva de forma independente, com notificação de sucesso/erro e sem sobrescrever campos das demais seções"
+  - "Logout com confirmação encerra a sessão (limpa token em memória via fluxo da PSI-030) e redireciona ao login"
+  - "Estados tratados: carregamento inicial das configurações e erro de leitura com ação de tentar novamente"
+  - "Testes cobrem leitura inicial, edição e persistência por seção, validações (CRP, valor monetário), independência entre seções e logout"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
   - "pnpm --filter @psiops/clinic build"
-  - "pnpm e2e"
 risks:
-  - "Acoplamento de ambiente: a suíte depende de docker compose, portas livres e estado limpo do banco; divergências de ambiente local/CI causam falhas difíceis de reproduzir"
-  - "Flakiness de E2E: esperas baseadas em tempo, corridas entre subida da infra e início dos testes e animações de UI podem gerar falhas intermitentes; mitigar com waits determinísticos e retries do Playwright"
-  - "Contratos desatualizados entre mock e API real só se revelam aqui; qualquer divergência exige correção na origem (API ou contratos), fora do escopo desta tarefa"
-  - "A verificação de exclusão do mock em produção pode gerar falso negativo se depender apenas de análise superficial do bundle"
+  - "Se a PSI-031 tiver definido o contrato do SettingsAdapter acoplado ao formato de wizard, a reutilização exigirá ajuste no adapter — mudança que deve ocorrer dentro de apps/clinic sem quebrar o onboarding"
+  - "Salvamento por seção com adapter que persiste o objeto inteiro pode causar sobrescrita de campos concorrentes (last-write-wins)"
+  - "Alterar valor padrão de sessão não repactua valores acordados por paciente; a UI deve deixar claro o alcance da mudança para evitar expectativa incorreta"
 out_of_scope:
-  - "Alterar componentes de tela, contratos (packages/contracts) ou schema/migrations do banco"
-  - "Editar o docker-compose ou workflows de CI (arquivos fora dos allowed_paths)"
-  - "Cobertura E2E exaustiva de todos os módulos; apenas os fluxos principais especificados"
-  - "Testes de carga, performance ou acessibilidade"
-  - "Adapters HTTP para o app automation (worker não tem UI)"
+  - "Alteração de email de login e senha, e exclusão de conta"
+  - "Gestão de plano/assinatura e faturamento do SaaS"
+  - "Novos canais de lembrete além de email"
+  - "Repactuação retroativa de valores por paciente ou de mensalidades já geradas"
+  - "Integração real com a API (PSI-044)"
 assumptions:
-  - "O arquivo docker compose da infraestrutura local já existe (tarefas anteriores) e é apenas invocado pela suíte, nunca editado"
-  - "Playwright e utilitários de teste já estão disponíveis nos workspaces existentes (por exemplo, packages/testing), pois esta tarefa não pode instalar dependências novas nem tocar package.json"
-  - "Existe um script agregador (como pnpm e2e) exposto por workspace já existente para invocar a suíte; caso contrário, o comando exato é documentado em e2e/** e ajustado nos validation_commands pelo orquestrador"
-  - "A verificação automatizada da ausência de mock em produção é implementada dentro dos allowed_paths (por exemplo, teste que inspeciona o bundle gerado ou a resolução de módulos por env)"
-  - "O endpoint real de lead da landing foi entregue pela API em tarefa anterior (PSI-027)"
-open_questions:
-  - "A execução do E2E em CI fica para uma tarefa futura de workflows, já que .github/workflows/** é proibido aqui?"
-  - "Qual estratégia de reset do banco entre cenários E2E (migrate reset por execução ou truncamento por teste)?"
+  - "O SettingsAdapter da PSI-031 cobre os quatro domínios de configuração; se algum campo faltar, ele é acrescentado ao contrato existente dentro de apps/clinic (sem tocar packages/contracts)"
+  - "Alterações de valor padrão valem apenas para usos futuros (novos pacientes/gerações), sem efeito retroativo"
+open_questions: []

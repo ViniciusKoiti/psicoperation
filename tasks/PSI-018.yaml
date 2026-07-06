@@ -1,28 +1,35 @@
 id: PSI-018
-title: "landing: CTA final, scroll reveal, composição e E2E"
+title: "landing: formulário de lista de espera"
 project: landing
 shared_change: false
-branch: "agent/psi-018-landing-composicao-e2e"
-commit_message: "feat(landing): CTA final, scroll reveal, composição e E2E [PSI-018]"
-pr_title: "PSI-018: landing: CTA final, scroll reveal, composição e E2E"
+branch: "agent/psi-018-landing-lead-form"
+commit_message: "feat(landing): formulário de lista de espera com máscara e LeadAdapter [PSI-018]"
+pr_title: "PSI-018: landing: formulário de lista de espera"
 description: |
-  Fecha a implementação da landing page. Entrega a seção de CTA final (card
-  com gradiente, overlays radiais e a marca invertida em branco), o
-  comportamento de scroll reveal como progressive enhancement (o
-  IntersectionObserver adiciona a classe de revelação quando a seção entra
-  na viewport; sem JavaScript, todo o conteúdo permanece visível) e a
-  composição da página completa na ordem exata da referência: nav, hero,
-  problema, solução, como funciona, quote, formulário, FAQ, CTA final e
-  footer. Adiciona a suíte E2E com Playwright validando o conjunto: todas
-  as seções renderizam, o accordion do FAQ abre e fecha, o submit do
-  formulário exibe o estado de sucesso e a página em viewport de 390px não
-  apresenta overflow horizontal. A referência project/PsiOps Landing.html é
-  somente leitura — proibido converter seu HTML diretamente para JSX.
+  Implementa a seção do formulário de captação de lista de espera
+  (âncora #lista) da landing page em apps/landing, conforme
+  docs/design/landing-page-spec.md e com fidelidade visual à referência
+  (project/PsiOps Landing.html, somente leitura — proibido converter HTML
+  diretamente para JSX).
+
+  O formulário captura nome, WhatsApp e email. O campo de WhatsApp aplica
+  a máscara (XX) XXXXX-XXXX durante a digitação (evento de input),
+  reproduzindo o comportamento do protótipo. A validação exibe erros
+  inline por campo (estado de erro visual conforme o design) e, em caso de
+  sucesso, o formulário é substituído pelo estado de sucesso.
+
+  O tipo do payload do lead vem exclusivamente de @psiops/contracts
+  (gen/ts) — é proibido redefinir o DTO localmente. As regras de validação
+  de formulário (obrigatoriedade e formato dos campos) são implementadas
+  localmente, de forma consistente com a spec OpenAPI do contrato
+  (registrado como assumption, pois validação de UX no cliente não é
+  gerada pelo codegen).
+
+  O envio é desacoplado da rede por uma interface LeadAdapter; esta tarefa
+  entrega apenas uma implementação mock em memória (sem nenhuma chamada de
+  rede). A integração real com a API acontece na PSI-044.
 dependencies:
   - "PSI-014"
-  - "PSI-015"
-  - "PSI-016"
-  - "PSI-017"
 allowed_paths:
   - "apps/landing/**"
 forbidden_paths:
@@ -34,33 +41,34 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Seção de CTA final em card com gradiente, overlays radiais e marca invertida (branca), pixel-perfect em relação à referência"
-  - "Scroll reveal implementado como progressive enhancement: IntersectionObserver adiciona a classe de revelação na entrada da viewport; sem JavaScript, nenhum conteúdo fica oculto"
-  - "Página completa composta na ordem da referência: nav, hero, problema, solução, como funciona, quote, formulário (#lista), FAQ, CTA final, footer"
-  - "Suíte E2E Playwright configurada no app landing"
-  - "E2E: todas as seções da página renderizam"
-  - "E2E: accordion do FAQ abre e fecha"
-  - "E2E: submit do formulário exibe o estado de sucesso"
-  - "E2E: em viewport de 390px a página não apresenta overflow horizontal"
-  - "pnpm --filter @psiops/landing exec playwright test executa com sucesso"
+  - "Seção do formulário implementada com id/âncora #lista, campos nome, WhatsApp e email, com layout e textos fiéis à referência"
+  - "Máscara (XX) XXXXX-XXXX aplicada ao campo WhatsApp durante a digitação (evento de input), lidando com digitação parcial, colagem e apagamento sem quebrar o cursor de forma perceptível"
+  - "Tipo do payload do lead importado de @psiops/contracts (gen/ts) e usado na assinatura do LeadAdapter e no submit; nenhum DTO equivalente redefinido em apps/landing"
+  - "Validação local de obrigatoriedade e formato (nome não vazio, WhatsApp completo conforme a máscara, email com formato válido), consistente com as restrições da spec OpenAPI do contrato"
+  - "Erros exibidos inline por campo, com estado visual de erro fiel ao design (ex.: borda em cor de erro), atualizando ao corrigir o campo"
+  - "Submissão bem-sucedida substitui o formulário pelo estado de sucesso da referência (formulário oculto, mensagem de confirmação exibida)"
+  - "Envio realizado através da interface LeadAdapter, com implementação mock em memória como única implementação; nenhuma chamada de rede em código ou testes"
+  - "Testes cobrindo: comportamento da máscara (casos de digitação parcial e valor completo), validação por campo (erros e limpeza de erros) e fluxo de sucesso substituindo o formulário"
+  - "pnpm --filter @psiops/landing build e test executam com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/landing test"
   - "pnpm --filter @psiops/landing build"
-  - "pnpm --filter @psiops/landing exec playwright test"
+  - "pnpm --filter @psiops/landing test"
 risks:
-  - "Scroll reveal mal implementado pode ocultar conteúdo permanentemente quando o JavaScript falha ou demora (quebra do progressive enhancement e do SEO)"
-  - "Testes E2E dependem do servidor do app no ambiente de CI; configuração de webServer do Playwright frágil gera flakiness"
-  - "Overflow horizontal em 390px costuma vir de elementos absolutos das seções anteriores (chips do hero); a correção deve respeitar os limites de cada tarefa já integrada"
-  - "Integração das seções pode revelar divergências de espaçamento entre tarefas feitas isoladamente, exigindo ajustes finos para manter o pixel-perfect da página inteira"
+  - "Máscaras aplicadas em evento de input são propensas a bugs de posição de cursor e de colagem; cobrir esses casos em teste"
+  - "Se a spec OpenAPI do contrato de lead divergir das regras de máscara/validação do design (ex.: formato E.164 vs. máscara nacional), a validação local pode aceitar o que a API rejeitará na PSI-044; registrar a normalização adotada"
+  - "Redefinir o DTO localmente por conveniência é uma violação silenciosa fácil de cometer; revisar imports para garantir que o tipo vem de @psiops/contracts"
+  - "O estado de sucesso substitui o formulário; sem gestão de foco/aria-live adequada, leitores de tela podem não perceber a confirmação"
 out_of_scope:
-  - "Alterações estruturais nas seções entregues por PSI-013 a PSI-017 além de ajustes de composição/integração"
-  - "Integração do formulário com API real (PSI-039)"
-  - "Testes E2E de outros apps do monorepo"
-  - "Métricas de analytics ou tags de marketing"
+  - "Integração real com a API de leads (PSI-044) — nenhum fetch/HTTP nesta tarefa"
+  - "Persistência de leads, anti-spam, rate limiting e double opt-in"
+  - "Alterações em packages/contracts (consumo somente)"
+  - "Demais seções da landing e composição final (PSI-019)"
 assumptions:
-  - "A dependência do Playwright é adicionada apenas em apps/landing/package.json, o que não altera arquivos proibidos; assume-se que o lockfile raiz é regenerado por processo/tarefa autorizada, já que pnpm-lock.yaml é proibido nesta tarefa"
+  - "A validação de formulário (obrigatoriedade/formato) é implementada localmente de forma consistente com a spec OpenAPI de packages/contracts, já que o codegen fornece tipos, não regras de UX; divergências encontradas serão registradas, não resolvidas alterando o contrato"
+  - "PSI-007/PSI-009 garantem que @psiops/contracts (gen/ts) já é dependência resolvível de apps/landing sem alterar pnpm-lock.yaml (proibido nesta tarefa)"
+  - "O valor de WhatsApp enviado ao adapter segue o formato definido pelo contrato; se o contrato não especificar, envia-se o valor mascarado nacional, registrando a decisão no código"
 open_questions:
-  - "Como a instalação da dependência Playwright deve refletir no pnpm-lock.yaml raiz, dado que o lockfile é proibido em tarefas shared_change: false?"
+  - "O contrato OpenAPI do lead define normalização do telefone (E.164, somente dígitos ou mascarado)? A resposta determina a transformação antes do submit na PSI-044"
+  - "Há necessidade de consentimento LGPD (checkbox/aviso) no formulário já no MVP, ou o aviso textual da referência é suficiente?"

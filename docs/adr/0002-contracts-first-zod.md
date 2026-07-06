@@ -1,6 +1,6 @@
 # ADR 0002 — Contracts-first com Zod em packages/contracts
 
-- Status: aceito
+- Status: substituído pelo ADR 0008 em 2026-07-05 (pivô de stack; regras de processo preservadas)
 - Data: 2026-07-05
 
 ## Contexto

@@ -1,24 +1,29 @@
 id: PSI-021
-title: "api: autenticação e autorização"
+title: "api: migration V2 e entidades JPA do domínio"
 project: api
-shared_change: false
-branch: "agent/psi-021-api-autenticacao"
-commit_message: "feat(api): autenticação e autorização com JWT [PSI-021]"
-pr_title: "PSI-021: api: autenticação e autorização"
+shared_change: true
+branch: "agent/psi-021-migration-v2-entidades"
+commit_message: "feat(api): adiciona migration V2 e entidades JPA do domínio [PSI-021]"
+pr_title: "PSI-021: api: migration V2 e entidades JPA do domínio"
 description: |
-  Implementa a camada de autenticação e autorização da API NestJS do PsiOps.
-  Entrega os endpoints de registro e login conforme os contratos de auth
-  definidos em @psiops/contracts (os DTOs vêm exclusivamente desse package,
-  sendo proibido duplicá-los na API), hash de senha com a biblioteca já
-  instalada no scaffold (argon2 ou bcrypt), emissão de JWT de acesso e de
-  refresh com rotação do refresh token a cada uso, guard global de
-  autenticação registrado no bootstrap da aplicação com decorator @Public
-  para liberar explicitamente rotas abertas, e rate-limit no endpoint de
-  login para mitigar força bruta. A persistência de usuárias e tokens usa
-  exclusivamente @psiops/database como consumidor: esta tarefa não altera
-  schema, migrations nem qualquer arquivo de packages/contracts ou
-  packages/database. É a fundação de segurança consumida por todos os
-  módulos autenticados subsequentes (pacientes, agenda, financeiro etc.).
+  Cria a migration Flyway V2__mvp_domain.sql e as entidades JPA correspondentes
+  ao domínio do MVP em apps/api (Spring Boot 3, Java 21), alinhadas aos
+  contratos gerados na PSI-020 (DTOs de packages/contracts/gen/java — a API
+  nunca redefine DTOs).
+
+  Tabelas de domínio: patients, appointments, session_records, charges, tasks,
+  reminders. Todas carregam user_id (multi-tenant estrito pela psicóloga) e
+  índices adequados por usuário e por período (ex.: appointments por
+  user_id + intervalo de horário; charges por user_id + competência/vencimento).
+
+  A migration também cria as tabelas exigidas pelo Axon Framework com event
+  store JPA no PostgreSQL (sem Axon Server): event store (domain_event_entry,
+  snapshot_event_entry), token store (token_entry), saga store
+  (saga_entry/association_value_entry) e suporte a deadlines — somente as que
+  ainda não tiverem sido criadas na V1, que permanece imutável.
+
+  session_records armazena apenas dados administrativos (compareceu/faltou/
+  remarcada + anotações administrativas); nenhuma coluna clínica é criada.
 dependencies:
   - "PSI-010"
   - "PSI-020"
@@ -33,42 +38,31 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
 acceptance_criteria:
-  - "Endpoints de registro e login existem e validam entrada/saída exclusivamente pelos schemas de auth de @psiops/contracts, sem DTOs duplicados na API"
-  - "Senhas são armazenadas apenas como hash usando a biblioteca instalada no scaffold (argon2 ou bcrypt); nenhuma senha ou hash aparece em logs ou respostas"
-  - "Login bem-sucedido emite JWT de acesso (curta duração) e refresh token (longa duração); o endpoint de refresh rotaciona o refresh token e invalida o anterior"
-  - "Refresh token já rotacionado ou inválido é rejeitado com 401, sem emitir novos tokens"
-  - "Guard de autenticação é registrado globalmente; toda rota exige token válido por padrão"
-  - "Decorator @Public marca rotas abertas (registro, login, refresh) e é a única forma de bypass do guard"
-  - "Endpoint de login possui rate-limit; exceder o limite retorna 429"
-  - "Registro com email já existente é rejeitado sem vazar se o email está cadastrado além do necessário ao fluxo"
-  - "Testes unitários cobrem hash/verificação de senha, emissão/validação de tokens e lógica de rotação"
-  - "Testes e2e com supertest cobrem: fluxo feliz de registro + login + acesso autenticado, credenciais inválidas (401) e acesso negado a rota protegida sem token (401)"
+  - "V2__mvp_domain.sql criada em apps/api/src/main/resources/db/migration com as tabelas patients, appointments, session_records, charges, tasks e reminders"
+  - "Toda tabela de domínio possui coluna user_id não nula e índices por usuário e por período onde aplicável (agenda por intervalo, cobranças por competência/vencimento)"
+  - "Tabelas exigidas pelo Axon (event store JPA, token store, saga store, deadlines) presentes ao fim da V2, criando apenas as que não existirem na V1"
+  - "session_records contém somente status administrativo (compareceu/faltou/remarcada) e anotações administrativas; nenhuma coluna de diagnóstico ou dado clínico"
+  - "Entidades JPA correspondentes criadas e alinhadas aos contratos (tipos, nulabilidade, enums de status), com valores monetários em centavos (inteiro/bigint)"
+  - "V1 permanece byte a byte imutável; nenhuma migration existente é alterada"
+  - "Migrations sequenciais e imutáveis: apenas o novo arquivo V2 é adicionado"
+  - "cd apps/api && ./mvnw verify verde, incluindo testes com Testcontainers aplicando V1+V2 em PostgreSQL real"
 validation_commands:
-  - "pnpm --filter @psiops/api lint"
-  - "pnpm --filter @psiops/api typecheck"
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api test:e2e"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Configuração incorreta de expiração ou de segredo dos JWTs compromete a segurança de todos os módulos que dependem desta tarefa"
-  - "Rotação de refresh token mal implementada (sem invalidar o token anterior) permite replay de tokens vazados"
-  - "Guard global mal registrado pode bloquear rotas de health/infra ou, pior, deixar rotas sensíveis abertas por engano"
-  - "Rate-limit agressivo demais pode bloquear usuárias legítimas em redes compartilhadas (NAT)"
-  - "Divergência entre os contratos de auth de @psiops/contracts e a implementação quebraria o cliente clinic que consome os mesmos contratos"
+  - "Divergência entre nomes/tipos das tabelas Axon e a versão do Axon Framework em uso pode quebrar o event store em runtime; validar contra o schema oficial da versão fixada no pom.xml"
+  - "Esquema mal indexado degrada listagens por período conforme o volume cresce; índices compostos (user_id, período) são críticos"
+  - "Desalinhamento entre entidades JPA e DTOs de gen/java gera retrabalho nas tarefas de módulo (PSI-022 a PSI-029)"
+  - "Alterar a V1 por engano quebra o checksum do Flyway em todos os ambientes"
 out_of_scope:
-  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
-  - "Recuperação de senha, verificação de email e MFA"
-  - "Login social / OAuth de terceiros"
-  - "Gestão de perfis, papéis ou permissões além do escopo por usuária autenticada"
-  - "Telas de login/registro do clinic (tratadas na PSI-028)"
-  - "Instalação de novas dependências no workspace"
+  - "Endpoints REST, controllers e services (PSI-022 em diante)"
+  - "Seeds ou dados de exemplo"
+  - "Alterações em packages/contracts ou regeneração de codegen"
+  - "Qualquer alteração na migration V1"
+  - "Colunas ou estruturas para dados clínicos"
 assumptions:
-  - "O scaffold da API (PSI-020) já instalou uma biblioteca de hash (argon2 ou bcrypt) e o suporte a JWT; esta tarefa usa exatamente o que estiver instalado"
-  - "Os contratos de auth (registro, login, refresh, payloads de token) já existem em @psiops/contracts entregues por tarefa anterior de contratos"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; se o nome do package da API diferir, ajustar apenas o filtro do pnpm"
-  - "O modelo de usuária e o armazenamento necessário à rotação de refresh tokens já existem no schema de @psiops/database"
+  - "A PSI-010 criou a V1 com a tabela leads e possivelmente parte da infraestrutura; esta tarefa verifica o conteúdo da V1 antes de criar tabelas Axon para não duplicar"
+  - "Agregados Axon são state-stored: as tabelas de domínio funcionam como estado dos agregados, e o event store JPA registra os eventos publicados"
+  - "Identificadores primários em UUID, seguindo o padrão dos contratos"
 open_questions:
-  - "Se o scaffold não tiver instalado biblioteca de hash ou mecanismo de rate-limit (ex.: @nestjs/throttler), registrar bloqueio — esta tarefa não pode instalar dependências novas"
-  - "Estratégia de entrega do refresh token ao cliente (corpo da resposta vs cookie httpOnly) caso os contratos de auth não a determinem"
+  - "Deadlines do Axon exigem tabela própria apenas com DbSchedulerDeadlineManager/JobRunr; se a estratégia de deadline da PSI-029 usar SimpleDeadlineManager, a tabela pode não ser necessária — registrar a decisão no PR"

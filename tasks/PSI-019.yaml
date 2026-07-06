@@ -1,61 +1,78 @@
 id: PSI-019
-title: "contracts: domínio clínico e eventos"
-project: contracts
-shared_change: true
-branch: "agent/psi-019-contracts-dominio"
-commit_message: "feat(contracts): domínio clínico e eventos [PSI-019]"
-pr_title: "PSI-019: contracts: domínio clínico e eventos"
+title: "landing: CTA final, scroll reveal, composição e E2E"
+project: landing
+shared_change: false
+branch: "agent/psi-019-landing-composicao-e2e"
+commit_message: "feat(landing): CTA final, scroll reveal, composição completa e E2E [PSI-019]"
+pr_title: "PSI-019: landing: CTA final, scroll reveal, composição e E2E"
 description: |
-  Define em @psiops/contracts os schemas Zod e tipos TypeScript do domínio
-  do MVP, fonte única de verdade consumida por api, clinic e automation.
-  Cobre: Paciente (dados cadastrais e de cobrança; sem dados clínicos
-  sensíveis), Consulta/Agendamento (horário, duração, recorrência semanal
-  simples, status), Registro administrativo de consulta (compareceu, faltou
-  ou remarcada, com anotações administrativas — explicitamente sem campos de
-  diagnóstico ou conteúdo clínico), Mensalidade/Cobrança (valor em centavos,
-  vencimento, status em_dia/pendente/atrasada, dados de pagamento), Tarefa,
-  Lembrete (canal email, com vínculo opcional a paciente, consulta ou
-  cobrança), Configurações e Onboarding. Define também os eventos de domínio
-  consumidos pelo app automation (ex.: cobranca.atrasada, lembrete.devido)
-  com um envelope comum, além de filtros e paginação padronizados
-  reutilizando os utilitários comuns do pacote. Restrição de produto
-  registrada: o sistema não faz diagnóstico automático nem toma decisão
-  clínica; os contratos não devem abrir espaço para isso.
+  Fecha a construção da landing page em apps/landing: implementa a última
+  seção (CTA final), o comportamento global de scroll reveal, compõe todas
+  as seções na ordem da referência e adiciona a suíte E2E com Playwright
+  que valida a página inteira em navegador real. Referências:
+  docs/design/landing-page-spec.md (fonte estrutural) e
+  project/PsiOps Landing.html (somente leitura, conferência visual —
+  proibido converter HTML diretamente para JSX).
+
+  O CTA final é um card com fundo em gradiente e overlays radiais,
+  exibindo a marca (mark) invertida para branco, com CTA apontando para
+  #lista. O scroll reveal segue a estratégia de progressive enhancement do
+  protótipo: sem JavaScript, todo o conteúdo permanece visível; com JS, os
+  elementos marcados são armados como ocultos e revelados por
+  IntersectionObserver ao entrar no viewport, com fallback que garante a
+  exibição caso a revelação não ocorra.
+
+  A composição final monta a página na ordem da referência: nav, hero,
+  problema, solução, como funciona, quote, formulário #lista, FAQ, CTA
+  final e footer. A suíte Playwright cobre renderização de todas as
+  seções, interação do accordion do FAQ, submissão do formulário com
+  estado de sucesso e ausência de overflow horizontal em viewport de
+  390px.
 dependencies:
-  - "PSI-005"
+  - "PSI-015"
+  - "PSI-016"
+  - "PSI-017"
+  - "PSI-018"
 allowed_paths:
-  - "packages/contracts/**"
-  - "pnpm-lock.yaml"
+  - "apps/landing/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Schema Zod + tipo para Paciente com dados cadastrais e de cobrança, sem nenhum campo de dado clínico sensível"
-  - "Schema Zod + tipo para Consulta/Agendamento com horário, duração, recorrência semanal simples e status"
-  - "Schema Zod + tipo para Registro administrativo de consulta com status compareceu/faltou/remarcada e anotações administrativas; explicitamente sem campos de diagnóstico ou conteúdo clínico"
-  - "Schema Zod + tipo para Mensalidade/Cobrança com valor em centavos (inteiro), vencimento, status em_dia/pendente/atrasada e dados de pagamento"
-  - "Schemas Zod + tipos para Tarefa e para Lembrete (canal email; vínculo opcional a paciente, consulta ou cobrança)"
-  - "Schemas Zod + tipos para Configurações e Onboarding"
-  - "Eventos de domínio para o automation (incluindo cobranca.atrasada e lembrete.devido) definidos sobre um envelope comum de evento"
-  - "Filtros e paginação padronizados reutilizando os utilitários comuns já existentes no pacote (sem reimplementação)"
-  - "Testes cobrindo todos os schemas (casos válidos e inválidos representativos)"
-  - "Restrição documentada no pacote: nada de diagnóstico automático ou decisão clínica nos contratos"
+  - "Seção CTA final implementada como card com gradiente e overlays radiais fiéis à referência, exibindo a marca (mark) invertida para branco e CTA para #lista"
+  - "Scroll reveal implementado como progressive enhancement: sem JS todo o conteúdo é visível; com JS os elementos são armados e revelados via IntersectionObserver ao entrar no viewport"
+  - "Fallback do reveal garante que nenhum conteúdo permaneça oculto se o observer falhar ou demorar (mecanismo equivalente ao snap fallback da referência)"
+  - "Página composta com todas as seções na ordem da referência: nav, hero, problema, solução, como funciona, quote, formulário #lista, FAQ, CTA final, footer"
+  - "Âncoras internas funcionais (CTAs do hero e do CTA final levam ao #lista)"
+  - "Playwright configurado em apps/landing com suíte E2E cobrindo: todas as seções renderizam na ordem esperada; accordion do FAQ abre/fecha mantendo um item aberto por vez; submissão do formulário com dados válidos exibe o estado de sucesso; em viewport de 390px não há overflow horizontal (scrollWidth <= clientWidth do documento)"
+  - "Testes unitários existentes das seções continuam verdes após a composição"
+  - "pnpm --filter @psiops/landing build, test e exec playwright test executam com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/contracts test"
-  - "pnpm --filter @psiops/contracts build"
+  - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing exec playwright test"
 risks:
-  - "Contratos são consumidos por api, clinic, automation e database; um desenho ruim aqui propaga refatoração para todo o monorepo"
-  - "Incluir acidentalmente campos de conteúdo clínico (mesmo como texto livre mal nomeado) cria risco regulatório/LGPD contrário à restrição de produto"
-  - "Modelagem de recorrência semanal simples pode ser insuficiente para casos reais e forçar migração de contrato depois"
-  - "Envelope de eventos incompatível com o padrão do worker BullMQ obrigaria adaptação em PSI-012 e nas filas futuras"
-  - "Tarefa shared_change altera pnpm-lock.yaml; execução concorrente com outra tarefa shared_change gera conflito de lockfile"
+  - "Scroll reveal mal implementado pode ocultar conteúdo permanentemente (SEO/acessibilidade); a variante sem JS e o fallback precisam de teste explícito"
+  - "Animações de reveal podem gerar flakiness nos testes E2E (elementos ainda ocultos no momento da asserção); usar waits semânticos do Playwright e/ou reduzir motion em ambiente de teste"
+  - "Instalação de browsers do Playwright em CI exige passo dedicado; sem ele o comando de validação falha por ambiente, não por código"
+  - "A composição pode expor conflitos visuais entre seções desenvolvidas em paralelo (margens/espacamentos duplicados); a conferência pixel-perfect da página inteira é desta tarefa"
+  - "Overflow horizontal em 390px costuma vir de elementos absolutos do hero ou de sombras/overlays; o teste E2E deve apontar a seção ofensora para depuração"
 out_of_scope:
-  - "Modelos Prisma e migrations correspondentes (PSI-020)"
-  - "Implementação de endpoints na API ou consumo nos apps"
-  - "Recorrência complexa (regras RRULE, exceções de calendário)"
-  - "Canais de lembrete além de email (ex.: WhatsApp)"
-  - "Qualquer funcionalidade de diagnóstico ou apoio à decisão clínica"
+  - "Integração real do formulário com a API (PSI-044) — o E2E usa o LeadAdapter mock da PSI-018"
+  - "Alterações estruturais nas seções entregues por PSI-014 a PSI-018 além de ajustes de composição/espaçamento"
+  - "Testes E2E de outros apps ou pipeline de CI (.github/workflows/** é proibido)"
+  - "Métricas de performance (Lighthouse) e analytics"
 assumptions:
-  - "PSI-005 criou o pacote @psiops/contracts com utilitários comuns (common) de filtros/paginação a serem reutilizados"
-  - "O filtro pnpm do pacote é '@psiops/contracts'"
-open_questions: []
+  - "Playwright pode ser adicionado como devDependency de apps/landing sem alterar pnpm-lock.yaml; caso a instalação exija atualização do lockfile, isso deve ser sinalizado ao orquestrador, pois esta tarefa não tem shared_change"
+  - "respeitar prefers-reduced-motion no reveal é considerado parte da fidelidade de comportamento, ainda que o protótipo não o faça explicitamente; registrado aqui como decisão de acessibilidade"
+  - "O snap fallback da referência (revelação forçada após ~2600ms) é o comportamento a reproduzir, salvo indicação diferente na spec"
+open_questions:
+  - "O E2E deve rodar contra build de produção servido (next start) ou dev server? Recomenda-se build de produção para fidelidade, definindo o webServer do Playwright de acordo"
+  - "Adicionar Playwright sem tocar pnpm-lock.yaml pode ser inviável na prática; confirmar com o orquestrador se esta tarefa deveria ser shared_change: true com pnpm-lock.yaml em allowed_paths"

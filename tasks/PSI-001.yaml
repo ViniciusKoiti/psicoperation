@@ -6,16 +6,22 @@ branch: "agent/psi-001-bootstrap-monorepo"
 commit_message: "chore(root): bootstrap do monorepo com pnpm e turborepo [PSI-001]"
 pr_title: "PSI-001: Bootstrap do monorepo (pnpm + Turborepo)"
 description: |
-  Cria a fundação do monorepo PsiOps na raiz do repositório, usando pnpm
-  workspaces e Turborepo como orquestrador de tarefas. Esta tarefa entrega
-  apenas o esqueleto de tooling: manifesto raiz, declaração de workspaces,
-  pipelines do Turborepo, TypeScript base estrito e arquivos de higiene do
-  repositório (.gitignore, .editorconfig, .nvmrc, .npmrc, README.md).
-  Nenhum app ou package é criado aqui — os diretórios apps/* e packages/*
-  ficam apenas declarados como workspaces para as tarefas seguintes.
-  Todas as demais tarefas do lote dependem direta ou indiretamente desta,
-  portanto ela deve deixar o repositório instalável e com o grafo de
-  pipelines resolvível mesmo sem nenhum workspace concreto presente.
+  Cria a fundação do monorepo PsiOps: workspace pnpm com Turborepo orquestrando
+  exclusivamente o lado JavaScript/TypeScript. O objetivo é que qualquer tarefa
+  subsequente (packages/config, packages/ui, apps/landing etc.) possa ser
+  adicionada como workspace sem reconfiguração da raiz.
+
+  A configuração de workspaces cobre "apps/*" e "packages/*", mas apenas os
+  diretórios que contêm package.json aderem de fato ao pnpm: apps/api (Spring
+  Boot/Maven) e apps/mobile (Flutter) vivem dentro de apps/ sem participar do
+  workspace JS — o CI os invoca diretamente via Maven wrapper e Flutter CLI.
+
+  O turbo.json usa o formato v2 (chave "tasks") e declara os pipelines lint,
+  typecheck, test e build, com build declarando dependsOn ["^build"] para
+  garantir que dependências internas sejam construídas antes dos consumidores.
+  Também entram os arquivos de higiene da raiz: .nvmrc fixando Node 22,
+  .npmrc, .editorconfig, tsconfig.base.json em modo strict (base para os
+  pacotes TS) e .gitignore cobrindo os três ecossistemas (Node, Java, Flutter).
 dependencies: []
 allowed_paths:
   - "package.json"
@@ -31,29 +37,32 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "pnpm install executa com sucesso a partir de um clone limpo, sem erros nem prompts interativos"
-  - "pnpm-workspace.yaml declara os globs de workspaces apps/* e packages/*"
-  - "turbo.json define as pipelines lint, typecheck, test e build"
-  - "A pipeline build declara dependsOn com ^build, garantindo que dependências internas sejam construídas antes dos dependentes"
-  - ".nvmrc fixa Node >= 20 e o campo engines do package.json raiz é coerente com essa versão"
-  - "tsconfig.base.json habilita strict e serve como base para extends dos demais pacotes"
-  - "package.json raiz expõe scripts que delegam lint, typecheck, test e build ao Turborepo"
-  - ".gitignore cobre node_modules, artefatos de build e caches do Turborepo (.turbo)"
-  - "pnpm turbo run build --dry-run resolve o grafo de tarefas sem erros"
+  - "pnpm install executa sem erros a partir da raiz do repositório"
+  - "pnpm-workspace.yaml declara os globs apps/* e packages/* (somente pacotes com package.json aderem; apps/api e apps/mobile ficam fora do workspace pnpm)"
+  - "turbo.json está no formato v2 (chave raiz \"tasks\") com os pipelines lint, typecheck, test e build definidos"
+  - "O pipeline build declara dependsOn [\"^build\"] para respeitar o grafo de dependências internas"
+  - ".nvmrc fixa Node 22"
+  - "tsconfig.base.json habilita strict: true e serve de base para extensão pelos pacotes TS"
+  - ".gitignore cobre Node (node_modules, .next, .turbo, dist), Java (target/) e Flutter (.dart_tool/, build/)"
+  - "pnpm turbo run build --dry-run executa sem erros (grafo vazio é aceitável nesta fase)"
 validation_commands:
   - "pnpm install"
   - "pnpm turbo run build --dry-run"
 risks:
-  - "Escolhas de versão do Turborepo e do pnpm feitas aqui propagam para todas as tarefas seguintes; uma versão incompatível bloqueia o lote inteiro"
-  - "Pipelines mal declaradas em turbo.json (outputs/dependsOn incorretos) podem causar cache incorreto ou builds fora de ordem detectados apenas em tarefas futuras"
-  - "tsconfig.base.json excessivamente restritivo pode gerar atrito ao integrar frameworks (Next.js, NestJS) nas tarefas de scaffold"
+  - "Globs de workspace mal definidos podem capturar apps/api ou apps/mobile no futuro e quebrar o pnpm install quando esses diretórios existirem sem package.json válido"
+  - "turbo.json escrito no formato v1 (chave \"pipeline\") falha silenciosamente em versões 2.x do Turborepo"
+  - "Um .gitignore incompleto pode deixar artefatos de build Java/Flutter vazarem para commits de tarefas futuras"
 out_of_scope:
-  - "Criar qualquer app ou package (apps/* e packages/* ficam vazios)"
-  - "Configurar CI (tratado na PSI-004)"
-  - "Configurações compartilhadas de ESLint/Prettier/Vitest (tratadas na PSI-002)"
-  - "Docker Compose e infraestrutura local (tratados na PSI-003)"
+  - "Criação de qualquer app ou package (apps/landing, packages/config etc.) — apenas a fundação da raiz"
+  - "Configuração de CI/GitHub Actions (PSI-004)"
+  - "Infraestrutura Docker (PSI-003)"
+  - "Qualquer configuração específica de Maven ou Flutter"
 assumptions:
-  - "Como nenhum workspace existe ainda, considera-se aceitável que pnpm turbo run build --dry-run resolva um grafo vazio, desde que sem erros"
-  - "O gerenciador de pacotes é fixado via campo packageManager no package.json raiz, com .npmrc contendo apenas ajustes necessários ao pnpm"
+  - "pnpm e Node 22 estão disponíveis no ambiente de execução do agente"
+  - "Turborepo será fixado na versão major 2 como devDependency da raiz"
+  - "README.md pode ser criado/atualizado com instruções mínimas de setup do monorepo"
 open_questions: []

@@ -1,0 +1,85 @@
+id: PSI-044
+title: "Integração web real e E2E dos fluxos principais"
+project: integration
+shared_change: false
+branch: "agent/psi-044-integracao-web-e2e"
+commit_message: "feat(integration): integração web real e suíte E2E dos fluxos principais [PSI-044]"
+pr_title: "PSI-044: Integração web real e E2E dos fluxos principais"
+description: |
+  Liga os apps web à API Spring real e prova os fluxos principais do MVP
+  de ponta a ponta. Até aqui, apps/clinic (React) e apps/landing
+  (Next.js) operam sobre adapters mock; esta tarefa implementa/conecta
+  os HttpAdapters do clinic à API real, com a escolha entre mock e http
+  feita por variável de ambiente em um único ponto de composição, e faz
+  a landing enviar o lead da lista de espera ao endpoint real em
+  ambiente de teste.
+
+  Para impedir regressão silenciosa, uma verificação automatizada
+  garante que o build de produção do clinic não referencia código de
+  mocks (ex.: análise do bundle ou teste que falha se módulos mock
+  entrarem no grafo de produção).
+
+  A tarefa entrega também a suíte Playwright cross-app que sobe a
+  infraestrutura local via docker compose (PostgreSQL 16 + Mailpit) e a
+  API Spring, e exercita o caminho crítico: registro → login → criar
+  paciente → agendar consulta no clinic, além do fluxo da landing em que
+  o lead submetido persiste no banco (verificado via API ou consulta ao
+  banco). Os testes usam os tipos TS de packages/contracts/gen/ts nas
+  bordas, dinheiro em centavos BRL e datas ISO 8601, sem jamais tocar em
+  dado clínico.
+dependencies:
+  - "PSI-019"
+  - "PSI-022"
+  - "PSI-023"
+  - "PSI-024"
+  - "PSI-028"
+  - "PSI-030"
+  - "PSI-033"
+  - "PSI-035"
+allowed_paths:
+  - "apps/clinic/src/adapters/**"
+  - "apps/clinic/e2e/**"
+  - "apps/landing/src/adapters/**"
+  - "e2e/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
+acceptance_criteria:
+  - "HttpAdapters do clinic implementados/ligados à API Spring real, tipados pelos tipos TS de packages/contracts/gen/ts, cobrindo os fluxos de autenticação, pacientes e agenda usados pela suíte E2E"
+  - "Seleção entre adapters mock e http feita por variável de ambiente em um único ponto de composição do clinic, com documentação do valor esperado em cada ambiente"
+  - "Verificação automatizada de que o build de produção do clinic não referencia mocks (teste/script que falha se módulos mock entrarem no bundle de produção)"
+  - "Adapter da landing envia o lead da lista de espera ao endpoint real da API em ambiente de teste, mantendo o mock como padrão de desenvolvimento"
+  - "Suíte Playwright cross-app sobe a infraestrutura via docker compose (PostgreSQL 16 + Mailpit) e a API Spring, aguardando readiness antes dos testes"
+  - "Cenário E2E completo verde contra a API real: registro → login → criar paciente → agendar consulta"
+  - "Cenário E2E da landing verde: submissão do formulário de lead resulta em lead persistido no banco, verificado de forma automatizada"
+  - "Testes E2E são reexecutáveis sem intervenção manual (dados isolados por execução ou banco resetado entre execuções)"
+  - "Instruções de execução local da suíte (subir infra, rodar testes, derrubar infra) documentadas dentro de e2e/**"
+validation_commands:
+  - "pnpm exec playwright test"
+risks:
+  - "Flakiness de E2E (timing de UI, esperas implícitas); mitigar com waits por estado explícito, retries controlados e dados determinísticos por execução"
+  - "Acoplamento de ambiente: portas, URLs e credenciais divergentes entre máquina local e CI; centralizar em configuração única e documentar"
+  - "Tempo de subida da API Java no CI pode estourar timeouts da suíte; usar healthcheck com espera generosa e cache de build Maven quando disponível"
+  - "Divergências entre contratos e implementação real da API aparecem aqui pela primeira vez; falhas podem exigir correções fora dos caminhos permitidos desta tarefa (registrar e delegar ao orquestrador)"
+  - "Resíduos de dados entre execuções E2E podem gerar falsos negativos (e-mail já registrado, conflito de agenda); garantir isolamento por execução"
+out_of_scope:
+  - "Integração real do app mobile — PSI-045"
+  - "Correções na API Spring, nos contratos ou em telas do clinic/landing fora de src/adapters/** (qualquer necessidade vira registro para o orquestrador)"
+  - "Pipeline de CI (.github/workflows/**) — a suíte deve rodar localmente; o plug no CI é tarefa de infraestrutura"
+  - "Testes de carga/performance e testes de e-mail além do necessário via Mailpit"
+  - "Seeds de demonstração — PSI-046"
+assumptions:
+  - "As tarefas dependentes deixaram a API Spring com os endpoints de registro, login, pacientes, agenda e captação de lead funcionais e compatíveis com packages/contracts"
+  - "O docker compose da raiz (PostgreSQL 16 + Mailpit) já existe e é suficiente como infraestrutura dos E2E, sem alterações (compose fora dos caminhos permitidos)"
+  - "Playwright e sua configuração podem viver sob e2e/** e apps/clinic/e2e/** usando dependências já presentes no workspace, pois package.json e pnpm-lock.yaml são proibidos nesta tarefa"
+  - "A verificação de ausência de mocks no build de produção pode ser implementada como script/teste dentro dos caminhos permitidos (ex.: e2e/** ou apps/clinic/e2e/**), sem alterar a configuração de build do clinic"
+open_questions:
+  - "Se o Playwright ainda não constar como dependência do workspace, qual tarefa shared_change o adiciona (esta tarefa não pode tocar package.json/pnpm-lock.yaml)?"
+  - "O comando de validação padrão deve subir o docker compose e a API automaticamente (script orquestrador em e2e/**) ou assume infra já em execução?"

@@ -1,75 +1,75 @@
 id: PSI-040
-title: "Seeds, fixtures e fechamento do MVP"
-project: database
-shared_change: true
-branch: "agent/psi-040-seeds-fechamento-mvp"
-commit_message: "feat(database): seeds de demonstração e fechamento do mvp [PSI-040]"
-pr_title: "PSI-040: Seeds, fixtures e fechamento do MVP"
+title: "mobile: autenticação e shell do app"
+project: mobile
+shared_change: false
+branch: "agent/psi-040-mobile-auth-shell"
+commit_message: "feat(mobile): autenticação e shell do app [PSI-040]"
+pr_title: "PSI-040: mobile: autenticação e shell do app"
 description: |
-  Fecha o ciclo do MVP deixando o produto demonstrável e o repositório
-  reproduzível do zero. Em packages/database, entrega um seed de
-  demonstração determinístico: uma psicóloga demo, cerca de oito
-  pacientes, agenda de duas semanas, mensalidades distribuídas nos três
-  status (em dia, pendente, atrasada) e tarefas e lembretes de exemplo.
-  Em packages/testing, estende as fixtures para cobrir o domínio clínico
-  completo (pacientes, consultas, registros administrativos,
-  mensalidades, tarefas, lembretes), alinhadas aos contratos. Atualiza a
-  documentação de setup local do zero (README.md e docs/), verificada
-  passo a passo em ambiente limpo, e adiciona o checklist de release do
-  MVP. A verificação final do lote exige o monorepo inteiro verde em
-  lint, typecheck, test e build via Turborepo, e o seed aplicável após
-  um migrate reset.
+  Entrega a fundação do app companion Flutter da psicóloga em apps/mobile:
+  o shell de navegação e o fluxo completo de autenticação, sobre o qual
+  todas as demais telas (dashboard, agenda, pacientes, financeiro) serão
+  construídas nas tarefas PSI-041 a PSI-043.
+
+  Inclui as telas de login e registro estilizadas com o tema Material 3
+  derivado dos tokens de packages/ui (tokens.json), textos de UI em pt-BR,
+  e a gestão de sessão: access token mantido exclusivamente em memória e
+  refresh transparente (interceptação de expiração e renovação sem
+  interação da usuária). A navegação usa go_router com redirect que
+  protege as rotas autenticadas — usuária sem sessão válida é enviada ao
+  login e retorna à rota original após autenticar.
+
+  O acesso a dados segue o padrão de adapters do monorepo: um AuthAdapter
+  abstrai a fonte, com implementação mock (padrão em dev/test) e um
+  client HTTP tipado pelos modelos Dart gerados em
+  packages/contracts/gen/dart (consumidos via path dependency). O client
+  HTTP é implementado e compilável, mas não é exercitado contra a API
+  real nesta tarefa — a integração real acontece na PSI-045. A seleção
+  entre mock e HTTP acontece por configuração de ambiente em um único
+  ponto de composição.
 dependencies:
-  - "PSI-020"
-  - "PSI-039"
+  - "PSI-013"
 allowed_paths:
-  - "packages/database/**"
-  - "packages/testing/**"
-  - "docs/**"
-  - "README.md"
-  - "pnpm-lock.yaml"
+  - "apps/mobile/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
   - "package.json"
+  - "pnpm-lock.yaml"
   - "pnpm-workspace.yaml"
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Seed de demonstração cria exatamente uma psicóloga demo com credenciais documentadas para ambiente local"
-  - "Seed cria cerca de oito pacientes com dados fictícios plausíveis em pt-BR, incluindo pelo menos um arquivado"
-  - "Seed cria agenda de duas semanas com consultas distribuídas nos dias/horários de atendimento da psicóloga demo, incluindo ao menos uma recorrência semanal"
-  - "Seed cria mensalidades nos três status — em dia, pendente e atrasada — com totais coerentes com os valores dos pacientes"
-  - "Seed cria tarefas (pendentes, vencidas e concluídas) e lembretes vinculados a consulta e a cobrança"
-  - "Seed é determinístico: duas execuções sobre um banco recém-resetado produzem o mesmo conjunto de dados (IDs e âncora temporal estáveis)"
-  - "Seed é executável após prisma migrate reset e termina sem erros, deixando o app clinic demonstrável com os dados criados"
-  - "Fixtures de packages/testing cobrem o domínio clínico completo (paciente, consulta, registro administrativo, mensalidade, tarefa, lembrete) tipadas pelos contratos"
-  - "README.md e docs/ documentam o setup local do zero (pré-requisitos, install, infra local, migrate, seed, execução dos apps), verificado seguindo os passos em ambiente limpo"
-  - "docs/ contém checklist de release do MVP com os itens de verificação final"
-  - "pnpm turbo run lint typecheck test build executa verde em todo o monorepo"
+  - "Telas de login e registro implementadas em pt-BR, com validação inline de campos (e-mail, senha) e feedback de erro de autenticação"
+  - "Tema Material 3 construído a partir dos tokens de packages/ui (tokens.json), aplicado globalmente via ThemeData — sem cores/tipografia hardcoded nas telas"
+  - "Sessão autenticada mantém o access token apenas em memória (nunca em disco) e executa refresh transparente quando o token expira, sem deslogar a usuária em caso de sucesso"
+  - "Navegação com go_router: redirect protege as rotas autenticadas, envia usuária não autenticada ao login e restaura a rota de destino após o login"
+  - "AuthAdapter definido como abstração, com implementação mock (padrão em dev/test) e client HTTP real tipado pelos modelos Dart de packages/contracts/gen/dart, sem uso real da API nesta tarefa"
+  - "Seleção entre adapter mock e HTTP feita por configuração de ambiente (ex.: --dart-define ou arquivo de ambiente) em um único ponto de composição, com mock como padrão"
+  - "Falha definitiva de refresh encerra a sessão e redireciona ao login com mensagem adequada"
+  - "Testes unitários e de widget cobrem o fluxo de autenticação com o adapter mock: login com sucesso, credenciais inválidas, redirect de rota protegida e logout"
+  - "cd apps/mobile && flutter analyze e cd apps/mobile && flutter test executam sem erros"
 validation_commands:
-  - "pnpm install"
-  - "pnpm turbo run lint typecheck test build"
-  - "pnpm --filter @psiops/database exec prisma migrate reset --force --skip-seed"
-  - "pnpm --filter @psiops/database seed"
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
 risks:
-  - "Seed com datas relativas à execução pode quebrar o determinismo ou deixar de produzir os três status de mensalidade dependendo do dia em que roda; a âncora temporal precisa ser calculada de forma estável"
-  - "Como shared_change: true, esta tarefa trava a fila de tarefas compartilhadas; qualquer app quebrado no monorepo bloqueia o critério de verificação final e o fechamento do lote"
-  - "Fixtures novas em packages/testing podem conflitar com fixtures já consumidas por suítes existentes, exigindo compatibilidade retroativa"
-  - "Documentação de setup não verificada de fato em ambiente limpo tende a omitir pré-requisitos implícitos"
+  - "Divergência entre o contrato de autenticação assumido pelo client HTTP e a API real só será detectada na PSI-045; mitigar tipando o client estritamente pelos modelos Dart gerados de packages/contracts"
+  - "Refresh transparente mal implementado pode gerar loops de renovação ou corrida entre requisições concorrentes; o mecanismo deve serializar a renovação"
+  - "Lógica de redirect do go_router combinada a estado assíncrono de sessão pode causar flicker ou loops de navegação se o estado inicial não for resolvido antes do primeiro redirect"
+  - "Tokens de packages/ui podem não mapear 1:1 para o esquema Material 3; mapeamento incompleto geraria inconsistência visual com os apps web"
 out_of_scope:
-  - "Novas migrations ou alterações de schema (o seed usa o schema existente; **/migrations/** permanece proibido)"
-  - "Alterações em packages/contracts"
-  - "Novas funcionalidades em qualquer app"
-  - "Deploy, provisionamento de produção ou CI/CD (workflows são intocáveis aqui)"
-  - "Dados de demonstração com informações reais de pessoas"
+  - "Integração real com a API Spring (chamadas HTTP de verdade) — PSI-045"
+  - "Telas de dashboard, agenda, pacientes e financeiro — PSI-041 a PSI-043"
+  - "Recuperação de senha e verificação de e-mail"
+  - "Login social/biometria"
+  - "Alterações em packages/contracts, packages/ui ou qualquer arquivo compartilhado do monorepo"
 assumptions:
-  - "O schema entregue até a PSI-039 comporta todo o seed sem novas migrations; caso contrário, seria necessária uma tarefa prévia de schema"
-  - "O seed usa uma âncora temporal derivada de forma estável (por exemplo, início da semana corrente) para manter agenda e status de mensalidades coerentes em qualquer data de execução"
-  - "pnpm-lock.yaml está em allowed_paths para absorver eventuais ajustes de dependências internas workspace:*; nenhuma dependência externa nova é planejada"
-  - "Os nomes dos scripts de seed seguem os já definidos em packages/database (PSI-020); os validation_commands assumem um script seed e devem ser ajustados se o nome real divergir"
+  - "PSI-013 deixou os modelos Dart gerados em packages/contracts/gen/dart consumíveis por path dependency no pubspec.yaml de apps/mobile, incluindo os tipos de autenticação (credenciais, tokens, usuária)"
+  - "packages/ui expõe tokens.json em formato estável, já consumido pelo tema Material 3 existente do app conforme o padrão do monorepo"
+  - "O pubspec.yaml de apps/mobile pode ser editado livremente (adicionar go_router e demais dependências Dart) sem tocar no lockfile pnpm"
+  - "O contrato de autenticação prevê par access/refresh token; o refresh token pode ser guardado em armazenamento seguro do dispositivo para viabilizar o refresh, mantendo o access token apenas em memória"
 open_questions:
-  - "As credenciais da psicóloga demo devem funcionar apenas em ambiente local ou também em um ambiente de staging futuro?"
-  - "O checklist de release deve incluir critérios de negócio (ex.: revisão de textos em pt-BR) além dos critérios técnicos?"
+  - "A sessão deve sobreviver a reinício do app (persistir refresh token em armazenamento seguro) ou o MVP aceita novo login a cada abertura?"
+  - "O registro no app mobile cria a conta completa da psicóloga ou o cadastro primário acontece na web/landing e o mobile só autentica?"

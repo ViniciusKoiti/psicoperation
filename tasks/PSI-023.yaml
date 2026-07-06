@@ -1,27 +1,30 @@
 id: PSI-023
-title: "api: módulo de agenda"
+title: "api: módulo de pacientes"
 project: api
 shared_change: false
-branch: "agent/psi-023-api-agenda"
-commit_message: "feat(api): módulo de agenda com detecção de conflitos [PSI-023]"
-pr_title: "PSI-023: api: módulo de agenda"
+branch: "agent/psi-023-modulo-pacientes"
+commit_message: "feat(api): implementa módulo de pacientes com isolamento por tenant [PSI-023]"
+pr_title: "PSI-023: api: módulo de pacientes"
 description: |
-  Implementa o módulo de agenda da API NestJS: CRUD de consultas e
-  agendamentos escopado à psicóloga autenticada, com detecção de conflito de
-  horário no momento de criar ou remarcar (sobreposição de intervalo retorna
-  409), suporte a recorrência semanal simples e listagem por intervalo de
-  datas para alimentar visões de dia/semana no clinic. A estratégia de
-  recorrência (materializar ocorrências futuras vs armazenar a regra e
-  expandir na leitura) deve ser decidida durante a implementação e
-  registrada explicitamente na documentação do módulo e no PR, com a
-  justificativa. Remarcação e cancelamento operam por transição de status,
-  preservando o histórico da consulta em vez de apagar registros. Toda
-  validação usa exclusivamente os schemas de agenda de @psiops/contracts,
-  sem DTOs duplicados. A tarefa consome @psiops/database como está: não
-  altera schema, migrations nem qualquer arquivo de packages/contracts ou
-  packages/database.
+  Implementa o módulo de pacientes em apps/api conforme os contratos da
+  PSI-020 (DTOs de gen/java), sobre as entidades criadas na PSI-021.
+
+  Pacientes carregam apenas dados de cadastro e cobrança (nome, contato, valor
+  combinado) — nenhum dado clínico. Todas as operações são escopadas ao userId
+  autenticado (contexto provido pela PSI-022): cada query filtra por user_id,
+  sem exceção, garantindo o multi-tenant estrito.
+
+  Funcionalidades:
+  - CRUD completo conforme o contrato.
+  - Listagem paginada com busca por nome.
+  - Arquivamento em vez de exclusão física: paciente arquivado sai das
+    listagens padrão mas preserva histórico financeiro e de consultas.
+
+  Testes com MockMvc + Testcontainers, incluindo teste explícito de isolamento
+  entre tenants: a usuária A não enxerga, não altera e não arquiva dados da
+  usuária B (leituras retornam 404/lista vazia, nunca 403 que vaze existência).
 dependencies:
-  - "PSI-021"
+  - "PSI-022"
 allowed_paths:
   - "apps/api/**"
 forbidden_paths:
@@ -33,39 +36,28 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "CRUD de consultas/agendamentos disponível apenas para usuária autenticada e escopado por userId em toda query"
-  - "Criar ou remarcar consulta que sobreponha horário de outra consulta ativa da mesma psicóloga retorna 409 com mensagem clara; sobreposição parcial (início ou fim dentro de outro intervalo) também é detectada"
-  - "Consultas canceladas não bloqueiam horário na detecção de conflito"
-  - "Recorrência semanal simples é suportada; a decisão entre materializar ocorrências ou expandir por regra está registrada com justificativa no código/PR"
-  - "Listagem por intervalo de datas (início/fim) retorna as consultas do período, incluindo ocorrências de recorrências que caem no intervalo, com validação dos limites do intervalo"
-  - "Remarcação altera o horário registrando a transição de status correspondente; cancelamento marca status de cancelada sem exclusão física"
-  - "Entrada e saída validadas exclusivamente pelos schemas de agenda de @psiops/contracts; payload inválido retorna 400"
-  - "Testes cobrem: criação simples, conflito exato e sobreposição parcial (409), recorrência semanal aparecendo na listagem, listagem com limites de intervalo (bordas inclusivas/exclusivas documentadas), remarcação e cancelamento"
+  - "CRUD de pacientes implementado conforme os contratos, consumindo DTOs de gen/java"
+  - "Toda query (leitura e escrita) filtra por user_id do usuário autenticado, sem exceção"
+  - "Listagem paginada conforme o padrão de paginação dos contratos, com busca por nome (case-insensitive, correspondência parcial)"
+  - "Arquivamento implementado em vez de exclusão: endpoint de arquivar altera status e o paciente sai das listagens padrão; nenhum DELETE físico exposto"
+  - "Acesso a paciente de outro tenant retorna 404 (ou lista vazia em listagens), sem vazar a existência do recurso"
+  - "Testes MockMvc + Testcontainers cobrindo CRUD, paginação, busca, arquivamento e isolamento entre tenants (usuária A vs usuária B)"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/api lint"
-  - "pnpm --filter @psiops/api typecheck"
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api test:e2e"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Detecção de conflito com condição de corrida entre duas requisições simultâneas pode criar sobreposição; mitigação (transação/constraint disponível no schema atual) deve ser avaliada e a limitação registrada"
-  - "Tratamento de timezone incorreto (Brasil, horários locais vs UTC) pode deslocar consultas e gerar conflitos falsos ou perdidos"
-  - "Recorrência materializada sem limite pode inflar o banco; recorrência por regra complica a listagem por intervalo — a decisão errada aqui é cara de reverter"
-  - "Listagens de intervalos muito amplos sem limite podem degradar a API"
+  - "Um único repositório/query sem filtro de user_id quebra o isolamento multi-tenant; revisão deve varrer todas as queries do módulo"
+  - "Retornar 403 em vez de 404 para recurso de outro tenant vaza informação de existência"
+  - "Busca por nome sem índice adequado pode degradar com a base crescendo; alinhar com os índices criados na PSI-021"
 out_of_scope:
-  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
-  - "Recorrências complexas (quinzenal, mensal, regras RRULE completas, exceções por ocorrência além de cancelamento/remarcação)"
-  - "Lembretes e notificações de consulta (tratados na PSI-026 e no app automation)"
-  - "Sincronização com calendários externos (Google Calendar etc.)"
-  - "Telas de agenda no clinic"
-  - "Instalação de novas dependências no workspace"
+  - "Exclusão física de pacientes ou rotina de purge (LGPD tratada em tarefa futura)"
+  - "Dados clínicos de qualquer natureza"
+  - "Módulos de agenda, financeiro e registros (PSI-024, PSI-025, PSI-026)"
+  - "Novas migrations Flyway e alterações em packages/contracts"
+  - "Importação em massa de pacientes"
 assumptions:
-  - "O modelo de consulta/agendamento em @psiops/database já suporta status, vínculo com paciente e o necessário para a estratégia de recorrência escolhida"
-  - "Os schemas de agenda (criação, remarcação, cancelamento, listagem por intervalo, recorrência semanal) já existem em @psiops/contracts"
-  - "Horários são armazenados em UTC e interpretados no timezone da psicóloga na borda da aplicação, salvo definição contrária nos contratos"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
-open_questions:
-  - "Horizonte máximo de expansão/materialização da recorrência semanal (ex.: quantas semanas à frente) precisa de validação de produto; adotar valor conservador e registrá-lo"
-  - "Se consultas de recorrência exigirem estrutura não prevista no schema atual de @psiops/database, registrar bloqueio em vez de alterar o package"
+  - "O status de arquivamento (coluna em patients) foi previsto na migration V2 da PSI-021; caso contrário, reportar a lacuna em vez de criar migration"
+  - "Listagens aceitam filtro opcional para incluir arquivados, se previsto no contrato; caso o contrato não preveja, apenas ativos são listados"
+open_questions: []

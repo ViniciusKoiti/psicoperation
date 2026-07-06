@@ -43,7 +43,7 @@ open_questions: []       # perguntas abertas para o orquestrador/produto
 1. `forbidden_paths` sempre inclui `"project/**"` e `"tasks/**"`. Para tarefas com
    `shared_change: false`, inclui também: `"package.json"`, `"pnpm-lock.yaml"`,
    `"pnpm-workspace.yaml"`, `"turbo.json"`, `".github/workflows/**"`,
-   `"packages/contracts/**"`, `"packages/database/**"`, `"**/migrations/**"` —
+   `"packages/contracts/**"`, `"**/db/migration/**"` (migrations Flyway) —
    exceto os que estiverem em `allowed_paths` (um caminho não pode aparecer nas duas listas).
 2. Arquivo alterado pelo agente deve casar com ao menos um glob de `allowed_paths`
    e com nenhum de `forbidden_paths` (proibição vence).

@@ -1,6 +1,6 @@
 # ADR 0004 — Persistência centralizada, migrations serializadas e padrão Outbox
 
-- Status: aceito
+- Status: substituído pelo ADR 0009 em 2026-07-05 (pivô de stack)
 - Data: 2026-07-05
 
 ## Contexto

@@ -1,24 +1,36 @@
 id: PSI-036
-title: "clinic: tarefas e lembretes"
+title: "clinic: registros administrativos de consulta"
 project: clinic
 shared_change: false
-branch: "agent/psi-036-clinic-tarefas-lembretes"
-commit_message: "feat(clinic): tarefas e configuração de lembretes [PSI-036]"
-pr_title: "PSI-036: clinic — tarefas e lembretes"
+branch: "agent/psi-036-registros-administrativos"
+commit_message: "feat(clinic): registros administrativos de consulta [PSI-036]"
+pr_title: "PSI-036: clinic — registros administrativos de consulta"
 description: |
-  Implementa no app clinic a organização pessoal da psicóloga: uma lista
-  de tarefas com criação rápida, data de vencimento e conclusão, e a
-  configuração de lembretes vinculados a uma consulta ou a uma cobrança,
-  com canal de envio por email. Esta tarefa entrega apenas o lado de
-  gestão e configuração dentro do app — o disparo real dos emails é
-  responsabilidade do worker de automação (PSI-038). O acesso a dados
-  passa por TasksAdapter e RemindersAdapter mock em memória, fiéis aos
-  contratos de @psiops/contracts, prontos para substituição pelos
-  adapters HTTP na PSI-039. A UI trata estados de lista vazia,
-  carregamento e erro, e diferencia visualmente tarefas vencidas,
-  pendentes e concluídas.
+  Implementa o registro administrativo do desfecho de consultas no app
+  clinic: a partir da agenda (PSI-035) ou do detalhe do paciente (PSI-034),
+  a psicóloga registra presença, falta ou remarcação e anexa anotações
+  administrativas curtas (ex.: "pagamento combinado para dia 10",
+  "remarcada a pedido da paciente").
+
+  O registro é estritamente administrativo: nenhum campo de conteúdo
+  clínico, evolução, queixa ou hipótese diagnóstica existe no formulário,
+  e a UI rotula explicitamente a anotação como administrativa, com texto
+  auxiliar orientando a não inserir conteúdo clínico. Isso preserva a
+  restrição do produto de não armazenar dados clínicos.
+
+  O registro é feito em modal/drawer Mantine aberto da consulta na agenda
+  ou do histórico no detalhe do paciente. Registrar presença/falta atualiza
+  o status da consulta; registrar remarcação encaminha ao fluxo de
+  remarcação da PSI-035 e vincula a anotação. Os registros criados passam
+  a aparecer imediatamente no histórico do paciente (PSI-034), que até
+  então era somente leitura. A persistência ocorre pelo adapter de
+  agenda/registros tipado com mock em memória como padrão, mantendo a
+  seleção mock/http no ponto único de composição. Registros podem ser
+  editados; a edição preserva data de criação e marca a de atualização
+  (ISO 8601).
 dependencies:
-  - "PSI-028"
+  - "PSI-034"
+  - "PSI-035"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -30,34 +42,33 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Lista de tarefas permite criação rápida (título e opcionalmente vencimento) sem sair da tela"
-  - "Tarefa pode receber data de vencimento e ser marcada como concluída; tarefas vencidas são destacadas"
-  - "Configuração de lembrete vincula o lembrete a uma consulta ou a uma cobrança, com canal email"
-  - "Formulários validam os dados com os schemas Zod de @psiops/contracts, sem tipos duplicados no app"
-  - "TasksAdapter e RemindersAdapter mock em memória implementam as interfaces derivadas dos contratos"
-  - "Estados de lista vazia, carregamento e erro são tratados em tarefas e lembretes"
-  - "Testes cobrem criação rápida, conclusão, destaque de vencidas e a configuração de lembrete para consulta e para cobrança"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Registro de presença, falta ou remarcação acessível a partir da consulta na agenda (PSI-035) e do histórico no detalhe do paciente (PSI-034)"
+  - "Anotação administrativa opcional em texto curto, com rótulo e texto auxiliar em pt-BR deixando explícito o caráter administrativo (sem conteúdo clínico)"
+  - "Nenhum campo, rótulo ou placeholder de natureza clínica no formulário; a estrutura de dados do registro não contém campos clínicos"
+  - "Registrar presença/falta atualiza o status da consulta; registrar remarcação conduz ao fluxo de remarcação da PSI-035 mantendo o vínculo da anotação"
+  - "Registros criados/editados refletem imediatamente no histórico do paciente da PSI-034"
+  - "Edição de registro preserva o timestamp de criação e atualiza o de modificação, ambos em ISO 8601"
+  - "Persistência via adapter tipado com mock em memória como padrão em dev/test; sem chamadas HTTP reais"
+  - "Testes cobrem registro de presença, falta e remarcação a partir das duas origens, edição de anotação e reflexo no histórico"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Modelo de lembrete definido no mock em desacordo com o que o worker da PSI-038 espera consumir criaria retrabalho na integração"
-  - "Vincular lembretes a consultas e cobranças cujos módulos evoluem em paralelo (PSI-033, PSI-035) pode gerar referências mock inconsistentes entre adapters"
-  - "Confusão de expectativa da usuária: a UI deve deixar claro que o lembrete será enviado por email, sem prometer outros canais"
+  - "Campo de anotação livre pode ser usado para conteúdo clínico apesar dos rótulos; o produto mitiga com orientação na UI, mas não há como impedir tecnicamente — risco aceito e documentado"
+  - "Status de consulta definido na PSI-035 e desfechos registrados aqui precisam de um modelo único; divergência entre as duas tarefas exige conciliação do enum de status"
+  - "Registrar desfecho de consulta futura (ainda não ocorrida) tem semântica ambígua e deve ser bloqueado ou confirmado explicitamente"
 out_of_scope:
-  - "Envio real de emails e processamento de filas (PSI-038)"
-  - "Canais de lembrete além de email (WhatsApp, SMS, push)"
-  - "Integração com a API real (PSI-039)"
-  - "Notificações in-app em tempo real"
-  - "Instalação de novas dependências"
+  - "Prontuário, evolução clínica ou qualquer registro de conteúdo de sessão"
+  - "Criação/remarcação/cancelamento de consultas em si (PSI-035)"
+  - "Efeitos financeiros de falta (cobrança ou abono — PSI-037)"
+  - "Exclusão definitiva de registros e trilha de auditoria completa"
+  - "Integração real com a API (PSI-044)"
 assumptions:
-  - "Os contratos de tarefa e lembrete já existem em @psiops/contracts, incluindo o vínculo polimórfico com consulta ou cobrança e o canal email"
-  - "Nesta fase o canal email é o único disponível e pode ser exibido como opção fixa na UI"
-  - "Os momentos de disparo (véspera e dia, para consultas) são definidos pelos contratos e apenas exibidos/configurados aqui; a interpretação temporal é do worker da PSI-038"
+  - "O enum de status de consulta da PSI-035 (realizada, falta, remarcada, cancelada) é a fonte única e esta tarefa apenas o consome"
+  - "Registro de desfecho é permitido apenas para consultas com horário já iniciado/passado; para futuras, somente remarcação"
+  - "Falta não gera efeito financeiro automático nesta fase"
 open_questions:
-  - "A criação de lembrete deve ser oferecida também nos fluxos da agenda e do financeiro, ou somente na tela de lembretes nesta fase?"
+  - "Registros administrativos devem ser excluíveis pela usuária ou apenas editáveis (mantendo histórico)? Assumido apenas editáveis até definição de produto"

@@ -1,0 +1,82 @@
+id: PSI-045
+title: "Integração mobile real (integration_test)"
+project: mobile
+shared_change: false
+branch: "agent/psi-045-integracao-mobile-real"
+commit_message: "feat(mobile): integração real com a API via integration_test [PSI-045]"
+pr_title: "PSI-045: Integração mobile real (integration_test)"
+description: |
+  Liga o app Flutter à API Spring real, encerrando o ciclo mock-first
+  das tarefas PSI-040 a PSI-043. Os clients HTTP reais — tipados pelos
+  modelos Dart de packages/contracts/gen/dart e criados como implementação
+  alternativa dos adapters (Auth, Agenda/Dashboard, Patients,
+  Financeiro/Configurações) — passam a ser exercitados de verdade,
+  selecionados por configuração de ambiente no ponto de composição único
+  do app; o mock permanece o padrão em dev/test.
+
+  Para impedir regressão silenciosa, uma verificação automatizada
+  garante que o build de release não referencia código de mocks (ex.:
+  checagem de imports/grafo de dependências que falha se módulos mock
+  alcançarem a composição de release).
+
+  A prova de integração é a suíte integration_test do Flutter executada
+  contra a API local (docker compose com PostgreSQL 16 + Mailpit e API
+  Spring em execução), cobrindo o caminho crítico da psicóloga:
+  login → criar paciente → agendar consulta, com dinheiro em centavos
+  BRL e datas ISO 8601 nas bordas. A tarefa inclui a documentação de
+  como subir a infraestrutura e rodar a suíte localmente. A execução de
+  integration_test em CI (emulador/desktop target) fica registrada como
+  questão aberta para ajuste posterior.
+dependencies:
+  - "PSI-040"
+  - "PSI-041"
+  - "PSI-042"
+  - "PSI-043"
+  - "PSI-022"
+  - "PSI-023"
+  - "PSI-024"
+allowed_paths:
+  - "apps/mobile/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
+acceptance_criteria:
+  - "Clients HTTP reais implementados para todos os adapters do app (auth, agenda/dashboard, pacientes, financeiro/configurações), tipados pelos modelos Dart de packages/contracts/gen/dart"
+  - "Seleção mock vs. http por configuração de ambiente (ex.: --dart-define) no ponto de composição único estabelecido na PSI-040, com mock permanecendo o padrão em dev/test"
+  - "Verificação automatizada de que o build de release não referencia mocks (checagem que falha se código mock alcançar a composição de release), executável localmente"
+  - "Erros de rede e respostas de erro da API mapeados para estados de UI já existentes (mensagens pt-BR), sem crashes em falha de conexão"
+  - "Suíte integration_test do Flutter executa contra a API local (docker compose + API Spring rodando) o fluxo: login → criar paciente → agendar consulta, com asserções sobre o estado final na UI"
+  - "Suíte de integração reexecutável sem intervenção manual (dados isolados por execução, ex.: usuária/e-mail únicos por rodada)"
+  - "Documentação em apps/mobile (ex.: README ou doc local) descrevendo como subir a infraestrutura, configurar o ambiente e rodar a suíte integration_test localmente"
+  - "Testes unit/widget existentes das PSI-040 a PSI-043 continuam verdes com o mock como padrão"
+  - "cd apps/mobile && flutter analyze e cd apps/mobile && flutter test executam sem erros"
+validation_commands:
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
+risks:
+  - "Divergências entre os contratos assumidos pelos mocks e o comportamento real da API aparecem aqui; correções necessárias na API ou nos contratos estão fora dos caminhos permitidos e devem ser registradas para o orquestrador"
+  - "integration_test depende de dispositivo/emulador ou desktop target disponível; ambientes sem esse suporte não conseguem rodar a suíte localmente"
+  - "Tempo de subida da API Java e da infraestrutura pode causar timeouts; a suíte deve aguardar readiness explícita da API antes de iniciar"
+  - "Resíduos de dados entre execuções podem causar falhas intermitentes (e-mail já registrado, conflito de horário); mitigar com dados únicos por execução"
+  - "A verificação de ausência de mocks no release depende de disciplina de imports; refatorações futuras podem burlá-la se a checagem não cobrir o grafo de composição inteiro"
+out_of_scope:
+  - "Execução de integration_test em CI (emulador/desktop no pipeline) — registrada como questão aberta"
+  - "Alterações na API Spring, em packages/contracts ou no docker compose (necessidades viram registro para o orquestrador)"
+  - "Novas telas ou funcionalidades — apenas ligação real do que já existe"
+  - "Integração web real — PSI-044"
+  - "Testes de carga/performance contra a API"
+assumptions:
+  - "As PSI-022/023/024 deixaram os endpoints de autenticação, pacientes e agenda da API funcionais e compatíveis com os modelos Dart gerados de packages/contracts"
+  - "O docker compose da raiz e a API sobem localmente com instruções já documentadas nas tarefas de infraestrutura; esta tarefa apenas referencia esses comandos na documentação"
+  - "A execução da suíte integration_test é etapa manual/local nesta tarefa; os validation_commands automatizados permanecem flutter analyze e flutter test"
+  - "O pubspec.yaml de apps/mobile pode receber a dependência integration_test (SDK) e utilitários de HTTP sem tocar no lockfile pnpm"
+open_questions:
+  - "Execução de integration_test em CI (emulador Android vs. desktop target Linux) pode ficar para ajuste posterior — qual alvo o pipeline adotará?"
+  - "A base URL da API em dispositivos físicos/emulador (localhost vs. 10.0.2.2 vs. IP da máquina) deve ser padronizada em qual configuração de ambiente?"

@@ -1,24 +1,32 @@
 id: PSI-034
-title: "clinic: registros administrativos de consulta"
+title: "clinic: detalhe e histórico do paciente"
 project: clinic
 shared_change: false
-branch: "agent/psi-034-clinic-registros-administrativos"
-commit_message: "feat(clinic): registros administrativos de consulta [PSI-034]"
-pr_title: "PSI-034: clinic — registros administrativos de consulta"
+branch: "agent/psi-034-detalhe-paciente"
+commit_message: "feat(clinic): detalhe e histórico do paciente [PSI-034]"
+pr_title: "PSI-034: clinic — detalhe e histórico do paciente"
 description: |
-  Adiciona ao app clinic o registro administrativo de consultas: presença,
-  falta, remarcação e anotações de natureza puramente administrativa
-  (por exemplo, combinados de horário e pagamento). O registro pode ser
-  criado a partir de dois pontos de entrada — a agenda (PSI-033) e a
-  página de detalhe do paciente (PSI-032) — e, uma vez criado, passa a
-  aparecer no histórico do paciente. O escopo é deliberadamente
-  restrito ao lado administrativo do consultório: o produto não armazena
-  conteúdo clínico, e esta tarefa deve deixar essa fronteira explícita na
-  UI (rótulos e textos de apoio em pt-BR) e nos tipos consumidos de
-  @psiops/contracts. É proibido qualquer campo de diagnóstico, evolução
-  terapêutica ou recomendação clínica, inclusive gerada por IA.
+  Implementa a página de detalhe do paciente no app clinic, acessada a
+  partir da lista da PSI-033, consolidando em uma única visão:
+
+  - Dados cadastrais: informações administrativas do paciente com acesso à
+    edição (reutilizando o formulário da PSI-033);
+  - Histórico de consultas: consultas passadas e futuras com data, horário
+    e status (realizada, falta, remarcada, cancelada);
+  - Registros administrativos: anotações administrativas associadas às
+    consultas (sem qualquer campo clínico — a criação/edição desses
+    registros é escopo da PSI-036, aqui somente leitura);
+  - Situação financeira: mensalidades do paciente agrupadas por status
+    (em dia, pendente, atrasada) com valores em centavos BRL formatados
+    como R$.
+
+  A página é organizada em abas ou seções Mantine tematizadas pelos tokens
+  @psiops/ui, consome dados pelos adapters tipados existentes
+  (PatientsAdapter e as interfaces de leitura de consultas/financeiro) com
+  mocks em memória como padrão, e trata estados de carregamento, vazio por
+  seção e paciente inexistente (rota inválida leva a um estado 'não
+  encontrado' com retorno à lista).
 dependencies:
-  - "PSI-032"
   - "PSI-033"
 allowed_paths:
   - "apps/clinic/**"
@@ -31,36 +39,31 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "A partir de uma consulta na agenda é possível registrar presença, falta ou remarcação"
-  - "A partir da página de detalhe do paciente é possível criar registro administrativo com anotação livre de caráter administrativo"
-  - "Registro criado aparece imediatamente no histórico do paciente (seção entregue na PSI-032)"
-  - "Formulários validam os dados com os schemas Zod de @psiops/contracts, sem tipos duplicados no app"
-  - "A UI não contém nenhum campo de diagnóstico, evolução terapêutica, hipótese clínica ou conteúdo de prontuário, e os textos deixam claro o caráter administrativo do registro"
-  - "Nenhuma funcionalidade sugere, classifica ou recomenda condutas clínicas, com ou sem IA"
-  - "Estados de carregamento, erro e ausência de registros são tratados"
-  - "Testes cobrem os dois pontos de entrada (agenda e detalhe do paciente), a exibição no histórico e a validação dos formulários"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Rota de detalhe do paciente acessível por clique na lista da PSI-033, com navegação de volta preservando busca/página da lista"
+  - "Seção de dados cadastrais exibe as informações administrativas e dá acesso à edição reutilizando o formulário da PSI-033"
+  - "Histórico de consultas lista consultas com data/hora formatadas em pt-BR e status (realizada, falta, remarcada, cancelada), ordenado da mais recente para a mais antiga"
+  - "Registros administrativos exibidos em modo leitura, associados às consultas; nenhum campo ou rótulo de natureza clínica"
+  - "Situação financeira agrupa mensalidades por status (em dia, pendente, atrasada) com valores em centavos BRL formatados como R$"
+  - "Dados consumidos exclusivamente via adapters tipados com mocks em memória; sem chamadas HTTP reais"
+  - "Estados tratados: carregando por seção, seção vazia com mensagem própria e paciente inexistente com tela de não encontrado"
+  - "Testes cobrem navegação lista → detalhe, renderização das quatro seções com dados do mock, estados vazios e paciente inexistente"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Campo de anotação livre pode ser usado para conteúdo clínico apesar dos rótulos; a mitigação nesta fase é textual (avisos na UI), não técnica"
-  - "Registrar falta ou remarcação sem refletir o status da consulta na agenda criaria inconsistência entre os módulos"
-  - "Divergência entre o formato de registro usado no mock da PSI-032 e o desta tarefa exigiria reconciliação dos adapters"
+  - "A página consome dados de domínios ainda em construção (consultas na PSI-035, financeiro na PSI-037, registros na PSI-036); interfaces de leitura definidas aqui podem precisar de conciliação com essas tarefas"
+  - "Volume grande de histórico sem paginação/lazy loading pode degradar a renderização — o mock deve incluir cenário com muitos registros"
+  - "Risco de escopo: qualquer campo de anotação livre pode ser confundido com registro clínico; a UI deve rotular tudo explicitamente como administrativo"
 out_of_scope:
-  - "Prontuário eletrônico, evolução terapêutica ou qualquer campo clínico"
-  - "Diagnóstico automático, recomendação clínica ou decisão de saúde assistida por IA"
-  - "Efeitos financeiros de faltas (cobrança de sessão perdida) — domínio da PSI-035"
-  - "Integração com a API real (PSI-039)"
-  - "Edição ou exclusão de registros já criados, salvo se prevista nos contratos"
-  - "Instalação de novas dependências"
+  - "Criação e edição de registros administrativos de consulta (PSI-036) — aqui somente leitura"
+  - "Ações de agenda (criar/remarcar/cancelar consulta — PSI-035)"
+  - "Ações financeiras (gerar mensalidade, marcar como paga — PSI-037)"
+  - "Exportação de histórico e relatórios"
+  - "Integração real com a API (PSI-044)"
 assumptions:
-  - "Os tipos de registro administrativo (presença, falta, remarcação, anotação) já estão definidos em @psiops/contracts e o app apenas os consome"
-  - "Registrar remarcação a partir da consulta reutiliza o fluxo de remarcação da agenda (PSI-033), adicionando o registro correspondente ao histórico"
-  - "Os registros são persistidos pelo mesmo mecanismo de adapters mock em memória das tarefas anteriores"
-open_questions:
-  - "Registros administrativos devem ser imutáveis após criação ou os contratos preveem edição/estorno?"
+  - "As interfaces de leitura de consultas e financeiro por paciente são definidas nesta tarefa caso PSI-035/PSI-037 ainda não tenham sido executadas, e serão respeitadas por elas"
+  - "O histórico exibido no mock cobre consultas passadas e futuras para validar a ordenação e os status"
+open_questions: []

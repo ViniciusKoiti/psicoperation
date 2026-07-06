@@ -1,22 +1,29 @@
 id: PSI-015
-title: "landing: seções problema e solução"
+title: "landing: hero com mockup de dashboard"
 project: landing
 shared_change: false
-branch: "agent/psi-015-landing-problema-solucao"
-commit_message: "feat(landing): seções problema e solução [PSI-015]"
-pr_title: "PSI-015: landing: seções problema e solução"
+branch: "agent/psi-015-landing-hero"
+commit_message: "feat(landing): hero com mockup de dashboard e chips flutuantes [PSI-015]"
+pr_title: "PSI-015: landing: hero com mockup de dashboard"
 description: |
-  Implementa as seções "problema" e "solução" da landing page como
-  componentes semânticos, seguindo docs/design/landing-page-spec.md e
-  reutilizando as primitivas da PSI-013. A seção problema apresenta 3 cards
-  com efeito de hover lift. A seção solução usa feature rows alternadas
-  (imagem/mock de um lado, texto do outro, alternando a cada linha) com três
-  composições: lista de carteira de pacientes, mock de conversa de WhatsApp
-  e card de calculadora de juros. O conteúdo textual deve ser idêntico ao da
-  referência project/PsiOps Landing.html, que é somente leitura — proibido
-  converter seu HTML diretamente para JSX. Fidelidade visual pixel-perfect.
+  Implementa a seção hero da landing page em apps/landing, conforme
+  docs/design/landing-page-spec.md e com fidelidade visual ao design de
+  referência (project/PsiOps Landing.html, somente leitura — proibido
+  converter o HTML diretamente para JSX).
+
+  O hero é um grid de duas colunas: à esquerda, headline, subheadline e
+  CTAs; à direita, um mockup de dashboard decorado com chips flutuantes
+  posicionados de forma absoluta sobre o mockup. Os CTAs apontam para a
+  âncora #lista (formulário de lista de espera, entregue na PSI-018 — a
+  âncora deve funcionar mesmo antes de a seção existir na composição
+  final).
+
+  Comportamento responsivo: em viewports de até 920px o grid colapsa para
+  uma coluna e os chips flutuantes deixam de ser exibidos, evitando
+  sobreposição em telas estreitas. Construído sobre as primitivas de
+  layout e botões entregues na PSI-014.
 dependencies:
-  - "PSI-013"
+  - "PSI-014"
 allowed_paths:
   - "apps/landing/**"
 forbidden_paths:
@@ -28,28 +35,29 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Seção problema com 3 cards, cada um com efeito de hover lift fiel à referência"
-  - "Seção solução com feature rows alternadas contendo: lista de carteira de pacientes, mock de conversa de WhatsApp e card de calculadora de juros, conforme a spec"
-  - "Conteúdo textual (títulos, parágrafos, itens dos mocks) idêntico ao da referência project/PsiOps Landing.html"
-  - "Componentes semânticos construídos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
-  - "Reutilização das primitivas da PSI-013 (Section, Wrap, Eyebrow, Pill, cards)"
-  - "Fidelidade visual pixel-perfect à referência nas duas seções, incluindo o comportamento responsivo"
-  - "Testes de componentes cobrindo a renderização das duas seções e do conteúdo textual"
+  - "Seção hero implementada como componente semântico com grid de duas colunas: headline + CTAs à esquerda, mockup de dashboard à direita, conteúdo textual idêntico à referência"
+  - "Mockup de dashboard reconstruído como componentes (não imagem estática do protótipo, salvo se a spec determinar o contrário), com chips flutuantes posicionados de forma absoluta sobre ele"
+  - "CTAs do hero navegam para a âncora #lista, usando as variantes de botão da PSI-014"
+  - "Em viewports ≤ 920px o grid colapsa para uma coluna e os chips flutuantes são ocultados, sem overflow horizontal"
+  - "Fidelidade visual pixel-perfect à spec/da referência: tipografia, espaçamentos, cores dos tokens, sombras e raios de borda"
+  - "Testes de componentes cobrindo: renderização do conteúdo do hero, href dos CTAs apontando para #lista e presença dos chips no layout largo"
+  - "pnpm --filter @psiops/landing build e test executam com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/landing test"
   - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing test"
 risks:
-  - "Os mocks internos (carteira de pacientes, conversa de WhatsApp, calculadora de juros) são visualmente densos; reproduzi-los sem copiar o HTML exige atenção extra para manter pixel-perfect"
-  - "Divergência de conteúdo textual em relação à referência é fácil de introduzir ao redigitar os textos"
-  - "Feature rows alternadas podem quebrar a ordem visual esperada no colapso responsivo se a alternância for feita apenas por ordem no DOM"
+  - "Posicionamento absoluto dos chips é sensível a diferenças de fonte e rendering entre navegadores; pequenas divergências podem quebrar o pixel-perfect"
+  - "O mockup de dashboard é a parte visualmente mais densa da página; reconstruí-lo sem copiar o HTML do protótipo exige atenção redobrada à spec"
+  - "Ocultar chips em ≤ 920px via CSS precisa ser testável; testes de media query em JSDOM são limitados — validar também no E2E da PSI-019"
 out_of_scope:
-  - "Demais seções da landing (hero, como funciona, quote, FAQ, formulário, CTA final)"
-  - "Interatividade funcional na calculadora de juros ou no mock de WhatsApp (são composições estáticas de marketing)"
-  - "Scroll reveal e composição final da página (PSI-018)"
-  - "Alterações em pacotes compartilhados"
+  - "Seção do formulário #lista em si (PSI-018) — aqui apenas os links de âncora"
+  - "Animações de scroll reveal (PSI-019)"
+  - "Composição do hero na página final junto às demais seções (PSI-019)"
+  - "Alterações nas primitivas da PSI-014 além de consumo (ajustes estruturais nelas devem ser evitados ou minimizados)"
 assumptions:
-  - "Os mocks (carteira, WhatsApp, calculadora) são estáticos, como na referência, sem lógica real de cálculo ou mensagens"
-open_questions: []
+  - "docs/design/landing-page-spec.md especifica o conteúdo do mockup (valores, labels, chips) em nível suficiente; qualquer lacuna será resolvida por conferência visual da referência, sem cópia de HTML"
+  - "A verificação de comportamento responsivo em teste unitário se limita a classes/estrutura; a validação real de viewport ocorre no E2E da PSI-019"
+open_questions:
+  - "Os chips flutuantes devem ter animação sutil (float/pulse) conforme eventual detalhe da spec, ou permanecem estáticos até a PSI-019 (scroll reveal)?"

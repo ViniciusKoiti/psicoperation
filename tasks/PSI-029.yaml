@@ -1,28 +1,50 @@
 id: PSI-029
-title: "clinic: onboarding"
-project: clinic
+title: "api: lembretes assíncronos e e-mail (Axon deadlines)"
+project: api
 shared_change: false
-branch: "agent/psi-029-clinic-onboarding"
-commit_message: "feat(clinic): fluxo de onboarding pós-registro [PSI-029]"
-pr_title: "PSI-029: clinic: onboarding"
+branch: "agent/psi-029-deadlines-email"
+commit_message: "feat(api): implementa lembretes assíncronos e e-mail via Axon deadlines [PSI-029]"
+pr_title: "PSI-029: api: lembretes assíncronos e e-mail (Axon deadlines)"
 description: |
-  Implementa no app clinic o fluxo de onboarding pós-registro em passos,
-  guiando a psicóloga recém-cadastrada pela configuração inicial da conta:
-  perfil profissional (nome de exibição e CRP opcional), valor padrão de
-  sessão, dias e horários de atendimento e preferências de lembrete. O
-  fluxo usa componentes Mantine seguindo os tokens de @psiops/ui, permite
-  pular o onboarding a qualquer momento e retomá-lo depois do ponto onde
-  parou, e persiste as respostas via um SettingsAdapter mock — nenhuma
-  chamada à API real nesta fase (integração real só na PSI-039). Cada passo
-  valida seus campos antes de avançar, mas nenhum passo é obrigatório para
-  concluir, já que o fluxo inteiro é pulável. O conteúdo exato dos passos
-  ainda precisa de validação de produto, o que fica registrado como questão
-  aberta; a implementação deve manter os passos modulares para facilitar
-  ajuste posterior. Nenhuma dependência nova é instalada.
+  Implementa em apps/api a camada assíncrona de lembretes e o envio de e-mail,
+  fechando o ciclo iniciado nas PSI-026 (financeiro) e PSI-027 (lembretes).
+
+  Agendamento (DeadlineManager/scheduler do Axon, sem Axon Server):
+  - Lembrete de consulta: deadlines na véspera e no dia da consulta, criados a
+    partir dos eventos de agenda/lembrete; remarcação ou cancelamento da
+    consulta cancela/reagenda as deadlines correspondentes.
+  - Verificação diária de cobranças vencidas: varredura agendada que detecta
+    mensalidades com vencimento ultrapassado e status ainda não atrasado.
+
+  Ao expirar a deadline/verificação, são publicados os eventos de domínio
+  lembrete.devido e cobranca.atrasada, conforme os schemas com envelope comum
+  definidos na PSI-020.
+
+  Entrega (event handler de e-mail):
+  - Handler assina lembrete.devido e cobranca.atrasada e envia e-mail via SMTP
+    (Mailpit em dev) com templates de texto simples em pt-BR.
+  - Idempotência de envio: o mesmo evento processado mais de uma vez não gera
+    e-mail duplicado (registro de envio por identificador do evento).
+  - Retries com backoff exponencial para falhas transitórias de SMTP, com
+    limite de tentativas e registro de falha definitiva.
+
+  Restrição registrada e obrigatória: nenhuma regra de negócio nova no handler
+  de e-mail — ele só faz entrega. Decidir se uma cobrança está atrasada, se um
+  lembrete é devido ou qualquer outra regra pertence aos módulos de domínio
+  (PSI-026/PSI-027); o handler apenas materializa o evento em mensagem. Os
+  e-mails têm conteúdo exclusivamente administrativo/financeiro — nenhum
+  conteúdo clínico ou recomendação de saúde.
+
+  Testes: fixtures Axon (AggregateTestFixture/SagaTestFixture com
+  StubDeadlineManager) validando criação, cancelamento e expiração de
+  deadlines; transporte de e-mail mockado (ou Mailpit via Testcontainers)
+  validando conteúdo, idempotência e retries.
 dependencies:
-  - "PSI-028"
+  - "PSI-011"
+  - "PSI-026"
+  - "PSI-027"
 allowed_paths:
-  - "apps/clinic/**"
+  - "apps/api/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
@@ -32,37 +54,34 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Fluxo de onboarding é apresentado após o registro, em passos sequenciais com indicador de progresso, construído com Mantine e tokens de @psiops/ui"
-  - "Passos cobrem: perfil profissional (nome de exibição obrigatório no passo, CRP opcional), valor padrão de sessão, dias/horários de atendimento e preferências de lembrete"
-  - "Navegação entre passos funciona para frente e para trás sem perder dados já preenchidos"
-  - "Cada passo valida seus campos antes de avançar; valores monetários são tratados em centavos, coerentes com os contratos"
-  - "Onboarding pode ser pulado a qualquer momento, levando ao app; ao retornar, a usuária pode retomar do passo onde parou, com os dados preenchidos preservados"
-  - "Persistência ocorre exclusivamente via interface SettingsAdapter com implementação mock respeitando os contratos correspondentes; nenhuma chamada HTTP real"
-  - "Onboarding concluído (ou pulado) não é reapresentado automaticamente em novo login da mesma sessão mock"
-  - "Testes cobrem: navegação completa entre passos, validação de campo impedindo avanço, pular e retomar, e persistência dos dados no adapter mock"
+  - "Deadlines de lembrete de consulta criadas para véspera e dia da consulta a partir dos eventos de domínio; remarcação/cancelamento cancela ou reagenda as deadlines"
+  - "Verificação diária agendada detecta cobranças vencidas e transiciona/emite conforme a regra do módulo financeiro"
+  - "Eventos lembrete.devido e cobranca.atrasada publicados conforme os schemas de envelope comum dos contratos"
+  - "Event handler de e-mail envia via SMTP (Mailpit em dev) com templates de texto simples em pt-BR, com valores monetários e datas formatados em padrão brasileiro"
+  - "Idempotência de envio: reprocessamento do mesmo evento não duplica e-mail"
+  - "Retries com backoff exponencial e limite de tentativas para falhas de SMTP; falha definitiva registrada em log"
+  - "Nenhuma regra de negócio no handler de e-mail (somente entrega), com a restrição documentada no código"
+  - "Testes com fixtures Axon (StubDeadlineManager) e transporte de e-mail mockado cobrindo agendamento, cancelamento, expiração, idempotência e retries"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
-  - "pnpm --filter @psiops/clinic test"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "O conteúdo dos passos ainda não foi validado por produto; investir demais em conteúdo específico agora pode gerar retrabalho — manter passos modulares"
-  - "Estado de progresso do onboarding persistido apenas no mock pode divergir do modelo real de settings na integração (PSI-039)"
-  - "Formato de dias/horários de atendimento é fácil de modelar de forma incompatível com a agenda da API (PSI-023); seguir os contratos existentes é obrigatório"
-  - "Fluxos puláveis criam estados parciais (metade configurado) que o restante do app precisa tolerar"
+  - "SimpleDeadlineManager não sobrevive a restart da aplicação; deadlines de véspera/dia exigem persistência ou reidratação na inicialização — a decisão (DbSchedulerDeadlineManager/JobRunr vs reidratação) deve ser registrada no PR e é limitada às tabelas já criadas na PSI-021"
+  - "Sem idempotência robusta, redelivery de eventos do processador gera e-mails duplicados para a psicóloga"
+  - "Retries agressivos contra SMTP indisponível podem represar o event processor; isolar o handler em processing group próprio"
+  - "Fuso horário incorreto dispara lembrete de véspera no dia errado; cálculo de véspera/dia deve considerar o fuso de referência (America/Sao_Paulo)"
+  - "Dependência implícita da PSI-024 (eventos de agenda) via PSI-027; se os eventos de consulta divergirem do esperado, o agendamento de véspera/dia precisa de adaptação"
 out_of_scope:
-  - "Integração com API real de settings (somente na PSI-039)"
-  - "Alterar packages/contracts, packages/database ou packages/ui"
-  - "Validação do CRP junto a fontes oficiais (Conselho Regional de Psicologia)"
-  - "Edição posterior de configurações fora do fluxo de onboarding (tela de configurações do app)"
-  - "Instalação de novas dependências no workspace"
+  - "Novas regras de negócio de cobrança ou lembrete (pertencem a PSI-026/PSI-027)"
+  - "Canais além de e-mail e templates HTML ricos"
+  - "Novas migrations Flyway e alterações em packages/contracts"
+  - "Configuração de provedor SMTP de produção (somente Mailpit em dev e propriedades externalizadas)"
+  - "Qualquer conteúdo clínico nos e-mails"
 assumptions:
-  - "Existem contratos de settings/perfil em @psiops/contracts cobrindo os campos dos passos; o SettingsAdapter mock respeita exatamente esses schemas"
-  - "O estado de sessão e a proteção de rotas da PSI-028 estão disponíveis; o onboarding é rota protegida"
-  - "CRP é tratado como texto opcional com máscara/formato leve, sem validação externa"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+  - "A PSI-011 provisionou o Mailpit no ambiente de desenvolvimento (docker-compose) e as propriedades SMTP base; esta tarefa apenas as consome"
+  - "Véspera e dia calculados no fuso America/Sao_Paulo como referência única do MVP"
+  - "O registro de envio para idempotência usa estrutura já prevista nas migrations V1/V2; se faltar tabela, a lacuna é reportada em vez de criar migration"
 open_questions:
-  - "Conteúdo exato dos passos do onboarding (quais perguntas, ordem, obrigatoriedade) precisa de validação de produto; a estrutura implementada deve ser fácil de ajustar"
-  - "Preferências de lembrete disponíveis nesta fase (apenas canal email, conforme PSI-026?) precisam de confirmação de produto"
+  - "Definir com o orquestrador a estratégia de deadline persistente (extensão db-scheduler/JobRunr no pom.xml vs reidratação de deadlines no startup), considerando que as tabelas disponíveis são as da PSI-021"

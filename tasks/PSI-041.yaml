@@ -1,0 +1,74 @@
+id: PSI-041
+title: "mobile: dashboard do dia e agenda"
+project: mobile
+shared_change: false
+branch: "agent/psi-041-mobile-dashboard-agenda"
+commit_message: "feat(mobile): dashboard do dia e agenda com visões diária e semanal [PSI-041]"
+pr_title: "PSI-041: mobile: dashboard do dia e agenda"
+description: |
+  Implementa as duas telas centrais do dia a dia da psicóloga no app
+  Flutter: o dashboard do dia e a agenda de consultas, sobre o shell
+  autenticado entregue na PSI-040.
+
+  O dashboard do dia consolida, em uma única tela de abertura: as
+  próximas consultas do dia, as pendências financeiras (mensalidades
+  pendentes/atrasadas em centavos BRL, formatadas em pt-BR) e as tarefas
+  do dia. A agenda oferece visões diária e semanal, com criação,
+  remarcação e cancelamento de consulta. A detecção de conflito de
+  horário roda no client e deve aplicar exatamente as mesmas regras
+  expressas nos contratos (modelos Dart de packages/contracts/gen/dart),
+  para que o comportamento offline/mock coincida com o da API real.
+  Inclui recorrência semanal simples (consulta que se repete no mesmo
+  dia/horário a cada semana), sem regras avançadas de recorrência.
+
+  Todo o acesso a dados passa por adapters seguindo o padrão do app
+  (mock como implementação padrão em dev/test), com estados de
+  carregamento e vazio desenhados com o tema dos tokens. Datas trafegam
+  em ISO 8601 e valores monetários em centavos BRL.
+dependencies:
+  - "PSI-040"
+  - "PSI-020"
+allowed_paths:
+  - "apps/mobile/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
+acceptance_criteria:
+  - "Dashboard do dia exibe próximas consultas do dia (horário, paciente, status), pendências financeiras com valores em centavos BRL formatados em pt-BR e tarefas do dia"
+  - "Agenda com visão diária e visão semanal, com navegação entre dias/semanas e indicação clara do dia atual"
+  - "Fluxos de criar, remarcar e cancelar consulta funcionam de ponta a ponta sobre o adapter mock, com confirmação para ações destrutivas"
+  - "Detecção de conflito de horário executada no client antes da confirmação, consistente com as regras dos contratos (modelos Dart de packages/contracts/gen/dart), bloqueando ou alertando sobreposição de consultas"
+  - "Recorrência semanal simples disponível na criação: consulta repetida semanalmente no mesmo dia/horário, com as ocorrências visíveis na agenda"
+  - "Todos os dados fluem por adapters (agenda/dashboard) com implementação mock padrão, no mesmo padrão de composição da PSI-040"
+  - "Estados de carregamento e vazio implementados para dashboard e agenda, estilizados com o tema dos tokens e textos em pt-BR"
+  - "Datas e horários manipulados em ISO 8601 nas bordas dos adapters e exibidos no formato pt-BR na UI"
+  - "Testes de widget cobrem: renderização do dashboard com dados mock, visões diária/semanal, criação com conflito detectado e cancelamento de consulta"
+  - "cd apps/mobile && flutter analyze e cd apps/mobile && flutter test executam sem erros"
+validation_commands:
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
+risks:
+  - "Regras de conflito duplicadas no client podem divergir da validação do servidor; mitigar derivando a lógica dos tipos/regras dos contratos e cobrindo com testes os mesmos casos-limite (toque de bordas, sobreposição parcial)"
+  - "Recorrência semanal gera ambiguidade de edição (editar uma ocorrência vs. a série); escolher o comportamento mais simples e registrá-lo explicitamente na UI"
+  - "Fusos horários e horário de verão podem deslocar consultas se datas ISO 8601 forem convertidas de forma inconsistente entre adapter e UI"
+  - "A visão semanal pode ficar visualmente densa em telas pequenas; validar com os breakpoints/tokens do design system"
+out_of_scope:
+  - "Integração real com a API (adapters HTTP exercitados de verdade) — PSI-045"
+  - "Recorrências avançadas (quinzenal, mensal, regras de exceção por ocorrência)"
+  - "Sincronização com calendários externos (Google Calendar etc.)"
+  - "Notificações push de consulta"
+  - "Gestão financeira completa (marcar como paga, gerar mensalidades) — PSI-043"
+assumptions:
+  - "PSI-020 definiu nos contratos os modelos de consulta/agenda (incluindo status e campos necessários à detecção de conflito) já refletidos nos modelos Dart gerados em packages/contracts/gen/dart"
+  - "O conceito de 'tarefas do dia' existe nos contratos como registro administrativo simples (título, feita/não feita); nenhuma tarefa contém dado clínico"
+  - "A recorrência semanal pode ser materializada pelo adapter mock como ocorrências individuais dentro de um horizonte finito de exibição"
+open_questions:
+  - "Ao detectar conflito de horário, o comportamento desejado é bloquear a criação ou permitir com alerta explícito de sobreposição?"
+  - "Remarcação/cancelamento de uma consulta recorrente afeta somente a ocorrência ou a série inteira no MVP?"

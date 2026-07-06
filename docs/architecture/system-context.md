@@ -1,26 +1,27 @@
 # PsiOps — Contexto do sistema
 
+> Revisado em 2026-07-05 após o pivô de stack (ADRs 0007–0009).
+
 ## Visão geral (C4 nível 1–2)
 
 ```mermaid
 flowchart LR
     visitante([Visitante]) -->|navega| landing
-    psicologa([Psicóloga]) -->|usa| clinic
+    psicologa([Psicóloga]) -->|desktop| clinic
+    psicologa -->|celular| mobile
 
     subgraph Monorepo
-        landing[apps/landing<br/>Next.js]
+        landing[apps/landing<br/>Next.js React]
         clinic[apps/clinic<br/>Vite + React + Mantine]
-        api[apps/api<br/>NestJS]
-        automation[apps/automation<br/>Node + BullMQ]
+        mobile[apps/mobile<br/>Flutter]
+        api[apps/api<br/>Spring Boot 3 + Axon]
     end
 
     landing -->|POST /leads| api
     clinic -->|HTTP + JWT| api
-    api -->|Prisma| pg[(PostgreSQL)]
-    api -->|grava eventos| outbox[(tabela Outbox)]
-    automation -->|poll| outbox
-    automation -->|jobs| redis[(Redis)]
-    automation -->|SMTP| mail[Mailpit / provedor]
+    mobile -->|HTTP + JWT| api
+    api -->|JPA/Flyway| pg[(PostgreSQL<br/>domínio + event store)]
+    api -->|SMTP| mail[Mailpit / provedor]
     mail -->|e-mail| psicologa
 ```
 
@@ -29,58 +30,66 @@ flowchart LR
 ### apps/landing — Next.js (App Router)
 Página pública de marketing, reconstrução fiel de `project/PsiOps Landing.html`.
 Tailwind (pipeline própria, preset de tokens do `@psiops/ui`), fontes via `next/font`.
-Única escrita: captura de lead via `LeadAdapter` (mock em dev; HTTP para a API em produção).
-Sem autenticação, sem acesso a banco.
+Única escrita: captura de lead via `LeadAdapter` (mock em dev; HTTP para a API na
+integração — PSI-044). Sem autenticação, sem acesso a banco.
 
-### apps/clinic — Vite + React + Mantine
-SPA autenticada da psicóloga. Tema Mantine derivado dos tokens de `@psiops/ui`.
-Todo acesso a dados passa por **adapters** tipados pelos contratos:
-`Mock*Adapter` (memória; padrão em dev/test) e `Http*Adapter` (API real; selecionado por env).
-Mocks são proibidos em build de produção (verificação automatizada na PSI-039).
+### apps/clinic — Vite + React + Mantine (web)
+SPA autenticada da psicóloga no desktop. Tema Mantine derivado dos tokens de
+`@psiops/ui`. Todo acesso a dados passa por **adapters** tipados pelo codegen TS dos
+contratos: `Mock*Adapter` (padrão em dev/test) e `Http*Adapter` (API real; PSI-044).
+Mocks proibidos em build de produção (verificação automatizada).
 
-### apps/api — NestJS
-Fonte única de regras de negócio e autorização. JWT (access + refresh), guard global,
-multi-tenant estrito por `userId` em toda query. Valida entrada/saída com schemas de
-`@psiops/contracts`. Persistência exclusivamente via `@psiops/database` (Prisma).
-Comunicação com a automation somente pela tabela **Outbox** (a API nunca fala com Redis).
+### apps/mobile — Flutter
+App companion da psicóloga no celular: dashboard do dia, agenda, pacientes e
+financeiro. Material 3 tematizado pelo `tokens.json` de `packages/ui`; modelos Dart
+gerados dos contratos (`packages/contracts/gen/dart`); mesmo padrão de adapters
+mock/HTTP (integração real na PSI-045). Fora do pnpm/turbo; build via Flutter SDK.
 
-### apps/automation — Node + BullMQ
-Worker sem regra de negócio própria: consome a Outbox, agenda/processa jobs no Redis
-(lembrete de consulta, cobrança atrasada) e entrega e-mail via SMTP.
-Idempotência por `jobId` determinístico; retries com backoff exponencial.
+### apps/api — Spring Boot 3 + Axon Framework (backend único)
+Fonte única de regras de negócio e autorização. Spring Security stateless com JWT
+(access + refresh), multi-tenant estrito por `userId` em toda query. DTOs consumidos
+de `packages/contracts/gen/java` (nunca redefinidos).
+
+Assincronicidade **dentro do próprio backend** via Axon (não existe worker separado):
+- agregados state-stored publicam eventos de domínio;
+- event store JPA embutido no PostgreSQL (sem Axon Server no MVP);
+- `DeadlineManager` agenda lembretes de consulta (véspera/dia) e a verificação diária
+  de cobranças vencidas;
+- event handlers fazem projeções e enviam e-mail (SMTP/Mailpit), com idempotência e
+  retry — sem regra de negócio própria.
+
+Persistência: JPA/Hibernate + Flyway (`apps/api/src/main/resources/db/migration/`),
+migrations sequenciais e imutáveis, `ddl-auto=validate`.
 
 ## Pacotes compartilhados
 
 | Pacote | Papel | Quem consome |
 |---|---|---|
-| `packages/contracts` | Schemas Zod, tipos, eventos de domínio. Fonte única de DTOs. | todos os apps |
-| `packages/database` | Schema Prisma, migrations, client singleton, seeds. | api, automation |
-| `packages/ui` | Tokens de design (cores, tipografia, sombras), tema Mantine, preset Tailwind, primitivas. | landing, clinic |
-| `packages/config` | tsconfig, ESLint, Prettier, preset Vitest. | todos |
-| `packages/testing` | Fixtures determinísticas, helpers, infra de mock adapters. | todos |
+| `packages/contracts` | Spec OpenAPI 3.1 (fonte única) + codegen comitado: `gen/ts`, `gen/java`, `gen/dart`. | todos os apps |
+| `packages/ui` | Tokens de design (CSS vars, objeto TS, tema Mantine, preset Tailwind, `tokens.json` p/ Flutter) e primitivas React. | landing, clinic, mobile (tokens) |
+| `packages/config` | tsconfig, ESLint, Prettier, preset Vitest (lado JS). | pacotes/apps JS |
+| `packages/testing` | Fixtures determinísticas e infra de mock adapters (lado JS). | landing, clinic |
 
-Regra de dependência (imports permitidos):
-
-```
-apps/*  ──►  packages/*          (nunca o inverso)
-apps/*  ─X─► apps/*              (proibido)
-contracts não importa nada interno; database não importa contracts? — importa apenas contracts
-ui, testing ──► contracts, config
-```
+Regra de dependência: `apps/* → packages/*`, nunca o inverso; apps não importam apps.
+Java testa com JUnit/Testcontainers; Flutter com flutter_test/integration_test.
 
 ## Infraestrutura local
 
-`docker-compose.yml`: PostgreSQL 16, Redis 7, Mailpit. Variáveis em `.env.example`.
+`docker-compose.yml`: PostgreSQL 16 e Mailpit (sem Redis). Variáveis em `.env.example`.
+Toolchains: Node 22 + pnpm, JDK 21 + Maven (wrapper), Flutter 3.32+, Docker.
 
 ## CI (GitHub Actions)
 
-Em todo PR: instalação com cache pnpm → `turbo run lint typecheck test build`.
-Em branches `agent/*`: validação de escopo de arquivos com
-`node scripts/validate-task-scope.mjs --task PSI-0NN --base origin/main`.
+Jobs por ecossistema, condicionados à existência dos diretórios:
+- **js** — pnpm + `turbo run lint typecheck test build`;
+- **api** — JDK 21 + `./mvnw verify` (Testcontainers);
+- **mobile** — `flutter analyze && flutter test`;
+- **scope** — em branches `agent/*`: `node scripts/validate-task-scope.mjs --task PSI-0NN --base origin/main`.
 
 ## Fronteiras de segurança e privacidade
 
 - Landing pública nunca acessa banco diretamente.
 - API é a única fronteira de autorização; frontends não contêm regra de acesso.
-- Nenhum dado clínico é modelado, transmitido ou armazenado.
+- Nenhum dado clínico é modelado, transmitido ou armazenado; proibido diagnóstico
+  automático ou decisão de saúde por IA.
 - Segredos apenas via variáveis de ambiente; nunca comitados (checagem no PR).

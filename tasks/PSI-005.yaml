@@ -1,22 +1,32 @@
 id: PSI-005
-title: "packages/contracts: fundação de contratos Zod"
+title: "packages/contracts: OpenAPI base e codegen TypeScript"
 project: contracts
 shared_change: true
-branch: "agent/psi-005-contracts-zod"
-commit_message: "feat(contracts): fundação de contratos zod [PSI-005]"
-pr_title: "PSI-005: packages/contracts — fundação de contratos Zod"
+branch: "agent/psi-005-contracts-openapi-ts"
+commit_message: "feat(contracts): spec openapi 3.1 base e codegen typescript [PSI-005]"
+pr_title: "PSI-005: packages/contracts — OpenAPI base e codegen TypeScript"
 description: |
-  Cria o pacote @psiops/contracts em packages/contracts, a fonte única de
-  verdade dos contratos de dados do PsiOps, definidos com Zod. Esta
-  fundação cobre três módulos: common (ids UUID, paginação, datas ISO e
-  dinheiro em BRL representado em centavos como inteiro, evitando erros
-  de ponto flutuante em valores financeiros), auth (registro, login,
-  tokens e sessão da psicóloga) e lead (captura da lista de espera da
-  landing: nome, WhatsApp com máscara brasileira e email). Todos os tipos
-  TypeScript inferidos dos schemas são exportados, permitindo que api,
-  landing e demais apps compartilhem tipagem sem duplicação. Cada schema
-  possui testes Vitest cobrindo casos válidos e inválidos, documentando o
-  comportamento esperado das validações.
+  Cria o pacote @psiops/contracts com a especificação OpenAPI 3.1 como fonte
+  única de verdade dos contratos entre frontend (landing/clinic), mobile e o
+  backend Spring Boot. Nesta tarefa entram a spec base e o primeiro alvo de
+  codegen (TypeScript); Java e Dart chegam na PSI-006.
+
+  A especificação é modular: um arquivo raiz que referencia arquivos de
+  components organizados por domínio, cobrindo:
+
+  - common: envelope de erro Problem Details (RFC 9457), parâmetros e schemas
+    de paginação, representação de dinheiro em BRL como inteiro em centavos
+    (nunca float) e datas/horas em ISO 8601;
+  - auth: register, login, refresh de token e consulta de sessão corrente;
+  - lead: captura de lista de espera da landing page com nome, WhatsApp em
+    formato brasileiro e e-mail.
+
+  O codegen TypeScript (ex.: openapi-typescript) gera tipos comitados em
+  packages/contracts/gen/ts, expostos nos exports do pacote. Um script
+  "generate" regenera tudo, e um teste de drift regenera e falha se
+  "git diff --exit-code" acusar diferença — garantindo que gen/ nunca
+  dessincroniza da spec. A spec passa por lint (Redocly CLI ou Spectral) e o
+  pacote inclui testes básicos validando os tipos gerados.
 dependencies:
   - "PSI-002"
 allowed_paths:
@@ -25,29 +35,38 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "O pacote @psiops/contracts existe em packages/contracts, usa Zod e consome as configurações de @psiops/config via workspace:*"
-  - "Módulo common define schemas de id UUID, paginação, datas ISO e dinheiro BRL em centavos como inteiro (valores não inteiros ou negativos indevidos são rejeitados)"
-  - "Módulo auth define schemas de registro, login, tokens e sessão"
-  - "Módulo lead define o schema de captura de lista de espera com nome, whatsapp no formato de máscara brasileira e email"
-  - "O schema de whatsapp rejeita números fora do padrão brasileiro esperado e o de email rejeita endereços inválidos"
-  - "Todos os tipos inferidos (z.infer) são exportados junto aos schemas"
-  - "Cada schema possui testes Vitest com ao menos um caso válido e casos inválidos representativos"
-  - "pnpm --filter @psiops/contracts test executa com todos os testes passando"
-  - "pnpm --filter @psiops/contracts typecheck executa sem erros"
+  - "Especificação OpenAPI 3.1 modular: arquivo raiz + arquivos de components referenciados via $ref, organizados por domínio (common, auth, lead)"
+  - "common define: erros no formato Problem Details (RFC 9457), schemas/parâmetros de paginação, dinheiro BRL como inteiro em centavos e datas ISO 8601"
+  - "auth define operações de register, login, refresh e sessão corrente com schemas de request/response completos"
+  - "lead define a captura de lista de espera com nome, whatsapp brasileiro (com pattern documentado) e email (format: email)"
+  - "Tipos TypeScript gerados e comitados em packages/contracts/gen/ts, exportados pelo package.json do pacote"
+  - "Script \"generate\" regenera os tipos de forma determinística (mesmo input produz mesmo output)"
+  - "Teste de drift: regenerar e rodar git diff --exit-code sobre gen/ falha o build se houver dessincronização"
+  - "Lint da spec (Redocly CLI ou Spectral) passa sem erros e roda via script do pacote"
+  - "Testes básicos do pacote (compilação/uso dos tipos gerados) passam via Vitest"
 validation_commands:
+  - "pnpm install"
+  - "pnpm --filter @psiops/contracts lint"
+  - "pnpm --filter @psiops/contracts generate"
   - "pnpm --filter @psiops/contracts test"
-  - "pnpm --filter @psiops/contracts typecheck"
 risks:
-  - "Definições de dinheiro em centavos precisam ser respeitadas por todos os consumidores; qualquer conversão implícita para reais com decimais reintroduz erros de arredondamento"
-  - "Regras de validação do WhatsApp muito estritas podem rejeitar números legítimos (ex.: variações com/sem nono dígito ou DDI)"
-  - "Mudanças futuras nesses schemas quebram api e landing simultaneamente por serem contratos compartilhados"
+  - "Modelagem imprecisa de dinheiro/WhatsApp agora se propaga para três linguagens depois (TS, Java, Dart); revisão cuidadosa dos schemas comuns é crítica"
+  - "Versão flutuante do gerador pode produzir output diferente entre máquinas e disparar falso positivo no teste de drift — fixar versão exata"
+  - "Escolhas de nomenclatura (snake_case vs camelCase nos payloads) são difíceis de reverter após consumo pelos apps"
 out_of_scope:
-  - "Contratos do domínio clínico — pacientes, sessões, mensalidades (ficam na PSI-019)"
-  - "Persistência ou modelos Prisma (PSI-006)"
-  - "Integração dos contratos com endpoints da API (PSI-010)"
+  - "Codegen Java e Dart (PSI-006)"
+  - "Contratos do domínio clínico/financeiro (pacientes, mensalidades, cobranças) — planejados para tarefa futura (PSI-020)"
+  - "Implementação de qualquer endpoint no apps/api"
+  - "Publicação da spec como documentação hospedada"
 assumptions:
-  - "A máscara brasileira de WhatsApp segue o formato (XX) XXXXX-XXXX usado na landing de referência; aceitar também o valor sem máscara é decisão registrada no próprio schema, mas o formato mascarado é o contrato principal"
-  - "Datas ISO referem-se a strings no formato ISO 8601 validadas pelo Zod, sem imposição de timezone específico"
+  - "openapi-typescript é o gerador TS de referência; alternativa equivalente é aceitável se documentada no README do pacote"
+  - "Payloads usam camelCase, alinhado ao padrão dos DTOs Java e modelos Dart gerados"
+  - "Autenticação será baseada em bearer token JWT (esquema http/bearer nos securitySchemes)"
 open_questions:
-  - "PSI-019 é referenciada como destino dos contratos clínicos, mas não faz parte deste lote; a divisão exata do domínio clínico deve ser confirmada quando essa tarefa for especificada"
+  - "O refresh token trafega no corpo da resposta ou em cookie httpOnly? Assumido corpo da resposta até definição de produto/segurança"

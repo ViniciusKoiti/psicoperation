@@ -1,24 +1,31 @@
 id: PSI-022
-title: "api: módulo de pacientes"
+title: "api: autenticação e autorização"
 project: api
 shared_change: false
-branch: "agent/psi-022-api-pacientes"
-commit_message: "feat(api): módulo de pacientes multi-tenant [PSI-022]"
-pr_title: "PSI-022: api: módulo de pacientes"
+branch: "agent/psi-022-auth-jwt"
+commit_message: "feat(api): implementa autenticação JWT com refresh e rate-limit [PSI-022]"
+pr_title: "PSI-022: api: autenticação e autorização"
 description: |
-  Implementa o módulo de pacientes da API NestJS, o cadastro central sobre o
-  qual agenda, registros administrativos e financeiro se apoiam. Entrega o
-  CRUD de pacientes estritamente escopado à psicóloga autenticada: todo
-  acesso a dados carrega o userId extraído do token em toda query (leitura,
-  escrita, contagem), garantindo isolamento multi-tenant no nível da camada
-  de dados e não apenas nos controllers. Inclui listagem paginada com busca
-  por nome e arquivamento lógico em vez de exclusão física, preservando o
-  histórico financeiro e de agenda vinculado à paciente. Toda validação de
-  entrada e forma de saída usa exclusivamente os schemas de paciente de
-  @psiops/contracts, sem DTOs duplicados. A tarefa consome @psiops/database
-  como está: não altera schema, migrations nem qualquer arquivo de
-  packages/contracts ou packages/database.
+  Implementa autenticação e autorização em apps/api usando Spring Security em
+  modo stateless com JWT, conforme os contratos de packages/contracts (DTOs
+  consumidos de gen/java, nunca redefinidos na API).
+
+  Endpoints register/login/refresh conforme o contrato: registro cria a conta
+  da psicóloga com senha em BCrypt; login emite par access+refresh token;
+  refresh rotaciona o refresh token (o token usado é invalidado e um novo par é
+  emitido), mitigando reuso de tokens vazados. Rate-limit aplicado ao login
+  para conter força bruta.
+
+  O contexto do usuário autenticado (userId) fica disponível de forma tipada
+  para os demais módulos (ex.: resolver de argumento ou acesso ao
+  SecurityContext encapsulado), pois todo o sistema é multi-tenant estrito por
+  userId — este é o alicerce do isolamento usado por PSI-023 em diante.
+
+  Cobertura de testes com MockMvc + Testcontainers: fluxo feliz completo
+  (register → login → acesso autenticado → refresh), credenciais inválidas,
+  requisição sem token retornando 401 e rotação de refresh.
 dependencies:
+  - "PSI-011"
   - "PSI-021"
 allowed_paths:
   - "apps/api/**"
@@ -31,38 +38,32 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "CRUD de pacientes (criar, ler, listar, atualizar) disponível apenas para usuária autenticada; todas as rotas passam pelo guard global da PSI-021"
-  - "Toda query ao banco (busca, listagem, detalhe, atualização, arquivamento, contagem) filtra por userId da psicóloga autenticada, sem exceção"
-  - "Acessar ou alterar paciente de outra usuária retorna 404 (não 403), sem revelar a existência do registro"
-  - "Listagem é paginada com parâmetros validados pelos contratos e retorna metadados de paginação (total, página, tamanho)"
-  - "Busca por nome funciona de forma case-insensitive e combina com a paginação"
-  - "Arquivamento marca a paciente como arquivada em vez de excluir fisicamente; pacientes arquivadas ficam fora da listagem padrão e podem ser incluídas via filtro explícito"
-  - "Entrada e saída validadas exclusivamente pelos schemas de paciente de @psiops/contracts; payload inválido retorna 400 com detalhes de validação"
-  - "Testes cobrem o CRUD completo, paginação, busca, arquivamento e o caso de isolamento multi-tenant: usuária A não vê nem altera paciente da usuária B"
+  - "Endpoints de register, login e refresh implementados exatamente conforme os contratos, consumindo DTOs de gen/java sem redefini-los"
+  - "Spring Security configurado stateless (sem sessão) com filtro JWT validando access token em toda rota protegida"
+  - "Senhas armazenadas com BCrypt; nenhuma senha ou hash exposto em respostas ou logs"
+  - "Refresh token com rotação: cada uso invalida o token anterior e emite novo par access+refresh; reuso de refresh invalidado é rejeitado"
+  - "Rate-limit aplicado ao endpoint de login com resposta adequada ao exceder o limite"
+  - "userId do usuário autenticado disponível para os módulos via mecanismo único e documentado no código"
+  - "Testes MockMvc + Testcontainers cobrindo: fluxo feliz, credenciais inválidas, 401 sem token e fluxo de refresh (incluindo rotação)"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/api lint"
-  - "pnpm --filter @psiops/api typecheck"
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api test:e2e"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Uma única query sem filtro de userId quebra o isolamento multi-tenant e expõe dados de pacientes entre psicólogas — o risco mais grave do módulo"
-  - "Exclusão física acidental (em vez de arquivamento) romperia vínculos com mensalidades e consultas históricas"
-  - "Busca por nome sem índice adequado pode degradar com bases grandes; limitação deve ser conhecida, não resolvida aqui"
-  - "Divergência em relação aos schemas de @psiops/contracts quebra o clinic, que usa os mesmos contratos nos adapters mock"
+  - "Erros na configuração do Spring Security podem expor rotas protegidas ou bloquear as públicas (ex.: /leads da PSI-028); a cadeia de filtros deve ser testada nos dois sentidos"
+  - "Estratégia de armazenamento/invalidação de refresh tokens precisa de suporte no schema; se exigir tabela nova, há conflito com a imutabilidade das migrations (ver open_questions)"
+  - "Rate-limit em memória não compartilha estado entre instâncias; aceitável para o MVP single-instance, mas deve ser registrado"
+  - "Segredos JWT precisam vir de configuração externa; segredo hardcoded é falha de segurança"
 out_of_scope:
-  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
-  - "Exclusão física de pacientes ou rotina de purga de dados (LGPD) — apenas arquivamento lógico"
-  - "Qualquer campo ou registro clínico (diagnóstico, evolução, conteúdo terapêutico)"
-  - "Importação em lote de pacientes"
-  - "Telas de pacientes no clinic"
-  - "Instalação de novas dependências no workspace"
+  - "Recuperação de senha e verificação de e-mail"
+  - "Novas migrations Flyway (estrutura de usuários/tokens deve existir a partir de PSI-010/PSI-021)"
+  - "Alterações em packages/contracts"
+  - "Autorização por papéis/perfis (o MVP tem um único perfil: a psicóloga dona da conta)"
+  - "Login social/OAuth"
 assumptions:
-  - "O modelo de paciente em @psiops/database já possui os campos necessários, incluindo o marcador de arquivamento e o vínculo com a usuária dona"
-  - "Os schemas de paciente (criação, atualização, listagem paginada, filtros) já existem em @psiops/contracts"
-  - "Retornar 404 para recurso de outro tenant é o comportamento padrão do projeto para não vazar existência de dados"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+  - "As tabelas de usuários e de refresh tokens (ou estrutura equivalente) já existem nas migrations V1/V2; se faltar suporte, a lacuna deve ser reportada em vez de criar migration nesta tarefa"
+  - "Rate-limit implementado em memória (ex.: Bucket4j ou equivalente), adequado ao deploy single-instance do MVP; dependências Maven podem ser adicionadas ao pom.xml de apps/api"
+  - "Tempo de vida dos tokens configurável via application.yml, com defaults curtos para access (minutos) e mais longos para refresh (dias)"
 open_questions:
-  - "Conjunto exato de campos cadastrais da paciente (ex.: telefone/WhatsApp, email) segue o contrato existente; se o contrato estiver incompleto para o CRUD, registrar bloqueio em vez de estender packages/contracts"
+  - "Se o schema existente não comportar rotação de refresh tokens, a criação da migration deve ser tratada em tarefa própria (migrations são proibidas em shared_change:false)"

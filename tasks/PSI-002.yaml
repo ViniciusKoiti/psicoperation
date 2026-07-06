@@ -3,18 +3,26 @@ title: "packages/config: configurações compartilhadas"
 project: config
 shared_change: true
 branch: "agent/psi-002-packages-config"
-commit_message: "feat(config): configurações compartilhadas do workspace [PSI-002]"
+commit_message: "feat(config): pacote @psiops/config com presets compartilhados [PSI-002]"
 pr_title: "PSI-002: packages/config — configurações compartilhadas"
 description: |
-  Cria o pacote @psiops/config em packages/config, centralizando as
-  configurações de tooling compartilhadas por todos os apps e packages do
-  monorepo. O pacote exporta: um tsconfig base consumível via extends
-  (apoiado no tsconfig.base.json da raiz), uma ESLint flat config, uma
-  configuração de Prettier e um preset de Vitest. Os demais workspaces
-  consomem o pacote via protocolo workspace:*, evitando duplicação de
-  regras e garantindo que mudanças de estilo/qualidade sejam aplicadas de
-  forma uniforme. O próprio pacote deve passar em lint e typecheck para
-  servir de referência de conformidade.
+  Cria o pacote @psiops/config, ponto único de verdade para as configurações
+  de tooling do lado JavaScript/TypeScript do monorepo. Todo pacote/app JS
+  criado depois desta tarefa deve consumir estes presets via dependência
+  workspace:* em vez de duplicar configuração.
+
+  Entregas do pacote:
+  - tsconfig base exportável (estendendo o tsconfig.base.json da raiz),
+    consumível via "extends" pelos demais pacotes;
+  - ESLint em flat config (eslint.config.js exportado como preset composável),
+    com regras para TypeScript e React;
+  - configuração Prettier compartilhada (exportada como objeto/arquivo
+    referenciável no campo "prettier" dos consumidores);
+  - preset Vitest reutilizável com defaults sensatos (ambiente, globals,
+    cobertura) para os pacotes que testam com Vitest.
+
+  O próprio pacote deve ser exemplo de consumo: lint e typecheck do
+  @psiops/config rodam usando as configurações que ele exporta.
 dependencies:
   - "PSI-001"
 allowed_paths:
@@ -23,28 +31,35 @@ allowed_paths:
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "O pacote @psiops/config existe em packages/config e é reconhecido como workspace pelo pnpm"
-  - "Exporta um tsconfig base consumível por outros pacotes via extends"
-  - "Exporta uma ESLint flat config pronta para ser importada pelos demais workspaces"
-  - "Exporta uma configuração de Prettier reutilizável"
-  - "Exporta um preset de Vitest reutilizável pelos pacotes que definirem testes"
-  - "Os exports do package.json do pacote apontam corretamente para cada configuração publicada"
-  - "O pacote é consumível via workspace:* por outros workspaces do monorepo"
+  - "Pacote @psiops/config existe em packages/config com package.json válido dentro do workspace pnpm"
+  - "Exporta um tsconfig base consumível via \"extends\" por outros pacotes do monorepo"
+  - "Exporta um preset ESLint em flat config (formato eslint 9+), composável pelos consumidores"
+  - "Exporta configuração Prettier compartilhada referenciável pelos consumidores"
+  - "Exporta um preset Vitest reutilizável (defaults de ambiente e cobertura)"
+  - "Todos os exports são consumíveis por dependência workspace:* sem etapa de build obrigatória (ou com build documentado nos scripts do pacote)"
   - "pnpm --filter @psiops/config lint executa sem erros"
   - "pnpm --filter @psiops/config typecheck executa sem erros"
 validation_commands:
+  - "pnpm install"
   - "pnpm --filter @psiops/config lint"
   - "pnpm --filter @psiops/config typecheck"
 risks:
-  - "Regras de ESLint muito agressivas neste pacote geram atrito em todas as tarefas seguintes que o consomem"
-  - "Divergência entre a flat config do ESLint e plugins esperados por frameworks (Next.js, NestJS) pode exigir overrides locais nos apps"
-  - "Erro no mapa de exports do package.json quebraria o consumo por extends/import em todos os workspaces dependentes"
+  - "Preset ESLint flat config incompatível com a versão do ESLint fixada pelos consumidores futuros — fixar peerDependencies com cuidado"
+  - "Acoplamento excessivo: regras muito rígidas no preset podem travar apps futuros (landing/clinic) em decisões prematuras"
+  - "Exports mal declarados (campo \"exports\" do package.json) podem quebrar resolução em consumidores ESM/CJS"
 out_of_scope:
-  - "Aplicar as configurações aos demais apps/packages (cada tarefa de scaffold consome o pacote por conta própria)"
-  - "Configuração de CI (PSI-004)"
-  - "Tokens de design ou temas visuais (PSI-007)"
+  - "Configurações para Java (apps/api) e Flutter (apps/mobile) — os presets cobrem apenas o lado JS/TS"
+  - "Criação de pacotes consumidores"
+  - "Regras de CI (PSI-004)"
 assumptions:
-  - "O tsconfig base do pacote estende o tsconfig.base.json da raiz criado na PSI-001, mantendo strict"
-  - "Não havendo testes especificados para este pacote, a validação se limita a lint e typecheck conforme o enunciado"
+  - "ESLint 9+ (flat config nativo) é o alvo; não haverá suporte a .eslintrc legado"
+  - "Vitest é o runner padrão de todos os pacotes/apps JS do monorepo"
+  - "O pacote é privado (private: true) e nunca será publicado em registry externo"
 open_questions: []

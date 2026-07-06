@@ -1,28 +1,35 @@
 id: PSI-024
-title: "api: registros administrativos de consulta"
+title: "api: módulo de agenda"
 project: api
 shared_change: false
-branch: "agent/psi-024-api-registros-administrativos"
-commit_message: "feat(api): registros administrativos de consulta [PSI-024]"
-pr_title: "PSI-024: api: registros administrativos de consulta"
+branch: "agent/psi-024-modulo-agenda"
+commit_message: "feat(api): implementa módulo de agenda com detecção de conflito [PSI-024]"
+pr_title: "PSI-024: api: módulo de agenda"
 description: |
-  Implementa na API NestJS o registro administrativo vinculado a consulta:
-  para cada consulta a psicóloga pode registrar o desfecho administrativo
-  (compareceu, faltou ou remarcada) e anotações estritamente administrativas
-  e não clínicas (ex.: combinados de pagamento, ajuste de horário). Inclui
-  histórico paginado por paciente para consulta rápida do comportamento de
-  comparecimento. Restrição de produto explícita e inegociável: este módulo
-  NÃO possui campos de diagnóstico, evolução clínica ou conteúdo
-  terapêutico — o PsiOps é uma ferramenta financeira/administrativa e não
-  um prontuário; essa restrição deve estar registrada em comentário/doc do
-  módulo e refletida nos contratos consumidos. Igualmente proibido
-  introduzir qualquer diagnóstico automático, recomendação clínica ou
-  decisão de saúde por IA. Toda validação usa exclusivamente os schemas de
-  @psiops/contracts, sem DTOs duplicados; a tarefa consome @psiops/database
-  como está, sem alterar schema ou migrations.
+  Implementa o módulo de agenda/consultas em apps/api conforme os contratos da
+  PSI-020 (DTOs de gen/java), escopado ao userId autenticado em toda query.
+
+  Funcionalidades:
+  - CRUD de consultas com horário, duração e status.
+  - Detecção de conflito de horário: criação/remarcação que sobreponha outra
+    consulta ativa do mesmo usuário retorna 409 no formato Problem Details,
+    conforme o contrato.
+  - Recorrência semanal simples: consultas que se repetem semanalmente no
+    mesmo dia/horário. Decisão de implementação registrada neste manifesto
+    (ver assumptions) e reafirmada no PR: ocorrências materializadas em um
+    horizonte fixo, vinculadas por identificador de série.
+  - Listagem por intervalo de datas (visões de dia/semana/mês do cliente).
+  - Remarcação e cancelamento com transição de status adequada (consulta
+    remarcada/cancelada libera o horário para novos agendamentos).
+
+  Eventos de domínio relevantes (consulta criada, remarcada, cancelada) são
+  publicados via Axon Framework (agregados state-stored, event store JPA),
+  permitindo que a PSI-029 agende lembretes por deadline.
+
+  Testes cobrem detecção de conflito (sobreposição total, parcial e de borda),
+  limites de intervalo na listagem, recorrência e isolamento entre tenants.
 dependencies:
   - "PSI-022"
-  - "PSI-023"
 allowed_paths:
   - "apps/api/**"
 forbidden_paths:
@@ -34,37 +41,33 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Registro administrativo pode ser criado vinculado a uma consulta existente da própria psicóloga, com desfecho compareceu/faltou/remarcada e anotações administrativas opcionais"
-  - "Tentativa de registrar em consulta inexistente ou de outra usuária retorna 404; escopo por userId em toda query"
-  - "Registro pode ser atualizado (corrigir desfecho ou anotação) mantendo o vínculo com a consulta"
-  - "Histórico de registros por paciente é paginado, ordenado do mais recente para o mais antigo, e escopado à psicóloga autenticada"
-  - "Os payloads aceitos não contêm nenhum campo de diagnóstico, evolução clínica ou conteúdo terapêutico; a restrição está documentada no módulo e campos extras no payload são rejeitados pela validação dos contratos"
-  - "Nenhuma funcionalidade de diagnóstico automático, recomendação clínica ou decisão de saúde por IA é introduzida"
-  - "Entrada e saída validadas exclusivamente pelos schemas de @psiops/contracts; payload inválido retorna 400"
-  - "Testes cobrem criação para cada desfecho, atualização, histórico paginado por paciente, isolamento entre tenants e rejeição de payload com campos não previstos"
+  - "CRUD de consultas conforme os contratos, consumindo DTOs de gen/java, escopado ao userId em toda query"
+  - "Conflito de horário detectado na criação e na remarcação retorna 409 com corpo Problem Details (application/problem+json) conforme o contrato"
+  - "Consultas canceladas/remarcadas não contam como conflito para novos agendamentos"
+  - "Recorrência semanal simples implementada, com a decisão (materialização vs regra) registrada no manifesto e no PR"
+  - "Listagem por intervalo de datas com paginação conforme o contrato; consultas de borda do intervalo tratadas de forma consistente e testada"
+  - "Remarcação e cancelamento implementados com transições de status corretas"
+  - "Eventos de domínio de consulta publicados via Axon e persistidos no event store JPA"
+  - "Testes de conflito (sobreposição total, parcial, encostando na borda), de limites de intervalo e de isolamento entre tenants"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/api lint"
-  - "pnpm --filter @psiops/api typecheck"
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api test:e2e"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Anotações em texto livre podem ser usadas na prática para conteúdo clínico; a mitigação disponível é documentação e comunicação de produto, não validação técnica — limitação deve ficar registrada"
-  - "Desalinhamento entre desfecho administrativo (faltou/remarcada) e o status da consulta na agenda (PSI-023) pode gerar dados contraditórios; a relação entre os dois deve ser definida e documentada"
-  - "Validação permissiva (sem rejeitar campos extras) abriria brecha para armazenar dados sensíveis não previstos"
+  - "Detecção de conflito com condição de corrida entre requisições concorrentes; mitigar com verificação transacional e/ou constraint adequada existente no schema"
+  - "Materialização de recorrência gera volume de linhas e exige estratégia de extensão do horizonte (tratada como limitação registrada, não resolvida aqui)"
+  - "Regras de sobreposição de intervalo com timezone incorreto geram falsos positivos/negativos; padronizar armazenamento em UTC"
+  - "Edição de uma série recorrente (uma ocorrência vs série inteira) é fonte clássica de ambiguidade; escopo limitado ao definido no contrato"
 out_of_scope:
-  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
-  - "Prontuário eletrônico, evolução clínica, diagnóstico ou qualquer registro terapêutico"
-  - "Qualquer recurso de IA sobre os registros (resumo, classificação, recomendação)"
-  - "Efeitos financeiros automáticos do desfecho (ex.: cobrar falta) — o financeiro é tratado na PSI-025"
-  - "Telas de registros no clinic"
-  - "Instalação de novas dependências no workspace"
+  - "Lembretes de consulta e envio de e-mail (PSI-027 e PSI-029)"
+  - "Registros administrativos de consulta (PSI-025)"
+  - "Recorrências complexas (quinzenal, mensal, regras RRULE completas)"
+  - "Integração com calendários externos (Google Calendar etc.)"
+  - "Novas migrations Flyway e alterações em packages/contracts"
 assumptions:
-  - "O modelo de registro administrativo em @psiops/database já existe com desfecho, anotação e vínculos a consulta e paciente"
-  - "Os schemas correspondentes já existem em @psiops/contracts, com validação estrita que rejeita campos desconhecidos"
-  - "Um registro administrativo por consulta é o caso base; se o contrato permitir múltiplos, a implementação segue o contrato"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+  - "Decisão registrada: recorrência semanal materializada como ocorrências individuais em horizonte fixo (ex.: 12 semanas), vinculadas por series_id, pois simplifica conflito, listagem e remarcação pontual; a extensão automática do horizonte fica para tarefa futura"
+  - "Horários armazenados em UTC; o fuso da psicóloga é preocupação de apresentação do cliente"
+  - "Conflito considera apenas consultas do próprio usuário (agenda é por psicóloga)"
 open_questions:
-  - "O desfecho remarcada deve refletir ou disparar automaticamente a remarcação na agenda (PSI-023) ou é apenas informativo? Implementar como informativo e registrar a decisão até validação de produto"
+  - "Cancelar/remarcar uma consulta de série deve afetar somente a ocorrência ou oferecer opção de série inteira? Implementado o que o contrato da PSI-020 previr; se o contrato for omisso, somente a ocorrência"

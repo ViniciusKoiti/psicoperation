@@ -1,26 +1,33 @@
 id: PSI-030
-title: "clinic: dashboard"
+title: "clinic: autenticação e sessão"
 project: clinic
 shared_change: false
-branch: "agent/psi-030-clinic-dashboard"
-commit_message: "feat(clinic): dashboard com visão do dia [PSI-030]"
-pr_title: "PSI-030: clinic: dashboard"
+branch: "agent/psi-030-autenticacao-sessao"
+commit_message: "feat(clinic): autenticação e sessão com adapters mock/http [PSI-030]"
+pr_title: "PSI-030: clinic — autenticação e sessão"
 description: |
-  Implementa a tela inicial do app clinic: um dashboard com a visão do dia
-  da psicóloga. A tela reúne as próximas consultas do dia, as pendências
-  financeiras (mensalidades atrasadas e pendentes, com valores em centavos
-  formatados em BRL), as tarefas do dia e atalhos de ação rápida para os
-  fluxos mais frequentes. Todos os dados chegam por adapters mock
-  (consultas, financeiro, tarefas) que respeitam exatamente os schemas de
-  @psiops/contracts — nenhuma chamada à API real nesta fase; a integração
-  acontece na PSI-039. Cada bloco do dashboard define explicitamente seus
-  estados de carregamento (skeletons) e vazio (mensagem orientativa com
-  ação sugerida), de modo que a tela seja útil tanto para conta recém-criada
-  quanto para conta com dados. A construção usa Mantine com os tokens de
-  design de @psiops/ui e é rota protegida atrás da sessão da PSI-028.
-  Nenhuma dependência nova é instalada.
+  Implementa o fluxo de autenticação do app clinic (Vite + React + Mantine):
+  telas de login e registro construídas com componentes Mantine tematizados
+  pelos tokens de @psiops/ui, gerenciamento de sessão no client e proteção
+  de rotas.
+
+  A validação client-side dos formulários é derivada dos contratos de auth —
+  os tipos gerados em packages/contracts/gen/ts são a única fonte para os
+  DTOs de request/response (nenhum DTO é redeclarado no app). O access token
+  vive apenas em memória (nunca em localStorage/sessionStorage) e o refresh
+  é transparente: ao expirar ou receber 401, a camada de sessão tenta renovar
+  o token e repete a operação sem intervenção do usuário; se o refresh falhar,
+  a sessão é encerrada e o usuário é redirecionado para o login.
+
+  Todo acesso a dados passa por um AuthAdapter tipado com duas implementações:
+  MockAuthAdapter (memória, padrão em dev/test, com usuário semente e
+  simulação de expiração de token) e HttpAuthAdapter (tipado contra os
+  contratos, apontando para a API Spring Boot, porém sem uso real nesta fase —
+  a integração completa acontece só na PSI-044). A escolha entre mock e http
+  ocorre por variável de ambiente em um único ponto de composição do app,
+  e o build de produção nunca embarca o mock como padrão ativo.
 dependencies:
-  - "PSI-028"
+  - "PSI-012"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -32,38 +39,34 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Dashboard é a tela inicial autenticada e exibe: próximas consultas do dia (horário, paciente, status), pendências financeiras (mensalidades atrasadas e pendentes com totais em BRL) e tarefas do dia"
-  - "Atalhos de ação rápida estão presentes para os fluxos frequentes (ex.: nova consulta, nova paciente, registrar pagamento), navegando para as rotas correspondentes mesmo que ainda sejam placeholders"
-  - "Todos os dados vêm de adapters mock (agenda, financeiro, tarefas) tipados e conformes aos schemas de @psiops/contracts; nenhuma chamada HTTP real"
-  - "Cada bloco possui estado de carregamento próprio (skeleton) exibido enquanto o adapter resolve"
-  - "Cada bloco possui estado vazio bem definido com mensagem orientativa (ex.: sem consultas hoje, nenhuma pendência financeira, sem tarefas), distinto do estado de carregamento"
-  - "Valores monetários são recebidos em centavos e formatados em BRL apenas na apresentação"
-  - "Construção com Mantine seguindo os tokens de @psiops/ui; rota protegida pela sessão da PSI-028"
-  - "Testes cobrem: renderização com dados mock, estados de carregamento, estados vazios de cada bloco e navegação dos atalhos rápidos"
+  - "Telas de login e registro implementadas com Mantine e tema dos tokens @psiops/ui, com textos em pt-BR"
+  - "Validação client-side dos formulários consistente com os contratos de auth, usando exclusivamente os tipos de packages/contracts/gen/ts (nenhum DTO duplicado em apps/clinic)"
+  - "Access token mantido apenas em memória; nenhum token persiste em localStorage, sessionStorage ou cookies gerenciados pelo app"
+  - "Refresh transparente: expiração/401 dispara renovação automática da sessão e repetição da operação; falha no refresh encerra a sessão e redireciona ao login"
+  - "Rotas protegidas redirecionam usuário não autenticado para /login preservando a rota de destino para retorno pós-login"
+  - "Interface AuthAdapter tipada com MockAuthAdapter (padrão em dev/test) e HttpAuthAdapter tipado contra os contratos, sem chamadas reais habilitadas nesta tarefa"
+  - "Seleção mock/http por variável de ambiente concentrada em um único ponto de composição; build de produção não seleciona o mock por padrão"
+  - "Testes cobrem com o mock: login com sucesso, credenciais inválidas, registro, refresh transparente, logout e redirecionamento de rota protegida"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Adapters mock que divergem dos contratos criam um dashboard que quebra na integração real (PSI-039); a conformidade com os schemas é o ponto crítico"
-  - "Definição de dia (timezone da usuária) aplicada de forma inconsistente entre os blocos pode mostrar consultas ou tarefas do dia errado"
-  - "Atalhos rápidos apontando para fluxos ainda inexistentes podem gerar becos sem saída; destinos placeholder devem ser explícitos"
-  - "Formatação monetária local (BRL) feita fora de um utilitário único tende a divergir entre blocos"
+  - "Token apenas em memória implica perda de sessão em refresh de página; sem endpoint de refresh via cookie httpOnly funcional (só na PSI-044), o comportamento pós-reload precisa ficar explícito nos testes"
+  - "Divergência entre a validação client-side e as regras dos contratos gera retrabalho na integração real — mitigado usando os tipos gerados como fonte única"
+  - "Fila de requisições durante o refresh pode gerar condições de corrida (múltiplos 401 simultâneos disparando refreshes paralelos)"
+  - "Se o mock vazar para o build de produção, usuários poderiam autenticar contra dados falsos — a seleção por env precisa ser verificável no bundle"
 out_of_scope:
-  - "Integração com API real (somente na PSI-039)"
-  - "Alterar packages/contracts, packages/database ou packages/ui"
-  - "Telas completas de agenda, pacientes, financeiro e tarefas (os atalhos apenas navegam)"
-  - "Gráficos, relatórios e indicadores históricos de faturamento"
-  - "Qualquer recomendação automática ou insight de IA sobre os dados"
-  - "Instalação de novas dependências no workspace"
+  - "Integração real com a API Spring Boot (PSI-044)"
+  - "Recuperação de senha, verificação de e-mail e MFA"
+  - "Login social/OAuth"
+  - "Onboarding pós-registro (PSI-031)"
+  - "Alterações em packages/contracts ou regeneração de tipos"
 assumptions:
-  - "Os contratos de agenda, financeiro e tarefas em @psiops/contracts já definem as formas de dados que os adapters mock reproduzem"
-  - "Os adapters mock seguem o mesmo padrão de interface + seleção por env estabelecido na PSI-028 para o AuthAdapter"
-  - "A visão do dia usa o fuso horário do dispositivo da usuária nesta fase"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+  - "O scaffold da PSI-012 já fornece roteamento, test runner e as dependências necessárias (nenhuma dependência nova é instalada)"
+  - "Os contratos de auth (login, registro, refresh, logout) já existem em packages/contracts com tipos gerados em gen/ts"
+  - "O refresh token é tratado pelo transporte definido nos contratos (ex.: cookie httpOnly emitido pelo backend); o app não o armazena manualmente"
 open_questions:
-  - "Priorização e ordem dos blocos do dashboard (consultas vs financeiro vs tarefas) precisam de validação de produto; adotar ordem consultas → financeiro → tarefas e registrar"
-  - "Conjunto exato de atalhos de ação rápida precisa de confirmação de produto"
+  - "Após reload da página, a sessão deve ser retomada via refresh silencioso no bootstrap do app ou o usuário deve autenticar novamente até a PSI-044?"

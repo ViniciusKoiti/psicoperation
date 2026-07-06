@@ -1,26 +1,35 @@
 id: PSI-035
-title: "clinic: organização financeira"
+title: "clinic: agenda e consultas"
 project: clinic
 shared_change: false
-branch: "agent/psi-035-clinic-organizacao-financeira"
-commit_message: "feat(clinic): organização financeira de mensalidades [PSI-035]"
-pr_title: "PSI-035: clinic — organização financeira"
+branch: "agent/psi-035-agenda-consultas"
+commit_message: "feat(clinic): agenda com visões semanal/diária e gestão de consultas [PSI-035]"
+pr_title: "PSI-035: clinic — agenda e consultas"
 description: |
-  Implementa no app clinic o módulo financeiro centrado em mensalidades,
-  proposta de valor principal do PsiOps. Entrega a visão mensal das
-  mensalidades agrupadas por status (em dia, pendente, atrasada) com
-  totais por grupo, a geração das mensalidades do mês a partir dos
-  pacientes ativos, a marcação de mensalidade como paga e uma calculadora
-  de juros simples para cobranças atrasadas. A calculadora deve ter
-  paridade de resultado com o card de calculadora exibido na landing page
-  (project/PsiOps Landing.html), garantindo que o número prometido no
-  marketing seja o mesmo apresentado no produto. Todo o acesso a dados
-  passa por um FinanceAdapter mock em memória fiel aos contratos de
-  @psiops/contracts. Os testes cobrem os cálculos de juros e as
-  transições de estado das mensalidades, que são o núcleo de risco do
-  módulo.
+  Implementa a agenda do app clinic com visões semanal e diária e o ciclo de
+  vida básico de consultas: criar, remarcar e cancelar.
+
+  As visões são construídas com componentes Mantine tematizados pelos tokens
+  @psiops/ui (sem biblioteca de calendário nova — usa o que o scaffold
+  PSI-012 já fornece), com navegação entre semanas/dias e atalho para hoje.
+  A criação de consulta associa paciente, data/hora e duração; a remarcação
+  altera data/hora preservando o vínculo; o cancelamento pede confirmação.
+
+  A detecção de conflito de horário roda no client de forma consistente com
+  a regra dos contratos (a API responde 409 para sobreposição): o app
+  valida a sobreposição antes de submeter e também trata o 409 retornado
+  pelo adapter, exibindo o conflito com a consulta existente. O
+  MockAgendaAdapter reproduz a regra de conflito e devolve o mesmo erro
+  tipado que o HttpAgendaAdapter devolverá, garantindo paridade de
+  comportamento na integração (PSI-044).
+
+  A recorrência semanal simples permite criar uma série de consultas no
+  mesmo dia/horário por N semanas ou até uma data-limite; cada ocorrência é
+  materializada como consulta individual e conflitos são reportados por
+  ocorrência. Datas em ISO 8601 na camada de dados, exibição em pt-BR.
 dependencies:
-  - "PSI-031"
+  - "PSI-030"
+  - "PSI-020"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -32,36 +41,35 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Visão mensal lista as mensalidades do mês selecionado agrupadas por status (em dia, pendente, atrasada), com navegação entre meses"
-  - "Cada grupo exibe o total em reais e a contagem de mensalidades, e há um total geral do mês"
-  - "Ação de gerar mensalidades do mês cria as cobranças dos pacientes ativos, sem duplicar mensalidades já geradas para o mesmo mês"
-  - "Marcar mensalidade como paga atualiza o status e os totais imediatamente, seguindo as transições de estado previstas nos contratos"
-  - "Calculadora de juros simples recebe valor, taxa e dias/meses de atraso e produz resultado idêntico ao card da landing para as mesmas entradas"
-  - "FinanceAdapter mock em memória implementa a interface derivada dos contratos, sem tipos duplicados no app"
-  - "Estados de carregamento, erro e mês sem mensalidades são tratados"
-  - "Testes cobrem o cálculo de juros (incluindo os exemplos do card da landing), a geração idempotente do mês e as transições de status válidas e inválidas"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Visões semanal e diária com navegação entre períodos e atalho para hoje, UI Mantine com tokens @psiops/ui e textos em pt-BR"
+  - "Criar consulta com paciente, data/hora e duração; remarcar alterando data/hora; cancelar com confirmação — tudo via AgendaAdapter tipado"
+  - "Validação client-side de conflito de horário consistente com a regra dos contratos; sobreposição detectada antes do submit exibe a consulta conflitante"
+  - "Resposta 409 do adapter tratada com mensagem de conflito específica (não erro genérico), usando os tipos de erro de packages/contracts/gen/ts"
+  - "MockAgendaAdapter reproduz a regra de conflito e devolve erro tipado equivalente ao 409 da API; padrão em dev/test, sem chamadas HTTP reais"
+  - "Recorrência semanal simples: série no mesmo dia/horário por N semanas ou até data-limite, materializada em consultas individuais com conflitos reportados por ocorrência"
+  - "Estados de carregamento e agenda vazia tratados nas duas visões"
+  - "Testes cobrem criação, remarcação, cancelamento, conflito detectado no client, conflito devolvido pelo adapter (409) e criação recorrente com e sem conflitos"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Erros de arredondamento em cálculo monetário (ponto flutuante) podem quebrar a paridade com a landing e gerar valores de cobrança incorretos"
-  - "Regra de transição de status implementada apenas na UI pode divergir da regra dos contratos consumida pela API real na PSI-039"
-  - "Geração de mensalidades não idempotente criaria cobranças duplicadas, o pior tipo de bug para a confiança da usuária"
+  - "Regra de sobreposição divergente entre client, mock e API real gera comportamento inconsistente na integração — mitigado centralizando a regra em uma função única usada pelo client e pelo mock, derivada dos contratos"
+  - "Recorrência com conflito parcial (algumas ocorrências livres, outras não) tem semântica ambígua: criar as livres e reportar as demais, ou abortar tudo"
+  - "Cálculo de semanas e horário sensível a fuso e horário de verão pode deslocar ocorrências recorrentes"
+  - "Construir grade de calendário sem biblioteca dedicada pode custar mais que o previsto em responsividade e acessibilidade"
 out_of_scope:
-  - "Envio de cobrança ou lembrete por email/WhatsApp (PSI-036 e PSI-038)"
-  - "Integração com meios de pagamento (Pix, boleto, cartão)"
-  - "Integração com a API real (PSI-039)"
-  - "Juros compostos, multas escalonadas ou regras de negociação de dívida"
-  - "Alterar o card de calculadora da landing (project/** é intocável)"
-  - "Instalação de novas dependências"
+  - "Registros administrativos de presença/falta/anotações (PSI-036)"
+  - "Cobrança vinculada à consulta e mensalidades (PSI-037)"
+  - "Lembretes de consulta (PSI-038)"
+  - "Recorrências complexas (quinzenal, mensal, regras de exceção por ocorrência)"
+  - "Visão mensal de calendário"
+  - "Integração real com a API (PSI-044)"
 assumptions:
-  - "A fórmula de juros simples e a representação de valores monetários seguem os DTOs e regras de @psiops/contracts; o card da landing é usado como referência de paridade de resultado, lido mas nunca modificado"
-  - "O status atrasada é derivado da data de vencimento em relação à data corrente, conforme regra expressa nos contratos"
-  - "O valor de cada mensalidade gerada parte do valor de sessão/mensalidade cadastrado no paciente ou do valor padrão das configurações"
+  - "PSI-020 fornece os contratos de agenda/consultas, incluindo o formato de erro 409 de conflito, com tipos em packages/contracts/gen/ts"
+  - "Consultas pertencem a uma única profissional (solo); não há gestão de múltiplas salas ou profissionais"
+  - "Em recorrência com conflito parcial, assume-se criar as ocorrências livres e reportar as conflitantes para decisão da usuária"
 open_questions:
-  - "A geração de mensalidades do mês deve ser disparada apenas manualmente nesta fase, ou também prevista para automação futura?"
+  - "A edição de uma consulta pertencente a série recorrente deve afetar só a ocorrência ou oferecer 'esta e as próximas'? Assumido só a ocorrência até definição de produto"

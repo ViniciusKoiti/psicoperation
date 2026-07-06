@@ -1,28 +1,34 @@
 id: PSI-013
-title: "landing: layout base, navegação e rodapé"
-project: landing
+title: "apps/mobile: scaffold Flutter"
+project: mobile
 shared_change: false
-branch: "agent/psi-013-landing-layout-base"
-commit_message: "feat(landing): layout base, navegação e rodapé [PSI-013]"
-pr_title: "PSI-013: landing: layout base, navegação e rodapé"
+branch: "agent/psi-013-mobile-scaffold"
+commit_message: "feat(mobile): scaffold Flutter com tema de tokens e go_router [PSI-013]"
+pr_title: "PSI-013: apps/mobile: scaffold Flutter"
 description: |
-  Constrói a fundação visual da landing page em apps/landing (Next.js) como
-  componentes semânticos reutilizáveis, seguindo docs/design/landing-page-spec.md.
-  A referência project/PsiOps Landing.html é somente leitura e serve apenas
-  para conferência de fidelidade visual — é proibido converter o HTML da
-  referência diretamente para JSX; a implementação deve ser reconstruída como
-  componentes próprios. Esta tarefa entrega a Nav sticky (com blur e fundo
-  opaco quando scrollY > 12), o Footer de 3 colunas (marca + tagline, links de
-  navegação, links legais) e as primitivas de layout usadas por todas as
-  seções seguintes: Section, Wrap (container centralizado de max-width 1180px),
-  Eyebrow, Pill e os botões primary/ghost/white consumidos via @psiops/ui.
-  O logo é copiado de project/assets para o diretório public do app. O
-  resultado deve ser responsivo (colapso em 920px) e pixel-perfect em relação
-  à referência.
+  Cria o scaffold do app companion mobile (apps/mobile) em Flutter/Dart.
+  O app companion complementa o web da clínica com acesso rápido em
+  movimento; esta tarefa entrega apenas a fundação técnica, sem features
+  de domínio.
+
+  Estrutura organizada por features (lib/features/*), navegação com
+  go_router, e tema Material 3 derivado do tokens.json publicado por
+  packages/ui — cores e tipografia mapeadas dos tokens do design system
+  (primary roxo, accent terracota, neutros quentes, semânticos), com o
+  mapeamento token → ThemeData documentado no código para auditoria de
+  fidelidade visual.
+
+  Os modelos Dart de contratos são consumidos de packages/contracts
+  (gen/dart) via path dependency no pubspec — nenhum modelo de API é
+  redefinido no app. Configuração por ambiente é simples: ambiente dev usa
+  adapters/mocks em memória; não há flavors nativos complexos no MVP
+  (decisão registrada no código). Qualidade garantida por flutter analyze
+  e flutter test verdes, com smoke test de renderização.
 dependencies:
-  - "PSI-009"
+  - "PSI-006"
+  - "PSI-007"
 allowed_paths:
-  - "apps/landing/**"
+  - "apps/mobile/**"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
@@ -32,34 +38,34 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Componentes semânticos reutilizáveis implementados conforme docs/design/landing-page-spec.md, sem cópia direta do HTML da referência para JSX"
-  - "Nav sticky com efeito de blur, tornando-se opaca quando scrollY > 12, com transição fiel à referência"
-  - "Footer de 3 colunas: marca + tagline, links de navegação e links legais"
-  - "Primitivas Section, Wrap (max-width 1180px centralizado), Eyebrow e Pill criadas e reutilizáveis pelas demais seções"
-  - "Botões nas variantes primary, ghost e white consumidos via @psiops/ui (sem duplicar estilos de botão no app)"
-  - "Logo copiado de project/assets para o public do app e referenciado a partir de lá (nenhum asset servido de project/)"
-  - "Layout responsivo com colapso no breakpoint de 920px conforme a referência"
-  - "Fidelidade visual pixel-perfect à referência project/PsiOps Landing.html nas partes cobertas por esta tarefa"
-  - "Testes de componentes cobrindo Nav (estado sticky/opaco), Footer e primitivas"
+  - "Projeto Flutter criado em apps/mobile compatível com o SDK 3.32.x do ambiente, com pubspec.yaml versionado e lockfile do próprio app"
+  - "Estrutura por features implementada em lib/features/* com ao menos uma feature placeholder demonstrando o padrão (apresentação, estado e adapter separados)"
+  - "Navegação configurada com go_router, incluindo rotas nomeadas placeholder e tratamento de rota desconhecida"
+  - "Tema Material 3 (useMaterial3) construído a partir do tokens.json de packages/ui: paleta de cores e tipografia derivadas dos tokens, com documentação no código do mapeamento token → propriedade do ThemeData"
+  - "Modelos Dart de contratos consumidos de packages/contracts/gen/dart via path dependency no pubspec, usados em ao menos um ponto real do código, sem redefinição local de modelos de API"
+  - "Configuração por ambiente implementada de forma simples (ex.: enum/entrypoint por ambiente), com dev usando mocks em memória; decisão de não usar flavors nativos complexos no MVP registrada em comentário/documentação interna do app"
+  - "cd apps/mobile && flutter analyze conclui sem erros nem warnings"
+  - "cd apps/mobile && flutter test passa com smoke test que monta o app e verifica a tela inicial placeholder"
 validation_commands:
-  - "pnpm --filter @psiops/landing test"
-  - "pnpm --filter @psiops/landing build"
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
 risks:
-  - "Fidelidade pixel-perfect depende de fontes (DM Sans, Inter, Fraunces) e tokens corretos; pequenas divergências de tipografia se propagam para todas as seções"
-  - "Comportamento de scroll da Nav depende de listener no cliente; em Next.js é preciso cuidar de hydration/SSR para não gerar mismatch"
-  - "Tentação de copiar o HTML da referência para JSX viola a regra da tarefa e compromete a manutenção dos componentes"
-  - "Primitivas mal dimensionadas (Wrap, Section) forçam retrabalho nas tarefas PSI-014 a PSI-018 que dependem delas"
+  - "O tokens.json de packages/ui pode não cobrir todos os slots exigidos pelo Material 3 (ex.: container/onContainer); lacunas devem ser derivadas com critério documentado, não inventadas ad hoc"
+  - "Path dependency para packages/contracts/gen/dart acopla o app à estrutura do monorepo; caminhos relativos incorretos quebram o build em CI"
+  - "Divergência de versão do Flutter entre ambiente local e CI pode gerar análise/testes inconsistentes; fixar constraint de SDK no pubspec"
+  - "Sem flavors nativos, a separação de ambientes depende de disciplina no entrypoint; risco de configuração de dev vazar para builds de release — mitigar com defaults seguros"
 out_of_scope:
-  - "Seções de conteúdo da landing (hero, problema, solução, como funciona, quote, FAQ, CTA final) — tarefas PSI-014 a PSI-018"
-  - "Formulário de lista de espera (PSI-017)"
-  - "Scroll reveal e composição final da página (PSI-018)"
-  - "Testes E2E com Playwright (PSI-018)"
-  - "Alterações em @psiops/ui ou em qualquer pacote compartilhado"
+  - "Features de domínio (pacientes, mensalidades, cobranças) além de placeholders"
+  - "Integração real com a API (HTTP) — dev usa mocks em memória"
+  - "Flavors nativos Android/iOS, ícones/splash por ambiente e configuração de lojas"
+  - "Push notifications, deep links e autenticação"
+  - "Alterações em packages/ui ou packages/contracts (consumo somente)"
 assumptions:
-  - "PSI-009 deixou apps/landing (Next.js) criado e docs/design/landing-page-spec.md disponível no repositório"
-  - "Ler project/assets para copiar o logo é permitido; a proibição de project/** vale apenas para modificação"
-  - "O filtro pnpm do app é 'landing'"
-open_questions: []
+  - "Flutter 3.32.4 está instalado e disponível no PATH do ambiente de execução"
+  - "PSI-006 publicou tokens.json em packages/ui em formato estável e PSI-007 comitou o codegen Dart em packages/contracts/gen/dart como pacote Dart válido para path dependency"
+  - "O app mobile não participa do workspace pnpm, portanto nenhum arquivo compartilhado do monorepo JS precisa ser alterado"
+open_questions:
+  - "Quais plataformas-alvo o companion deve suportar no MVP (somente Android, ou Android + iOS)?"
+  - "Haverá exigência futura de flavors nativos (ex.: builds de staging distribuídos), o que reabriria a decisão registrada aqui?"

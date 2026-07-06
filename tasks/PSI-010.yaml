@@ -1,55 +1,77 @@
 id: PSI-010
-title: "apps/api: scaffold NestJS"
+title: "apps/api: scaffold Spring Boot 3 + Flyway V1"
 project: api
 shared_change: true
-branch: "agent/psi-010-api-scaffold"
-commit_message: "feat(api): scaffold nestjs [PSI-010]"
-pr_title: "PSI-010: apps/api — scaffold NestJS"
+branch: "agent/psi-010-api-scaffold-spring"
+commit_message: "feat(api): scaffold spring boot 3 com flyway v1 e testcontainers [PSI-010]"
+pr_title: "PSI-010: apps/api — scaffold Spring Boot 3 + Flyway V1"
 description: |
-  Cria o scaffold do app api em apps/api usando NestJS com TypeScript. O
-  ConfigModule valida as variáveis de ambiente na inicialização usando um
-  schema Zod — a aplicação falha rápido, com mensagem clara, quando o env
-  está incompleto ou inválido. Um PrismaModule encapsula o consumo do
-  singleton de @psiops/database, expondo o client para os demais módulos
-  via injeção de dependência e cuidando do ciclo de vida da conexão. O
-  endpoint GET /health responde com o status da aplicação e a versão,
-  servindo de sonda de vida para orquestradores e para o smoke test do
-  ambiente. Um pipe de validação global valida os payloads de entrada com
-  base nos schemas de @psiops/contracts, garantindo que a API rejeite
-  dados fora do contrato antes de chegarem aos handlers. O endpoint
-  /health é coberto por teste e2e com supertest.
+  Cria o esqueleto do backend único do PsiOps em apps/api: Spring Boot 3.3+
+  sobre Java 21, com Maven wrapper comitado (./mvnw) para builds
+  reprodutíveis sem Maven global. O apps/api fica fora do workspace pnpm; o
+  CI (PSI-004) o invoca diretamente via ./mvnw -f apps/api verify.
+
+  Organização do código por módulos de domínio: cada domínio é um pacote
+  Java de topo (ex.: auth, lead, settings) contendo internamente as camadas
+  web (controllers), application (casos de uso), domain (modelo) e
+  persistence (repositórios/entidades JPA). Essa convenção orienta todas as
+  features futuras, incluindo a adoção dos agregados state-stored do Axon
+  Framework nas tarefas de domínio (o event store JPA embutido no
+  PostgreSQL chega junto com o Axon; não há Axon Server).
+
+  Persistência com Spring Data JPA + Flyway: a migration V1__init.sql em
+  apps/api/src/main/resources/db/migration cria as tabelas users, settings
+  e leads, alinhadas aos contratos de auth e lead da PSI-005. Migrations são
+  sequenciais e imutáveis a partir do merge — por isso esta tarefa é
+  shared_change: true (o glob compartilhado "**/db/migration/**" casa com o
+  diretório de migrations criado aqui).
+
+  O app consome os DTOs Java gerados em packages/contracts/gen/java,
+  seguindo exatamente o mecanismo de consumo Maven documentado na PSI-006.
+  Expõe GET /actuator/health e cobre o scaffold com teste de contexto
+  (context load) e testes de repositório usando Testcontainers com
+  PostgreSQL real.
 dependencies:
-  - "PSI-005"
+  - "PSI-003"
   - "PSI-006"
 allowed_paths:
   - "apps/api/**"
-  - "pnpm-lock.yaml"
 forbidden_paths:
   - "project/**"
   - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
 acceptance_criteria:
-  - "O app api existe em apps/api com NestJS e TypeScript, consumindo as configurações de @psiops/config"
-  - "ConfigModule valida as variáveis de ambiente com schema Zod na inicialização e aborta com erro claro quando o env é inválido"
-  - "PrismaModule consome o singleton de PrismaClient de @psiops/database e o disponibiliza via injeção de dependência"
-  - "GET /health responde com status da aplicação e versão"
-  - "Um pipe de validação global valida payloads de entrada com base nos schemas de @psiops/contracts, rejeitando requisições fora do contrato"
-  - "Existe teste e2e do GET /health usando supertest, verificando status HTTP e formato da resposta"
-  - "pnpm --filter @psiops/api test executa com todos os testes passando"
-  - "pnpm --filter @psiops/api build compila a aplicação sem erros"
+  - "Projeto Spring Boot 3.3+ com Java 21 em apps/api, com Maven wrapper comitado (mvnw, mvnw.cmd, .mvn/) e build funcional via ./mvnw"
+  - "Código organizado por módulos de domínio: pacotes de topo por domínio com camadas web, application, domain e persistence"
+  - "Spring Data JPA e Flyway configurados; V1__init.sql em apps/api/src/main/resources/db/migration cria as tabelas users, settings e leads"
+  - "Migration V1 aplica limpa em PostgreSQL 16 (validada pelos testes com Testcontainers)"
+  - "DTOs Java de packages/contracts/gen/java são consumidos pelo build Maven usando o mecanismo documentado na PSI-006, sem copiar código gerado para apps/api"
+  - "GET /actuator/health responde 200 com status UP quando a aplicação sobe apontando para o PostgreSQL do docker compose (PSI-003)"
+  - "Teste de contexto (context load) e testes de repositório com Testcontainers (PostgreSQL) presentes e verdes"
+  - "cd apps/api && ./mvnw verify conclui com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api build"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Integração entre pipe de validação do Nest e schemas Zod exige adaptação (Nest assume class-validator por padrão); um pipe mal implementado pode deixar rotas sem validação silenciosamente"
-  - "Se o teste e2e do /health inicializar o PrismaModule com conexão real, passa a depender do Postgres local; é preciso garantir que o health check não exija banco disponível para o teste passar"
-  - "A validação de env por Zod precisa cobrir a URL do banco; divergência com o .env.example da infra local causa falhas confusas na subida"
+  - "Após o merge, V1__init.sql é imutável; erro de modelagem nas tabelas iniciais exige nova migration corretiva, nunca edição da V1"
+  - "O consumo dos DTOs de gen/java depende do mecanismo definido na PSI-006; qualquer desvio quebra o contrato entre as duas tarefas"
+  - "Testcontainers exige Docker no ambiente; sem Docker, ./mvnw verify falha — impacta desenvolvedores e CI"
+  - "Divergência entre os nomes de variáveis de conexão do application.yml e os definidos no .env.example da PSI-003 dificulta o onboarding"
+  - "Esquema inicial (users/settings/leads) desalinhado dos schemas OpenAPI de auth/lead gera retrabalho nas tarefas de feature"
 out_of_scope:
-  - "Endpoints de negócio (auth, leads, domínio clínico)"
-  - "Autenticação, autorização e emissão de tokens"
-  - "Migrations ou alterações de schema do banco (exclusivas de tarefas do projeto database)"
-  - "Deploy ou configuração de produção"
+  - "Implementação de endpoints de negócio (auth, lead) — apenas actuator/health nesta fase"
+  - "Configuração do Axon Framework (agregados, eventos, deadlines, event store) — chega com as tarefas de domínio"
+  - "Segurança/autenticação (Spring Security, JWT)"
+  - "Alterações em packages/contracts (caminho proibido; qualquer ajuste de codegen volta para tarefa de contracts)"
+  - "Alterações no docker-compose.yml ou no CI"
 assumptions:
-  - "O nome do package do app é api (sem escopo @psiops/), conforme o filtro usado nos comandos de validação"
-  - "A versão retornada por GET /health é lida do package.json do app"
-  - "O teste e2e do /health não exige Postgres em execução; o endpoint reporta o status da aplicação sem depender de query ao banco"
-open_questions: []
+  - "JDK 21 e Docker estão disponíveis no ambiente de execução (local e CI)"
+  - "O mecanismo de consumo Maven dos DTOs documentado na PSI-006 está definido e funcional antes do início desta tarefa"
+  - "Colunas monetárias, quando existirem, seguem o contrato: inteiro em centavos (BIGINT), nunca tipos de ponto flutuante"
+  - "Esta tarefa é shared_change: true por criar a migration V1, casando com o glob compartilhado \"**/db/migration/**\""
+open_questions:
+  - "Identificadores das tabelas serão UUID gerados pela aplicação ou pelo banco? Assumido UUID gerado pela aplicação até definição arquitetural"

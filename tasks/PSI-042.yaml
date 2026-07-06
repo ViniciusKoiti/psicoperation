@@ -1,0 +1,75 @@
+id: PSI-042
+title: "mobile: pacientes"
+project: mobile
+shared_change: false
+branch: "agent/psi-042-mobile-pacientes"
+commit_message: "feat(mobile): gestão de pacientes com busca, detalhe e arquivamento [PSI-042]"
+pr_title: "PSI-042: mobile: pacientes"
+description: |
+  Implementa o módulo de pacientes do app Flutter da psicóloga: lista com
+  busca, tela de detalhe, cadastro/edição e arquivamento, construído
+  sobre o shell autenticado da PSI-040 e os contratos de domínio da
+  PSI-020.
+
+  A lista apresenta os pacientes ativos com busca por nome e acesso ao
+  detalhe. O detalhe reúne os dados cadastrais, o histórico de consultas
+  e de registros administrativos (comparecimentos, remarcações,
+  anotações operacionais — nunca conteúdo clínico) e a situação
+  financeira do paciente (mensalidades em dia/pendentes/atrasadas, com
+  valores em centavos BRL formatados em pt-BR).
+
+  Cadastro e edição validam os campos de forma consistente com os
+  contratos (modelos Dart de packages/contracts/gen/dart), com mensagens
+  de erro em pt-BR. O arquivamento remove o paciente das listagens
+  padrão preservando o histórico, em vez de excluir dados. Todo o acesso
+  a dados passa por um PatientsAdapter com implementação mock (padrão em
+  dev/test), no mesmo padrão de composição por ambiente das tarefas
+  anteriores. Por restrição de produto, o app não armazena nem exibe
+  qualquer dado clínico e não oferece nenhuma forma de sugestão
+  diagnóstica ou recomendação de saúde.
+dependencies:
+  - "PSI-040"
+  - "PSI-020"
+allowed_paths:
+  - "apps/mobile/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
+acceptance_criteria:
+  - "Lista de pacientes ativos com busca por nome (filtro reativo conforme digitação) e estados de carregamento/vazio estilizados com o tema dos tokens"
+  - "Tela de detalhe exibe dados cadastrais, histórico de consultas e de registros administrativos e situação financeira (mensalidades por status, valores em centavos BRL formatados em pt-BR)"
+  - "Formulários de cadastro e edição com validação inline consistente com os contratos (modelos Dart de packages/contracts/gen/dart) e mensagens de erro em pt-BR"
+  - "Arquivamento de paciente com confirmação: paciente arquivado sai da lista padrão, mantém histórico e pode ser localizado por filtro de arquivados"
+  - "PatientsAdapter definido como abstração com implementação mock padrão em dev/test, selecionada no mesmo ponto de composição por ambiente da PSI-040"
+  - "Nenhum campo, modelo ou tela contempla dado clínico (diagnóstico, prontuário, evolução clínica); apenas dados cadastrais, administrativos e financeiros"
+  - "Datas em ISO 8601 nas bordas dos adapters e exibidas em formato pt-BR na UI"
+  - "Testes unitários e de widget cobrem: busca na lista, renderização do detalhe com dados mock, validação de formulário (sucesso e erro) e arquivamento"
+  - "cd apps/mobile && flutter analyze e cd apps/mobile && flutter test executam sem erros"
+validation_commands:
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
+risks:
+  - "Validações duplicadas no client podem divergir das regras dos contratos/API; mitigar derivando-as dos modelos Dart gerados e cobrindo os casos-limite com testes"
+  - "Risco de escopo: campos de texto livre no detalhe podem virar canal informal de dados clínicos; rótulos e ajuda contextual devem deixar claro o caráter administrativo"
+  - "Semântica de arquivamento (vs. exclusão) precisa coincidir com a dos contratos; divergência causaria inconsistência com o app web na integração real"
+  - "Histórico de consultas depende dos modelos de agenda; acoplamento com a PSI-041 deve ficar restrito aos adapters para evitar dependência circular entre telas"
+out_of_scope:
+  - "Integração real com a API (PatientsAdapter HTTP exercitado de verdade) — PSI-045"
+  - "Prontuário, anotações clínicas ou qualquer dado de saúde do paciente"
+  - "Exclusão definitiva de pacientes e fluxos de LGPD (portabilidade/eliminação)"
+  - "Gestão de mensalidades (marcar como paga, gerar cobranças) — PSI-043"
+  - "Importação de contatos do dispositivo"
+assumptions:
+  - "PSI-020 definiu nos contratos o modelo de paciente (dados cadastrais, status ativo/arquivado) e os registros administrativos, refletidos nos modelos Dart de packages/contracts/gen/dart"
+  - "A situação financeira exibida no detalhe é derivada dos modelos de mensalidade já existentes nos contratos, consumidos somente para leitura nesta tarefa"
+  - "Busca por nome no client (sobre a lista carregada) é aceitável no MVP, sem paginação/busca server-side"
+open_questions:
+  - "Quais campos cadastrais são obrigatórios no MVP (apenas nome, ou também WhatsApp/e-mail/valor de sessão por paciente)?"
+  - "Paciente arquivado com mensalidades em aberto deve gerar alerta ou bloqueio no arquivamento?"

@@ -23,3 +23,10 @@ e grafo de dependências entre pacotes.
   restritas a tarefas `shared_change: true`, executadas uma por vez (ver ADR 0005).
 - CI roda o monorepo inteiro por PR com cache do Turborepo para manter tempo aceitável.
 - Node >= 20 fixado em `.nvmrc`; gerenciador fixado via `packageManager` no `package.json` raiz.
+
+## Adendo (2026-07-05, pivô de stack — ADR 0007)
+
+O monorepo tornou-se **poliglota**: pnpm workspaces e Turborepo orquestram apenas os
+pacotes JS/TS (`apps/landing`, `apps/clinic`, `packages/*`). `apps/api` (Java/Maven)
+e `apps/mobile` (Flutter) vivem no mesmo repositório, fora do pnpm, com builds
+invocados diretamente pelo CI. A decisão de repositório único permanece.

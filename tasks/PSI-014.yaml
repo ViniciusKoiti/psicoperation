@@ -1,21 +1,32 @@
 id: PSI-014
-title: "landing: hero com mockup de dashboard"
+title: "landing: layout base, navegação e rodapé"
 project: landing
 shared_change: false
-branch: "agent/psi-014-landing-hero"
-commit_message: "feat(landing): hero com mockup de dashboard [PSI-014]"
-pr_title: "PSI-014: landing: hero com mockup de dashboard"
+branch: "agent/psi-014-landing-layout-base"
+commit_message: "feat(landing): layout base com nav sticky, footer e primitivas [PSI-014]"
+pr_title: "PSI-014: landing: layout base, navegação e rodapé"
 description: |
-  Implementa a seção hero da landing page como componentes semânticos,
-  seguindo docs/design/landing-page-spec.md e reutilizando as primitivas
-  criadas na PSI-013. O hero é um grid de duas colunas: à esquerda, headline
-  e CTAs; à direita, um mockup de dashboard com chips flutuantes reproduzindo
-  a composição da referência. Abaixo de 920px o grid colapsa em coluna única.
-  Os CTAs apontam para a âncora #lista (formulário de lista de espera). A
-  referência project/PsiOps Landing.html é somente leitura e não pode ser
-  convertida diretamente para JSX; a fidelidade visual deve ser pixel-perfect.
+  Implementa a fundação visual da landing page do PsiOps em apps/landing
+  (Next.js + Tailwind), reconstruída como componentes React semânticos a
+  partir de docs/design/landing-page-spec.md. O protótipo em
+  project/PsiOps Landing.html é referência somente leitura para conferência
+  de fidelidade — é proibido converter o HTML do protótipo diretamente em
+  JSX; a estrutura interna dos componentes é nossa, o resultado visual é
+  pixel-perfect.
+
+  Entregas: navegação sticky com blur que se torna opaca quando
+  scrollY > 12; rodapé em 3 colunas (marca + tagline, links de navegação,
+  links legais); e as primitivas de layout que as demais seções (PSI-015 a
+  PSI-019) reutilizarão — Section, Wrap (container centralizado de 1180px),
+  Eyebrow, Pill e botões — todas construídas sobre os tokens e estilos de
+  @psiops/ui, sem duplicar valores do design system.
+
+  Os logos são copiados de project/assets para o diretório public do app
+  (a cópia é permitida; a restrição do project/ é de escrita, não de
+  leitura). Comportamento responsivo com colapso no breakpoint de 920px,
+  conforme a spec.
 dependencies:
-  - "PSI-013"
+  - "PSI-009"
 allowed_paths:
   - "apps/landing/**"
 forbidden_paths:
@@ -27,28 +38,33 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Seção hero implementada como componentes semânticos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
-  - "Grid de duas colunas: headline e CTAs à esquerda; mockup de dashboard com chips flutuantes à direita, fiel à referência"
-  - "Grid colapsa em coluna única no breakpoint de 920px"
-  - "CTAs do hero apontam para a âncora #lista"
-  - "Componentes reutilizam as primitivas e botões da PSI-013 (Section, Wrap, Eyebrow, Pill, variantes de botão via @psiops/ui)"
-  - "Fidelidade visual pixel-perfect à referência na seção hero"
-  - "Testes de componentes cobrindo a renderização do hero (conteúdo, CTAs e destino #lista)"
+  - "Nav sticky implementada com efeito de blur, tornando-se opaca quando scrollY > 12, com transição conforme docs/design/landing-page-spec.md"
+  - "Footer em 3 colunas implementado: marca + tagline, links de navegação e links legais, com conteúdo e hierarquia idênticos à referência"
+  - "Primitivas Section, Wrap (max-width 1180px centralizado), Eyebrow, Pill e variantes de botão implementadas como componentes reutilizáveis consumindo tokens/estilos de @psiops/ui, sem hardcode de valores já cobertos pelo design system"
+  - "Logos copiados de project/assets para o public de apps/landing (psiops-logo-trim.png no header em 34px de altura, e demais variantes necessárias), sem qualquer escrita dentro de project/"
+  - "Nenhum trecho de HTML do protótipo convertido diretamente para JSX; componentes semânticos (nav, header, footer, landmarks ARIA) escritos a partir da spec"
+  - "Responsividade validada com colapso de layout no breakpoint de 920px conforme a spec"
+  - "Testes de componentes cobrindo: nav alterna estado opaco com base no scroll, footer renderiza as 3 colunas e links, primitivas aplicam classes/estilos esperados"
+  - "Fidelidade pixel-perfect ao design de referência verificada por comparação visual com o protótipo"
+  - "pnpm --filter @psiops/landing build e test executam com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/landing test"
   - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing test"
 risks:
-  - "O mockup de dashboard com chips flutuantes tem posicionamento absoluto delicado; pequenas diferenças quebram a fidelidade pixel-perfect"
-  - "Chips flutuantes podem causar overflow horizontal em viewports estreitos se o colapso em 920px não for cuidadoso"
-  - "Divergência entre as primitivas da PSI-013 e o que o hero precisa pode induzir a criar variantes duplicadas em vez de evoluir o componente base"
+  - "Efeitos de scroll (blur/opacidade) dependem de estado no cliente; em Next.js exigem client components bem delimitados para não degradar o restante da página estática"
+  - "Fidelidade pixel-perfect sem copiar o HTML do protótipo exige disciplina de conferência visual; divergências sutis de espaçamento/tipografia podem passar despercebidas sem screenshots comparativos"
+  - "Se docs/design/landing-page-spec.md estiver incompleta em algum detalhe visual, há tentação de ler o HTML do protótipo como fonte estrutural — ele só pode ser usado como referência visual/de conteúdo"
+  - "As primitivas criadas aqui são contrato para PSI-015..PSI-019; mudanças de API depois custam retrabalho em cadeia"
 out_of_scope:
-  - "Formulário #lista em si (PSI-017) — o hero apenas aponta para a âncora"
-  - "Scroll reveal e composição final da página (PSI-018)"
-  - "Demais seções da landing (problema, solução, como funciona, quote, FAQ, CTA final)"
-  - "Alterações em pacotes compartilhados"
+  - "Seções de conteúdo da landing: hero (PSI-015), problema/solução (PSI-016), como funciona/quote/FAQ (PSI-017), formulário (PSI-018), CTA final e composição (PSI-019)"
+  - "Scroll reveal global e testes E2E (PSI-019)"
+  - "Alterações em packages/ui — apenas consumo de tokens/estilos"
+  - "SEO avançado, analytics e integrações externas"
 assumptions:
-  - "A âncora #lista será renderizada pela composição da página (PSI-018) usando a seção da PSI-017; nesta tarefa os CTAs apenas referenciam o fragmento"
-open_questions: []
+  - "PSI-009 deixou apps/landing criado como app Next.js + Tailwind funcional no workspace, com @psiops/ui já declarado como dependência (esta tarefa não pode tocar pnpm-lock.yaml)"
+  - "Copiar arquivos de project/assets para apps/landing/public não viola a proibição de project/**, que se aplica a modificações dentro de project/, não à leitura"
+  - "As fontes DM Sans, Inter e Fraunces já estão configuradas no app (via PSI-009 ou @psiops/ui); caso contrário, sua configuração dentro de apps/landing/** faz parte desta tarefa"
+open_questions:
+  - "Os links legais do footer (privacidade, termos) devem apontar para rotas reais ou âncoras placeholder até existirem as páginas?"

@@ -1,24 +1,32 @@
 id: PSI-032
-title: "clinic: detalhe e histórico do paciente"
+title: "clinic: dashboard"
 project: clinic
 shared_change: false
-branch: "agent/psi-032-clinic-detalhe-paciente"
-commit_message: "feat(clinic): detalhe e histórico do paciente [PSI-032]"
-pr_title: "PSI-032: clinic — detalhe e histórico do paciente"
+branch: "agent/psi-032-dashboard"
+commit_message: "feat(clinic): dashboard com visão do dia [PSI-032]"
+pr_title: "PSI-032: clinic — dashboard (visão do dia)"
 description: |
-  Adiciona ao app clinic a página de detalhe do paciente, acessível a
-  partir da lista entregue na PSI-031. A página consolida em um só lugar
-  a visão completa do paciente para a psicóloga: dados cadastrais,
-  histórico de consultas, registros administrativos e situação financeira
-  (mensalidades e seus status). É a tela âncora do dia a dia da usuária,
-  e será o destino de navegação de outras funcionalidades (agenda,
-  financeiro, registros administrativos). Os dados são servidos pelos
-  adapters mock existentes e por extensões mock fiéis aos contratos de
-  @psiops/contracts, mantendo a página pronta para receber dados reais na
-  PSI-039 sem alteração de componentes. Seções sem dados exibem estados
-  vazios informativos, e a página trata carregamento e erro por seção.
+  Implementa o dashboard do app clinic — a tela inicial pós-login — com a
+  visão do dia da psicóloga, organizada em blocos:
+
+  - Próximas consultas: consultas do dia ordenadas por horário, com paciente
+    e status;
+  - Pendências financeiras: mensalidades atrasadas e pendentes, com totais
+    em centavos BRL formatados como R$;
+  - Tarefas do dia: tarefas com vencimento hoje ou atrasadas;
+  - Atalhos: ações rápidas para novo paciente, nova consulta e financeiro.
+
+  Os dados chegam exclusivamente por adapters tipados com implementações
+  mock em memória (padrão em dev/test), reutilizando os contratos de adapter
+  já definidos quando existirem e mantendo a seleção mock/http no ponto
+  único de composição do app. Cada bloco trata seus próprios estados de
+  carregamento (skeletons Mantine) e vazio (mensagem amigável em pt-BR com
+  chamada para ação), de modo que uma conta recém-criada veja um dashboard
+  útil e não uma tela quebrada. Datas em ISO 8601 na camada de dados,
+  formatadas em pt-BR na UI.
 dependencies:
-  - "PSI-031"
+  - "PSI-030"
+  - "PSI-020"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -30,36 +38,31 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Página de detalhe exibe os dados cadastrais do paciente conforme os DTOs de @psiops/contracts"
-  - "Seção de histórico de consultas lista as consultas do paciente com data, horário e status"
-  - "Seção de registros administrativos exibe os registros associados ao paciente em ordem cronológica"
-  - "Seção de situação financeira apresenta as mensalidades do paciente com seus status (em dia, pendente, atrasada)"
-  - "Clicar em um paciente na lista da PSI-031 navega para a página de detalhe correspondente"
-  - "Cada seção trata os estados de carregamento, erro e ausência de dados de forma independente"
-  - "Todos os dados são obtidos via adapters mock fiéis aos contratos, sem tipos duplicados no app"
-  - "Testes cobrem a navegação lista → detalhe, a renderização de cada seção e os estados vazios"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Dashboard como rota protegida inicial pós-login, com Mantine e tema dos tokens @psiops/ui, textos em pt-BR"
+  - "Bloco de próximas consultas exibe as consultas do dia ordenadas por horário com nome do paciente e horário formatado em pt-BR"
+  - "Bloco de pendências financeiras lista mensalidades atrasadas e pendentes com totais em centavos BRL formatados como R$"
+  - "Bloco de tarefas do dia exibe tarefas com vencimento hoje e atrasadas, com indicação visual de atraso"
+  - "Atalhos navegam para as rotas de novo paciente, nova consulta e financeiro (rotas podem ser placeholders até as tarefas correspondentes)"
+  - "Dados servidos por adapters tipados com mocks em memória como padrão; nenhuma chamada HTTP real"
+  - "Cada bloco tem estado de carregamento (skeleton) e estado vazio com mensagem e chamada para ação"
+  - "Testes cobrem renderização com dados do mock, estados vazios e estados de carregamento"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "A página agrega dados de vários domínios (cadastro, agenda, registros, financeiro); acoplamento excessivo entre seções dificultaria evoluções nas tarefas seguintes"
-  - "Estrutura de dados mock de consultas e mensalidades definida aqui antes de PSI-033 e PSI-035 pode divergir das telas dedicadas, exigindo reconciliação"
-  - "Exibir informação financeira incorreta (status de mensalidade) compromete a confiança da usuária no produto"
+  - "O dashboard consome dados de domínios implementados em tarefas paralelas (agenda, financeiro, tarefas); contratos de adapter definidos aqui podem divergir dos definidos lá e exigir conciliação"
+  - "Definição de 'dia' sensível a fuso horário: cálculo incorreto de fronteira do dia pode mostrar consultas/tarefas erradas"
+  - "Excesso de dados no mock pode mascarar problemas de layout com listas vazias — os testes de estado vazio mitigam"
 out_of_scope:
-  - "Criação e edição de consultas (PSI-033)"
-  - "Criação de registros administrativos (PSI-034); aqui apenas exibição"
-  - "Ações financeiras como gerar mensalidade ou marcar como paga (PSI-035); aqui apenas leitura"
-  - "Integração com a API real (PSI-039)"
-  - "Campos clínicos, evolução terapêutica ou qualquer conteúdo de prontuário"
-  - "Instalação de novas dependências"
+  - "CRUD completo de consultas (PSI-035), mensalidades (PSI-037) e tarefas (PSI-038) — o dashboard apenas consome e navega"
+  - "Gráficos e indicadores históricos/analíticos"
+  - "Integração real com a API (PSI-044)"
+  - "Personalização/reordenação de blocos pelo usuário"
 assumptions:
-  - "Os contratos de consulta, registro administrativo e mensalidade já existem em @psiops/contracts; os adapters mock desta tarefa apenas os consomem"
-  - "Como PSI-033, PSI-034 e PSI-035 ainda não existem, o histórico e a situação financeira são populados com dados mock plausíveis servidos pelos adapters em memória"
-  - "A rota de detalhe segue o padrão de roteamento estabelecido pelo shell do app na PSI-028"
-open_questions:
-  - "A situação financeira deve mostrar todo o histórico de mensalidades ou apenas uma janela recente (por exemplo, últimos 12 meses)?"
+  - "Fuso horário de referência é o do navegador da usuária (America/Sao_Paulo no caso típico)"
+  - "Os adapters de agenda, financeiro e tarefas ainda não existem; esta tarefa define interfaces mínimas de leitura que as tarefas PSI-035/PSI-037/PSI-038 deverão respeitar ou estender"
+  - "As rotas de destino dos atalhos podem ser stubs se as tarefas correspondentes ainda não tiverem sido implementadas"
+open_questions: []

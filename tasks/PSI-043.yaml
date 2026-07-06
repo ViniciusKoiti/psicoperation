@@ -1,0 +1,73 @@
+id: PSI-043
+title: "mobile: financeiro e configurações"
+project: mobile
+shared_change: false
+branch: "agent/psi-043-mobile-financeiro-config"
+commit_message: "feat(mobile): financeiro de mensalidades e configurações [PSI-043]"
+pr_title: "PSI-043: mobile: financeiro e configurações"
+description: |
+  Completa o conjunto de telas do MVP mobile com o módulo financeiro de
+  mensalidades — coração do produto — e a tela de configurações,
+  construídos sobre o módulo de pacientes da PSI-042.
+
+  A tela financeira apresenta as mensalidades do mês corrente agrupadas
+  por status (em dia, pendente, atrasada), com totais por status e total
+  geral, sempre em centavos BRL formatados em pt-BR, e navegação entre
+  meses. As ações principais são marcar uma mensalidade como paga (com
+  confirmação e atualização imediata dos totais) e gerar as mensalidades
+  do mês para os pacientes ativos, com comportamento idempotente
+  (não duplicar cobranças já geradas).
+
+  As configurações cobrem o mínimo do MVP: perfil da psicóloga, valor
+  padrão de sessão (entrada monetária em centavos BRL com máscara
+  pt-BR), preferências de lembrete de cobrança e logout (encerrando a
+  sessão da PSI-040 e retornando ao login). Todo o acesso a dados passa
+  por adapters com implementação mock (padrão em dev/test), no mesmo
+  ponto de composição por ambiente das tarefas anteriores; a integração
+  real ocorre na PSI-045.
+dependencies:
+  - "PSI-042"
+allowed_paths:
+  - "apps/mobile/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
+acceptance_criteria:
+  - "Tela de mensalidades do mês agrupadas por status (em dia, pendente, atrasada), com totais por status e total geral em centavos BRL formatados em pt-BR, e navegação entre meses"
+  - "Ação de marcar mensalidade como paga com confirmação, refletindo imediatamente no status e nos totais exibidos"
+  - "Ação de gerar mensalidades do mês para pacientes ativos, idempotente (não duplica mensalidades já geradas no mesmo mês) e com feedback do resultado"
+  - "Tela de configurações com: edição de perfil da psicóloga, valor padrão de sessão com entrada mascarada em BRL persistida em centavos, preferências de lembrete de cobrança e logout"
+  - "Logout encerra a sessão gerenciada pela PSI-040, limpa o estado em memória e redireciona ao login"
+  - "Todos os dados fluem por adapters (financeiro/configurações) com implementação mock padrão, no mesmo ponto de composição por ambiente das tarefas anteriores"
+  - "Estados de carregamento e vazio (ex.: mês sem mensalidades geradas) implementados com o tema dos tokens e textos em pt-BR"
+  - "Valores monetários manipulados exclusivamente como inteiros em centavos nas bordas dos adapters; nenhuma aritmética financeira em ponto flutuante"
+  - "Testes unitários e de widget cobrem: agrupamento e totais por status, marcar como paga, geração idempotente do mês e persistência do valor padrão de sessão em centavos"
+  - "cd apps/mobile && flutter analyze e cd apps/mobile && flutter test executam sem erros"
+validation_commands:
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
+risks:
+  - "Aritmética monetária em double causaria erros de centavos; todo cálculo deve usar inteiros em centavos, com formatação apenas na camada de exibição"
+  - "A regra de idempotência da geração de mensalidades implementada no mock pode divergir da regra do servidor; alinhar aos contratos e cobrir com testes para reduzir o retrabalho na PSI-045"
+  - "A classificação 'atrasada' depende de data de vencimento vs. data corrente; ambiguidade de fuso/virada de dia pode divergir da API se o cálculo não seguir os contratos"
+  - "Preferências de lembrete configuradas no app criam expectativa de envio; deixar claro na UI que o disparo é responsabilidade do backend, não do dispositivo"
+out_of_scope:
+  - "Integração real com a API (adapters HTTP exercitados de verdade) — PSI-045"
+  - "Envio efetivo de lembretes de cobrança (WhatsApp/e-mail) — responsabilidade do backend"
+  - "Cálculo/cobrança de juros e multas por atraso"
+  - "Meios de pagamento, conciliação bancária e emissão de recibos/notas"
+  - "Relatórios financeiros históricos além da navegação mensal simples"
+assumptions:
+  - "Os contratos já definem o modelo de mensalidade com os três status (em dia, pendente, atrasada) e os campos de vencimento/pagamento, refletidos nos modelos Dart de packages/contracts/gen/dart"
+  - "A geração de mensalidades do mês usa o valor padrão de sessão (ou valor por paciente, quando existir nos contratos) definido nas configurações"
+  - "As preferências de lembrete no MVP limitam-se a ligar/desligar e antecedência, persistidas via adapter; o agendamento real é do backend"
+open_questions:
+  - "Marcar como paga exige data de pagamento informada pela usuária ou assume a data corrente no MVP?"
+  - "A geração de mensalidades pode ser disparada retroativamente para meses anteriores ou somente para o mês corrente?"

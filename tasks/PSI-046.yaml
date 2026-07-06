@@ -1,0 +1,86 @@
+id: PSI-046
+title: "Seeds, fixtures e fechamento do MVP"
+project: api
+shared_change: true
+branch: "agent/psi-046-seeds-fechamento-mvp"
+commit_message: "chore(api): seeds de demonstração, fixtures e fechamento do MVP [PSI-046]"
+pr_title: "PSI-046: Seeds, fixtures e fechamento do MVP"
+description: |
+  Tarefa de fechamento do MVP: dados de demonstração, fixtures de teste
+  completas, documentação de setup verificada e a verificação final de
+  que todo o monorepo está verde.
+
+  O seed de demonstração é determinístico e roda apenas no perfil "demo"
+  da API Spring, implementado como CommandLineRunner (ou mecanismo
+  equivalente de inicialização da aplicação) — explicitamente NÃO via
+  migration Flyway, pois dado de demonstração não é schema e as
+  migrations são imutáveis. O seed cria: 1 psicóloga demo com
+  credenciais conhecidas e documentadas, cerca de 8 pacientes com dados
+  fictícios plausíveis (sem qualquer dado clínico), agenda de 2 semanas
+  em torno da data de execução, mensalidades nos três status (em dia,
+  pendente, atrasada) com valores em centavos BRL, e tarefas e lembretes
+  de exemplo. Reexecuções não duplicam dados.
+
+  As fixtures TS de packages/testing são estendidas para cobrir o
+  domínio completo (psicóloga, pacientes, agenda, mensalidades, tarefas,
+  lembretes, leads), consistentes com packages/contracts. A documentação
+  de setup do zero (Node+pnpm, JDK 21+Maven, Flutter, docker compose) é
+  escrita/revisada e verificada na prática, e um checklist de release do
+  MVP é registrado em docs/. A verificação final exige os três
+  ecossistemas verdes: pipelines JS/TS via Turborepo, build+testes da
+  API via Maven e analyze+test do app Flutter.
+dependencies:
+  - "PSI-021"
+  - "PSI-044"
+  - "PSI-045"
+allowed_paths:
+  - "apps/api/**"
+  - "packages/testing/**"
+  - "docs/**"
+  - "README.md"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "**/db/migration/**"
+acceptance_criteria:
+  - "Seed de demonstração implementado na API como CommandLineRunner (ou equivalente) ativo somente no perfil \"demo\"; nenhum dado é semeado nos demais perfis e nenhuma migration Flyway é criada/alterada"
+  - "Seed determinístico e idempotente: reexecutar a API no perfil demo não duplica dados nem falha"
+  - "Seed cria 1 psicóloga demo com credenciais documentadas, ~8 pacientes fictícios sem qualquer dado clínico, agenda de 2 semanas em torno da data de execução, mensalidades nos três status (em dia, pendente, atrasada) em centavos BRL, e tarefas e lembretes de exemplo"
+  - "Fixtures TS de packages/testing estendidas ao domínio completo (psicóloga, pacientes, agenda, mensalidades, tarefas, lembretes, leads), tipadas pelos tipos de packages/contracts/gen/ts e consumíveis pelos apps web e suítes E2E"
+  - "Documentação de setup do zero (Node+pnpm, JDK 21+Maven, Flutter, docker compose) escrita/atualizada em README.md e/ou docs/, verificada seguindo os passos na prática"
+  - "Checklist de release do MVP registrado em docs/, cobrindo verificação dos três ecossistemas, subida da infra local e smoke test com o perfil demo"
+  - "pnpm turbo run lint typecheck test build executa verde na raiz"
+  - "cd apps/api && ./mvnw verify executa verde, incluindo teste que cobre o seed do perfil demo"
+  - "cd apps/mobile && flutter analyze e cd apps/mobile && flutter test executam verdes"
+validation_commands:
+  - "pnpm turbo run lint typecheck test build"
+  - "cd apps/api && ./mvnw verify"
+  - "cd apps/mobile && flutter analyze"
+  - "cd apps/mobile && flutter test"
+risks:
+  - "Seed dependente de data corrente (agenda de 2 semanas, status de atraso) pode gerar resultados diferentes por dia de execução; determinismo deve ser relativo à data de execução e coberto por teste com relógio controlado"
+  - "Seed executado por engano fora do perfil demo poluiria ambientes reais; a ativação deve ser estritamente condicionada ao perfil e coberta por teste"
+  - "Idempotência ingênua (verificar só a psicóloga demo) pode deixar dados parciais em reexecuções após falha; a checagem deve ser robusta"
+  - "Fixtures TS desalinhadas dos contratos quebrariam consumidores; tipagem estrita por packages/contracts/gen/ts mitiga"
+  - "Como tarefa shared_change tocando pnpm-lock.yaml, conflita com qualquer outra tarefa compartilhada em andamento; deve executar isolada"
+  - "Documentação de setup só é confiável se verificada em ambiente limpo; verificação parcial pode deixar passos implícitos"
+out_of_scope:
+  - "Criação/alteração de migrations Flyway (**/db/migration/** proibido) — o seed é código de aplicação, não schema"
+  - "Alterações em packages/contracts (tipos são consumidos, não modificados)"
+  - "Novas funcionalidades de produto ou correções fora do fechamento (bugs achados viram registro para o orquestrador)"
+  - "Deploy/publicação em produção e configuração de CI (.github/workflows/**)"
+  - "Seed de dados no app mobile ou nos apps web — o seed vive na API"
+assumptions:
+  - "PSI-021 estabeleceu packages/testing com a infraestrutura de fixtures TS a ser estendida"
+  - "O domínio completo (pacientes, agenda, mensalidades, tarefas, lembretes, leads) está implementado na API pelas tarefas anteriores; o seed apenas usa os serviços/comandos existentes"
+  - "pnpm-lock.yaml está em allowed_paths para acomodar atualização do lockfile decorrente de mudanças em packages/testing; package.json da raiz permanece intocado (alterações de dependências ficam restritas ao package.json de packages/testing)"
+  - "As credenciais da psicóloga demo podem ser fixas e públicas na documentação por serem exclusivas do perfil demo local"
+open_questions:
+  - "O perfil demo deve ser incluído em algum atalho de execução documentado (ex.: instrução de subir a API com SPRING_PROFILES_ACTIVE=demo) ou também em script auxiliar na raiz (fora do escopo por tocar package.json)?"
+  - "O checklist de release deve incluir critérios de aceite de produto (revisão manual dos fluxos) além das verificações automatizadas?"

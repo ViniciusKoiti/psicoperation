@@ -1,25 +1,34 @@
 id: PSI-027
-title: "api: captura de leads (lista de espera)"
+title: "api: tarefas e lembretes"
 project: api
 shared_change: false
-branch: "agent/psi-027-api-captura-leads"
-commit_message: "feat(api): captura de leads da lista de espera [PSI-027]"
-pr_title: "PSI-027: api: captura de leads (lista de espera)"
+branch: "agent/psi-027-tarefas-lembretes"
+commit_message: "feat(api): implementa módulos de tarefas e lembretes [PSI-027]"
+pr_title: "PSI-027: api: tarefas e lembretes"
 description: |
-  Implementa na API NestJS o endpoint público de captura de leads que
-  atende ao formulário de lista de espera da landing page do PsiOps.
-  Entrega o POST /leads sem autenticação (rota marcada como pública),
-  validado exclusivamente pelo contrato LeadCapture de @psiops/contracts,
-  com deduplicação por email de forma idempotente: reenvio do mesmo email
-  retorna sucesso sem criar registro duplicado e sem revelar ao cliente que
-  o email já existia. Inclui rate-limit para conter abuso de um endpoint
-  aberto à internet e persiste via @psiops/database usando o modelo Lead
-  criado na migration 0001. A tarefa consome contracts e database como
-  estão: não altera schema, migrations nem qualquer arquivo desses
-  packages. Por depender apenas do scaffold da API (PSI-010), pode ser
-  desenvolvida em paralelo aos módulos autenticados.
+  Implementa os módulos de tarefas e lembretes em apps/api conforme os
+  contratos da PSI-020 (DTOs de gen/java), sobre as tabelas tasks e reminders
+  da PSI-021, escopados ao userId autenticado em toda query.
+
+  Tarefas: CRUD com título, data de vencimento e conclusão (marcar/desmarcar),
+  com listagem paginada e filtros conforme o contrato — a lista de pendências
+  administrativas da psicóloga.
+
+  Lembretes: CRUD conforme o contrato, com canal email (único canal do MVP) e
+  vínculo opcional a paciente, consulta ou cobrança. Agendar um lembrete
+  publica o comando/evento Axon correspondente, persistido no event store JPA,
+  deixando o estado pronto para o disparo assíncrono — o agendamento efetivo
+  por deadline e o envio de e-mail são responsabilidade exclusiva da PSI-029.
+
+  Validações: momento do lembrete no futuro; vínculo opcional, quando
+  informado, deve referenciar recurso existente do próprio tenant (violação
+  responde 404 sem vazar existência).
+
+  Testes MockMvc + Testcontainers cobrindo CRUD de ambos os módulos,
+  validações de vínculo, publicação do comando/evento de agendamento (fixtures
+  Axon) e isolamento entre tenants.
 dependencies:
-  - "PSI-010"
+  - "PSI-022"
 allowed_paths:
   - "apps/api/**"
 forbidden_paths:
@@ -31,38 +40,27 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "POST /leads é acessível sem autenticação e valida o corpo exclusivamente pelo contrato LeadCapture de @psiops/contracts, sem DTO duplicado na API"
-  - "Payload inválido (email malformado, campos obrigatórios ausentes, campos extras) retorna 400 com detalhes de validação"
-  - "Envio de email já cadastrado é idempotente: retorna a mesma resposta de sucesso do primeiro envio, sem criar duplicata e sem indicar que o email já existia"
-  - "Deduplicação por email é resistente a variações triviais (normalização de caixa e espaços antes de comparar/persistir)"
-  - "Endpoint possui rate-limit; exceder o limite retorna 429"
-  - "Persistência usa o modelo Lead da migration 0001 via @psiops/database, sem qualquer alteração de schema"
-  - "Testes cobrem: fluxo feliz, dedupe (segundo envio do mesmo email), payload inválido e comportamento do rate-limit"
+  - "CRUD de tarefas (título, vencimento, conclusão) conforme os contratos, consumindo DTOs de gen/java, com listagem paginada"
+  - "CRUD de lembretes conforme os contratos, com canal email e vínculo opcional a paciente/consulta/cobrança"
+  - "Vínculo informado que referencie recurso inexistente ou de outro tenant é rejeitado com 404, sem vazar existência"
+  - "Agendar lembrete publica comando/evento Axon persistido no event store JPA; nenhum e-mail é enviado nesta tarefa"
+  - "Toda query escopada ao userId autenticado"
+  - "Testes MockMvc + Testcontainers: CRUD, validações, publicação do comando/evento e isolamento entre tenants"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/api lint"
-  - "pnpm --filter @psiops/api typecheck"
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api test:e2e"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Endpoint público é alvo natural de spam/bots; rate-limit por IP é mitigação parcial e a limitação deve ficar registrada"
-  - "Dedupe sem apoio de constraint única no banco pode duplicar sob concorrência; se a migration 0001 tiver unique em email, tratar o erro de violação como sucesso idempotente"
-  - "Resposta diferente para email novo vs existente permitiria enumeração de emails cadastrados — as respostas devem ser indistinguíveis"
-  - "Se esta tarefa rodar antes da PSI-021, o mecanismo de rota pública deve funcionar mesmo sem o guard global existir ainda, sem conflitar quando ele chegar"
+  - "Contrato do comando/evento de agendamento mal definido agora obriga retrabalho na PSI-029, que consome esse fluxo para registrar deadlines"
+  - "Vínculo opcional a três tipos de recurso (paciente/consulta/cobrança) tende a virar modelagem frouxa; validar exatamente um vínculo quando presente, conforme o contrato"
+  - "Cancelamento/edição de lembrete precisa deixar rastro consistente para a PSI-029 não disparar lembrete revogado"
 out_of_scope:
-  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
-  - "Integração do formulário da landing com este endpoint (tarefa do app landing)"
-  - "Email de confirmação/boas-vindas ao lead e double opt-in"
-  - "Painel administrativo ou listagem de leads"
-  - "Proteções anti-bot adicionais (captcha, honeypot no backend)"
-  - "Instalação de novas dependências no workspace"
+  - "Disparo efetivo por deadline, envio de e-mail e retries (PSI-029)"
+  - "Canais de lembrete além de email (ex.: WhatsApp)"
+  - "Recorrência de tarefas ou lembretes"
+  - "Novas migrations Flyway e alterações em packages/contracts"
 assumptions:
-  - "O contrato LeadCapture já existe em @psiops/contracts com os campos do formulário da landing (nome, WhatsApp, email)"
-  - "O modelo Lead da migration 0001 já existe em @psiops/database com email como chave de deduplicação"
-  - "O rate-limit usa o mecanismo já instalado no scaffold da API; a chave é o IP de origem"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
-open_questions:
-  - "Se o scaffold não tiver mecanismo de rate-limit instalado (ex.: @nestjs/throttler), registrar bloqueio — esta tarefa não pode instalar dependências novas"
-  - "Limites exatos do rate-limit (requisições/janela) precisam de validação de produto; adotar valor conservador e registrá-lo"
+  - "Lembrete carrega momento de disparo (scheduled_at) e, quando vinculado, o vínculo é a exatamente um recurso"
+  - "Cancelar lembrete altera seu status e publica evento correspondente, permitindo à PSI-029 cancelar a deadline associada"
+open_questions: []

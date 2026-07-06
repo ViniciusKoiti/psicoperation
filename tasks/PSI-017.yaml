@@ -1,25 +1,30 @@
 id: PSI-017
-title: "landing: formulário de lista de espera"
+title: "landing: como funciona, citação e FAQ"
 project: landing
 shared_change: false
-branch: "agent/psi-017-landing-form-lista"
-commit_message: "feat(landing): formulário de lista de espera [PSI-017]"
-pr_title: "PSI-017: landing: formulário de lista de espera"
+branch: "agent/psi-017-landing-faq"
+commit_message: "feat(landing): como funciona, pull quote e FAQ acessível [PSI-017]"
+pr_title: "PSI-017: landing: como funciona, citação e FAQ"
 description: |
-  Implementa a seção do formulário de lista de espera (#lista) da landing
-  page, conforme docs/design/landing-page-spec.md e com as primitivas da
-  PSI-013. O formulário captura nome, WhatsApp e email. O campo WhatsApp
-  recebe máscara (XX) XXXXX-XXXX aplicada durante a digitação. A validação
-  usa o schema LeadCapture de @psiops/contracts — é proibido duplicar o DTO
-  no app. Erros são exibidos inline por campo. Em envio bem-sucedido, o
-  formulário é substituído pelo estado de sucesso, como na referência. O
-  envio passa por uma interface LeadAdapter, com implementação mock em
-  memória (nenhuma chamada de rede); a integração com a API real fica para
-  a PSI-039. A referência project/PsiOps Landing.html é somente leitura e
-  não pode ser convertida diretamente para JSX. Fidelidade visual
-  pixel-perfect.
+  Implementa três seções da landing page em apps/landing, conforme
+  docs/design/landing-page-spec.md e com fidelidade visual à referência
+  (project/PsiOps Landing.html, somente leitura — proibido converter HTML
+  diretamente para JSX).
+
+  1. "Como funciona": fluxo numerado de 3 passos apresentando a jornada de
+     adoção do produto.
+  2. Citação: pull quote de largura total em serif Fraunces itálico,
+     momento editorial de respiro entre as seções.
+  3. FAQ: accordion acessível construído a partir de um array tipado de
+     perguntas e respostas (conteúdo idêntico à referência). Diferente do
+     protótipo — que injeta HTML via JS —, aqui o accordion é um
+     componente React declarativo com semântica correta: cada pergunta é
+     um button com aria-expanded e aria-controls, apenas um item aberto
+     por vez, e a abertura/fechamento tem animação de altura suave.
+
+  Construída sobre as primitivas da PSI-014 e os tokens de @psiops/ui.
 dependencies:
-  - "PSI-013"
+  - "PSI-014"
 allowed_paths:
   - "apps/landing/**"
 forbidden_paths:
@@ -31,31 +36,32 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Seção do formulário identificada pela âncora #lista, com campos nome, WhatsApp e email, fiel à referência"
-  - "Máscara (XX) XXXXX-XXXX aplicada ao campo WhatsApp no evento de input, conforme o comportamento da referência"
-  - "Validação implementada com o schema LeadCapture de @psiops/contracts, importado do pacote; nenhum DTO/schema duplicado no app"
-  - "Estado de erro inline por campo (mensagem e indicação visual no campo inválido)"
-  - "Ao enviar com sucesso, o formulário é substituído pelo estado de sucesso, como na referência"
-  - "Envio realizado exclusivamente através da interface LeadAdapter, com implementação mock em memória; nenhuma chamada de rede é feita"
-  - "Componentes construídos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
-  - "Fidelidade visual pixel-perfect à referência na seção do formulário, incluindo os estados de erro e sucesso"
-  - "Testes cobrindo a máscara de WhatsApp, a validação por campo (erros inline) e o fluxo de envio com sucesso"
+  - "Seção Como funciona implementada com fluxo numerado de 3 passos (número, título, descrição) e conteúdo idêntico à referência"
+  - "Pull quote implementada em largura total, tipografia serif Fraunces itálico, com texto e atribuição idênticos à referência"
+  - "FAQ implementado como accordion com dados em array tipado (TypeScript) de perguntas/respostas, com conteúdo idêntico à referência"
+  - "Acessibilidade do accordion: cada cabeçalho de item é um button com aria-expanded refletindo o estado e aria-controls apontando para o painel correspondente; painéis navegáveis por teclado"
+  - "Comportamento de item único: abrir um item fecha o anteriormente aberto"
+  - "Animação de altura na abertura/fechamento dos painéis, fiel ao comportamento da referência, sem quebra quando o conteúdo tem alturas variadas"
+  - "Testes do accordion cobrindo: renderização de todas as perguntas, toggle de aria-expanded ao clicar, apenas um item aberto por vez e fechamento do item ativo"
+  - "Testes de renderização das seções Como funciona e citação"
+  - "pnpm --filter @psiops/landing build e test executam com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/landing test"
   - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing test"
 risks:
-  - "Divergência entre a máscara visual e o formato aceito pelo schema LeadCapture pode fazer entradas visualmente válidas falharem na validação"
-  - "Máscara aplicada no evento de input pode conflitar com o gerenciamento de estado do React (posição do cursor, colar texto)"
-  - "Se a interface LeadAdapter não for definida com cuidado, a troca do mock pela API real (PSI-039) exigirá refatoração do componente"
-  - "Duplicar regras do DTO no app por conveniência viola o critério e cria fonte dupla de verdade"
+  - "Animação de max-height/altura com conteúdo dinâmico pode cortar texto de respostas longas; medir scrollHeight ou usar técnica equivalente robusta"
+  - "A fonte Fraunces em itálico precisa estar carregada com o eixo/peso correto; fallback errado compromete o momento editorial da citação"
+  - "Reproduzir o conteúdo do FAQ manualmente a partir da referência traz risco de typo; conferir literalmente cada pergunta e resposta"
+  - "Semântica ARIA incorreta (ex.: aria-expanded no elemento errado) passa em testes superficiais; incluir asserções específicas de atributos"
 out_of_scope:
-  - "Integração com a API real de captura de leads (PSI-039)"
-  - "Persistência de leads (banco, fila, e-mail)"
-  - "Anti-spam, rate limiting ou captcha"
-  - "Alterações em packages/contracts (o schema LeadCapture é apenas consumido)"
+  - "Demais seções da landing (hero, problema/solução, formulário, CTA final)"
+  - "Scroll reveal e testes E2E do accordion em navegador real (PSI-019)"
+  - "Busca ou filtro no FAQ, deep-linking de item aberto via hash"
+  - "Alterações de copy em relação à referência"
 assumptions:
-  - "O schema LeadCapture já existe em @psiops/contracts e cobre nome, WhatsApp e email; esta tarefa apenas o consome"
-open_questions: []
+  - "docs/design/landing-page-spec.md contém (ou a referência permite extrair fielmente) o conjunto completo de perguntas e respostas do FAQ e os textos dos 3 passos e da citação"
+  - "A fonte Fraunces itálica já está disponível na configuração de fontes do app (PSI-014/PSI-009); caso contrário, configurá-la dentro de apps/landing/** faz parte desta tarefa"
+open_questions:
+  - "O primeiro item do FAQ deve iniciar aberto ou todos fechados (seguir o comportamento exato da referência; registrar qual é ao implementar)?"

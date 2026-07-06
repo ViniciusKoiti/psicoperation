@@ -1,23 +1,29 @@
 id: PSI-016
-title: "landing: como funciona, citação e FAQ"
+title: "landing: seções problema e solução"
 project: landing
 shared_change: false
-branch: "agent/psi-016-landing-faq"
-commit_message: "feat(landing): como funciona, citação e FAQ [PSI-016]"
-pr_title: "PSI-016: landing: como funciona, citação e FAQ"
+branch: "agent/psi-016-landing-problema-solucao"
+commit_message: "feat(landing): seções problema e solução com feature rows [PSI-016]"
+pr_title: "PSI-016: landing: seções problema e solução"
 description: |
-  Implementa três seções da landing page como componentes semânticos,
-  seguindo docs/design/landing-page-spec.md e as primitivas da PSI-013:
-  o fluxo numerado "como funciona" com 3 passos; a pull quote em serif
-  (Fraunces itálico) em largura total; e o FAQ em formato accordion. O
-  accordion deve ser acessível (cada pergunta é um button com aria-expanded),
-  manter apenas um item aberto por vez e animar a altura na abertura e no
-  fechamento. As perguntas e respostas ficam em um array tipado e devem ser
-  idênticas às da referência project/PsiOps Landing.html, que é somente
-  leitura — proibido converter seu HTML diretamente para JSX. Fidelidade
-  visual pixel-perfect.
+  Implementa as seções "Problema" e "Solução" da landing page em
+  apps/landing, conforme docs/design/landing-page-spec.md e com fidelidade
+  visual à referência (project/PsiOps Landing.html, somente leitura —
+  proibido converter HTML diretamente para JSX).
+
+  A seção Problema apresenta 3 cards em colunas com efeito hover de
+  elevação (lift), comunicando as dores da psicóloga solo com cobrança de
+  mensalidades. A seção Solução usa feature rows alternadas (texto/visual
+  invertendo lado a cada linha) com três visuais construídos como
+  componentes: lista de carteira de pacientes, mock de conversa de
+  WhatsApp e card de calculadora de juros.
+
+  O conteúdo textual (títulos, descrições, itens dos mocks) deve ser
+  idêntico ao da referência — a landing já validada não pode sofrer
+  reescrita de copy nesta tarefa. Construída sobre as primitivas da
+  PSI-014 (Section, Wrap, Eyebrow, cards) e os tokens de @psiops/ui.
 dependencies:
-  - "PSI-013"
+  - "PSI-014"
 allowed_paths:
   - "apps/landing/**"
 forbidden_paths:
@@ -29,30 +35,30 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Seção 'como funciona' com fluxo numerado de 3 passos fiel à referência"
-  - "Pull quote em largura total usando Fraunces itálico (serif), fiel à referência"
-  - "FAQ accordion acessível: cada pergunta é um button com aria-expanded refletindo o estado; conteúdo associado corretamente para leitores de tela"
-  - "Apenas um item do accordion aberto por vez; abrir um item fecha o anterior"
-  - "Animação de altura na abertura/fechamento dos itens do accordion"
-  - "Perguntas e respostas definidas em array tipado (TypeScript), com conteúdo idêntico ao da referência project/PsiOps Landing.html"
-  - "Componentes construídos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
-  - "Fidelidade visual pixel-perfect à referência nas três seções"
-  - "Testes de componentes incluindo o comportamento do accordion (abre, fecha, exclusividade de item aberto, aria-expanded)"
+  - "Seção Problema implementada com 3 cards em colunas, cada um com ícone, título e descrição idênticos à referência, e efeito hover lift (elevação + sombra) fiel ao design"
+  - "Seção Solução implementada com feature rows alternadas (visual alternando de lado a cada linha), com textos idênticos à referência"
+  - "Visual 1 da Solução: lista de carteira de pacientes reconstruída como componente (avatares/iniciais, nomes, status de pagamento) fiel à referência"
+  - "Visual 2 da Solução: mock de conversa de WhatsApp reconstruído como componente (balões, timestamps, aparência do chat) fiel à referência"
+  - "Visual 3 da Solução: card de calculadora de juros reconstruído como componente (valores, rótulos, destaque de resultado) fiel à referência"
+  - "Layout responsivo: cards e feature rows colapsam adequadamente em telas estreitas conforme a spec, sem overflow horizontal"
+  - "Testes de componentes cobrindo renderização do conteúdo das duas seções e presença dos três visuais da Solução"
+  - "pnpm --filter @psiops/landing build e test executam com sucesso"
 validation_commands:
-  - "pnpm --filter @psiops/landing test"
   - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing test"
 risks:
-  - "Animação de altura (max-height/scrollHeight) é sensível a conteúdo dinâmico e pode cortar texto se a medição for feita no momento errado"
-  - "Acessibilidade do accordion exige mais que aria-expanded (foco, associação button/painel); implementação superficial pode passar nos testes visuais e falhar para leitores de tela"
-  - "Redigitar perguntas/respostas pode introduzir divergência de conteúdo em relação à referência"
+  - "Os três visuais da Solução são ricos em detalhes (chat do WhatsApp, calculadora); reconstruí-los sem copiar HTML exige conferência visual minuciosa contra a referência"
+  - "Exigência de conteúdo textual idêntico: qualquer 'melhoria' de copy introduzida acidentalmente é regressão — validar por comparação literal com a referência"
+  - "Efeito hover lift deve reutilizar o padrão do design system; duplicar sombras/transições fora dos tokens gera inconsistência com as demais seções"
 out_of_scope:
-  - "Demais seções da landing (hero, problema, solução, formulário, CTA final)"
-  - "Scroll reveal e composição final da página (PSI-018)"
-  - "Busca ou filtragem no FAQ"
-  - "Alterações em pacotes compartilhados"
+  - "Seções hero (PSI-015), como funciona/quote/FAQ (PSI-017), formulário (PSI-018) e CTA final/composição (PSI-019)"
+  - "Animações de scroll reveal (PSI-019)"
+  - "Qualquer alteração de copy ou de conteúdo em relação à referência"
+  - "Funcionalidade real de calculadora de juros (o card é estático/ilustrativo)"
 assumptions:
-  - "A referência constrói o FAQ dinamicamente a partir de um array em JS; a versão React mantém o mesmo dado como array tipado local ao app"
-open_questions: []
+  - "docs/design/landing-page-spec.md descreve o conteúdo e a estrutura das duas seções; o protótipo serve apenas para conferência visual e extração fiel do texto"
+  - "O padrão de hover lift está disponível via primitivas/tokens entregues por PSI-014 e @psiops/ui; caso falte, sua implementação local em apps/landing faz parte desta tarefa"
+open_questions:
+  - "O card de calculadora de juros deve exibir valores fixos idênticos aos da referência, ou a spec prevê variação futura (interatividade fica de fora de qualquer forma)?"

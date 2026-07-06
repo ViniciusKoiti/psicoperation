@@ -1,6 +1,6 @@
 # ADR 0003 — Stack por aplicação
 
-- Status: aceito
+- Status: substituído pelo ADR 0007 em 2026-07-05 (pivô de stack)
 - Data: 2026-07-05
 
 ## Contexto

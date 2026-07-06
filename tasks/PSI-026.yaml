@@ -1,25 +1,40 @@
 id: PSI-026
-title: "api: tarefas e lembretes"
+title: "api: módulo financeiro (mensalidades)"
 project: api
 shared_change: false
-branch: "agent/psi-026-api-tarefas-lembretes"
-commit_message: "feat(api): tarefas e lembretes com eventos via outbox [PSI-026]"
-pr_title: "PSI-026: api: tarefas e lembretes"
+branch: "agent/psi-026-modulo-financeiro"
+commit_message: "feat(api): implementa módulo financeiro de mensalidades [PSI-026]"
+pr_title: "PSI-026: api: módulo financeiro (mensalidades)"
 description: |
-  Implementa na API NestJS o módulo de organização pessoal da psicóloga:
-  tarefas (título, vencimento, conclusão) e lembretes por email, com vínculo
-  opcional a paciente, consulta ou cobrança. O agendamento de um lembrete
-  não envia nada diretamente: a API grava um evento na tabela Outbox via
-  @psiops/database e o app automation (BullMQ) é o único responsável por
-  consumir a Outbox e disparar o email — é proibido a API falar com Redis ou
-  com filas diretamente. Todo o CRUD é escopado à psicóloga autenticada
-  (userId em toda query) e toda validação de entrada e saída usa
-  exclusivamente os schemas de tarefas/lembretes de @psiops/contracts, sem
-  DTOs duplicados. A tarefa consome @psiops/database como está: não altera
-  schema, migrations nem qualquer arquivo de packages/contracts ou
-  packages/database.
+  Implementa o módulo financeiro de mensalidades em apps/api conforme os
+  contratos da PSI-020 (DTOs de gen/java), sobre a tabela charges da PSI-021,
+  escopado ao userId autenticado em toda query.
+
+  Funcionalidades:
+  - Mensalidades por paciente: valor em centavos (inteiro), competência
+    (AAAA-MM), vencimento e status em_dia/pendente/atrasada, conforme o
+    contrato.
+  - Geração idempotente das mensalidades do mês via endpoint: acionar a
+    geração para a mesma competência repetidas vezes não cria duplicatas
+    (chave natural user_id + paciente + competência); pacientes arquivados não
+    recebem mensalidade nova.
+  - Marcação de pagamento com data, transicionando o status corretamente.
+  - Visão de inadimplência: listagem das cobranças atrasadas com totais,
+    conforme o contrato.
+  - Juros simples com taxa mensal configurável, mantendo paridade com a
+    calculadora exibida na landing page: valor corrigido = valor original +
+    (valor original * taxa * tempo de atraso), calculado sobre centavos com
+    arredondamento determinístico e testado.
+  - Publicação do evento de domínio cobranca.atrasada via Axon quando a
+    condição de atraso é detectada, persistido no event store JPA (o schema do
+    evento segue o envelope comum da PSI-020; a verificação diária agendada é
+    responsabilidade da PSI-029).
+
+  Testes cobrem cálculo de juros (casos de borda e arredondamento), transições
+  de status, idempotência da geração mensal, publicação do evento e isolamento
+  entre tenants.
 dependencies:
-  - "PSI-021"
+  - "PSI-023"
 allowed_paths:
   - "apps/api/**"
 forbidden_paths:
@@ -31,37 +46,33 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "CRUD de tarefas com título, vencimento e marcação de conclusão, conforme os contratos de @psiops/contracts, escopado por userId em toda query"
-  - "CRUD de lembretes com canal email e vínculo opcional a paciente, consulta ou cobrança; vínculo apontando para recurso inexistente ou de outra usuária retorna 404"
-  - "Criar ou reagendar um lembrete grava um evento na tabela Outbox na mesma transação da escrita do lembrete; cancelar o lembrete registra o evento correspondente"
-  - "A API não contém nenhuma conexão com Redis nem cliente de fila; a comunicação com o app automation ocorre exclusivamente via tabela Outbox"
-  - "Listagens de tarefas e lembretes são paginadas e permitem filtrar por estado (pendente/concluída; lembrete futuro/passado)"
-  - "Entrada e saída validadas exclusivamente pelos schemas de @psiops/contracts; payload inválido retorna 400"
-  - "Testes cobrem CRUD de tarefas e lembretes, conclusão de tarefa, gravação de evento na Outbox no agendamento/reagendamento/cancelamento, validação de vínculos e isolamento entre tenants"
+  - "Mensalidades por paciente com valor em centavos, competência, vencimento e status em_dia/pendente/atrasada, conforme os contratos (DTOs de gen/java)"
+  - "Endpoint de geração das mensalidades do mês é idempotente: repetir a chamada para a mesma competência não cria duplicatas"
+  - "Pacientes arquivados não recebem novas mensalidades na geração"
+  - "Marcação de pagamento registra data e transiciona o status corretamente, inclusive para cobrança já atrasada"
+  - "Visão de inadimplência lista cobranças atrasadas do usuário conforme o contrato"
+  - "Juros simples calculado com taxa configurável, em centavos, com arredondamento determinístico e paridade com a calculadora da landing"
+  - "Evento cobranca.atrasada publicado via Axon quando o atraso é detectado, sem duplicar publicação para a mesma cobrança"
+  - "Toda query escopada ao userId autenticado; testes de isolamento entre tenants incluídos"
+  - "Testes de cálculo de juros, transições de status e idempotência da geração"
+  - "cd apps/api && ./mvnw verify verde"
 validation_commands:
-  - "pnpm --filter @psiops/api lint"
-  - "pnpm --filter @psiops/api typecheck"
-  - "pnpm --filter @psiops/api test"
-  - "pnpm --filter @psiops/api test:e2e"
+  - "cd apps/api && ./mvnw verify"
 risks:
-  - "Gravar o evento de lembrete fora da transação da escrita pode gerar lembrete sem evento (nunca dispara) ou evento sem lembrete (dispara indevidamente)"
-  - "Reagendamento sem invalidar/atualizar o evento anterior na Outbox pode gerar envio duplicado pelo automation"
-  - "Contrato do payload do evento na Outbox mal definido acopla API e automation de forma frágil; o formato deve vir de @psiops/contracts"
-  - "Vínculos opcionais a três tipos de recurso (paciente/consulta/cobrança) multiplicam casos de borda de validação e de tenant"
+  - "Divergência de arredondamento entre o cálculo em Java e o da calculadora JS da landing quebra a paridade prometida; fixar regra (ex.: base diária vs mensal, arredondamento half-up em centavos) e testá-la explicitamente"
+  - "Geração mensal sem controle de concorrência pode duplicar cobranças sob requisições simultâneas; idempotência deve se apoiar em unicidade verificável"
+  - "Publicação repetida de cobranca.atrasada para a mesma cobrança geraria lembretes/e-mails duplicados na PSI-029"
+  - "Regras de transição de status incompletas (ex.: pagamento de cobrança atrasada) podem corromper a visão de inadimplência"
 out_of_scope:
-  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
-  - "Envio efetivo de emails e processamento da Outbox (responsabilidade do app automation)"
-  - "Canais além de email (WhatsApp, push, SMS)"
-  - "Recorrência de tarefas ou de lembretes"
-  - "Telas de tarefas/lembretes no clinic"
-  - "Instalação de novas dependências no workspace"
+  - "Verificação diária agendada de vencidos e envio de e-mails (PSI-029)"
+  - "Integração com meios de pagamento (Pix, boleto, cartão)"
+  - "Multa fixa, descontos, parcelamento ou juros compostos"
+  - "Novas migrations Flyway e alterações em packages/contracts"
 assumptions:
-  - "Os modelos de tarefa, lembrete e a tabela Outbox já existem em @psiops/database conforme migrations anteriores"
-  - "Os schemas de tarefas/lembretes e o formato dos eventos de Outbox já existem em @psiops/contracts"
-  - "O tratamento de reagendamento adotado (evento de cancelamento + novo evento, ou atualização do evento pendente) segue o que a estrutura da Outbox permitir, com a decisão registrada no código"
-  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+  - "A taxa de juros é configurável por usuária via settings (contrato da PSI-020), com default global em application.yml alinhado à calculadora da landing"
+  - "Tempo de atraso para juros simples contado em base mensal pro rata dia, salvo definição diversa no contrato"
+  - "A detecção de atraso nesta tarefa ocorre nas operações do módulo (consulta/atualização); a varredura diária proativa é da PSI-029"
 open_questions:
-  - "Semântica exata de reagendamento na Outbox (cancelar + recriar vs atualizar evento pendente) caso os contratos não a determinem — registrar a decisão adotada para alinhamento com o app automation"
+  - "Confirmar a fórmula exata (taxa mensal pro rata dia vs taxa diária) usada na calculadora da landing para garantir paridade de resultados"

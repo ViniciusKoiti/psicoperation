@@ -1,24 +1,36 @@
 id: PSI-037
-title: "clinic: configurações"
+title: "clinic: organização financeira"
 project: clinic
 shared_change: false
-branch: "agent/psi-037-clinic-configuracoes"
-commit_message: "feat(clinic): tela de configurações e logout [PSI-037]"
-pr_title: "PSI-037: clinic — configurações"
+branch: "agent/psi-037-organizacao-financeira"
+commit_message: "feat(clinic): organização financeira de mensalidades [PSI-037]"
+pr_title: "PSI-037: clinic — organização financeira (mensalidades)"
 description: |
-  Implementa no app clinic a área de configurações da conta, permitindo
-  que a psicóloga edite seu perfil profissional, o valor padrão de
-  sessão, os dias e horários de atendimento e as preferências de
-  lembrete, além de encerrar a sessão (logout). A persistência usa o
-  SettingsAdapter sob o mesmo contrato de configurações já empregado no
-  onboarding, garantindo que um dado ajustado no onboarding e o mesmo
-  dado ajustado nas configurações sejam lidos e escritos de forma
-  idêntica. Os formulários validam com os schemas Zod de
-  @psiops/contracts e a tela trata estados de carregamento, erro e
-  salvamento, com feedback claro de sucesso em pt-BR.
+  Implementa o núcleo financeiro do app clinic, centrado em mensalidades —
+  o modelo de cobrança principal do produto para psicólogas solo.
+
+  A visão mensal apresenta as mensalidades do mês selecionado agrupadas por
+  status (em dia, pendente, atrasada), com navegação entre meses e totais
+  por status e total geral, sempre em centavos BRL na camada de dados e
+  formatados como R$ na UI. A ação "gerar mensalidades do mês" cria as
+  cobranças do período a partir dos pacientes ativos e seus valores
+  acordados, de forma idempotente (não duplica mensalidades já geradas) e
+  com resumo do que foi criado. Marcar como paga registra a data de
+  pagamento e move a mensalidade para "em dia", com possibilidade de
+  desfazer o engano.
+
+  Inclui a calculadora de juros simples com paridade funcional com o card
+  da landing (project/PsiOps Landing.html, seção Solução): mesmos campos e
+  mesma fórmula de juros simples sobre o valor em atraso, implementada como
+  função pura testada — a landing serve apenas de referência de
+  comportamento, nada é copiado ou alterado nela.
+
+  Todo acesso a dados passa pelo FinanceAdapter tipado, com
+  MockFinanceAdapter em memória (padrão em dev/test, com dados semente nos
+  três status) e seleção mock/http no ponto único de composição. Estados de
+  carregamento, mês sem mensalidades e erro com retry são tratados.
 dependencies:
-  - "PSI-028"
-  - "PSI-029"
+  - "PSI-033"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -30,36 +42,34 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Edição de perfil profissional (dados exibidos conforme os DTOs de @psiops/contracts) com validação Zod e feedback de sucesso ao salvar"
-  - "Edição do valor padrão de sessão com validação de valor monetário conforme os contratos"
-  - "Configuração de dias e horários de atendimento consistente com o formato usado pelos contratos"
-  - "Edição das preferências de lembrete (canal email e momentos de envio previstos nos contratos)"
-  - "Logout encerra a sessão e redireciona para a tela de entrada, limpando o estado autenticado do app"
-  - "Persistência realizada via SettingsAdapter usando o mesmo contrato de configurações do onboarding; valores salvos no onboarding aparecem pré-carregados aqui"
-  - "Estados de carregamento, erro de carregamento e erro de salvamento são tratados"
-  - "Testes cobrem edição e persistência de cada seção, pré-carregamento dos valores existentes e o fluxo de logout"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Visão mensal com navegação entre meses exibindo mensalidades agrupadas por status (em dia, pendente, atrasada), com totais por status e total geral formatados como R$"
+  - "Todos os valores monetários trafegam em centavos BRL na camada de dados; formatação como moeda ocorre apenas na UI; datas em ISO 8601"
+  - "Ação de gerar mensalidades do mês cria cobranças a partir dos pacientes ativos e seus valores acordados, é idempotente e apresenta resumo do resultado"
+  - "Marcar mensalidade como paga registra data de pagamento, atualiza status e totais imediatamente e permite desfazer"
+  - "Calculadora de juros simples com paridade de campos e fórmula com o card da landing, implementada como função pura sem efeitos colaterais"
+  - "FinanceAdapter tipado com MockFinanceAdapter (memória, padrão em dev/test); seleção mock/http no ponto único de composição; sem chamadas HTTP reais"
+  - "Estados tratados: carregando (skeleton), mês sem mensalidades e erro com ação de tentar novamente"
+  - "Testes cobrem cálculo de juros (incluindo casos de borda: zero dias de atraso, arredondamento em centavos), agrupamento e totais por status, geração idempotente e marcação de pagamento com desfazer"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Divergência entre o formulário de configurações e o de onboarding sobre o mesmo contrato criaria dois comportamentos para o mesmo dado"
-  - "Alterar o valor padrão de sessão levanta a questão de efeito retroativo sobre mensalidades já geradas; sem definição, o comportamento seguro é não retroagir"
-  - "Logout incompleto (estado residual em memória ou storage) pode vazar dados entre sessões no mesmo navegador"
+  - "Aritmética monetária em ponto flutuante causa erros de centavos — mitigado operando somente com inteiros (centavos) e definindo regra explícita de arredondamento no juro"
+  - "Regra de transição pendente → atrasada depende de data de vencimento e fuso horário; fronteira mal definida classifica mensalidades incorretamente"
+  - "A fórmula do card da landing é a referência de paridade; se a landing mudar, a paridade se perde — a fórmula fica documentada nos testes como fonte de verdade do app"
+  - "Geração de mensalidades sem idempotência criaria cobranças duplicadas; o contrato do adapter precisa expressar essa garantia para valer também na API real"
 out_of_scope:
-  - "Alteração de email de login, senha ou exclusão de conta"
-  - "Novos campos ou mudanças nos contratos de configurações (packages/contracts é intocável)"
-  - "Integração com a API real (PSI-039)"
-  - "Faturamento/assinatura do próprio PsiOps (billing da plataforma)"
-  - "Instalação de novas dependências"
+  - "Pagamentos online, PIX, boletos ou integração com gateways"
+  - "Envio de cobrança por WhatsApp/email (lembretes são da PSI-038)"
+  - "Aplicação automática de juros ao valor da mensalidade (a calculadora é ferramenta de consulta)"
+  - "Relatórios financeiros, exportação e conciliação bancária"
+  - "Integração real com a API (PSI-044)"
 assumptions:
-  - "O contrato de configurações e o SettingsAdapter foram estabelecidos no fluxo de onboarding do clinic e esta tarefa os reutiliza sem alterações de interface"
-  - "Alterar o valor padrão de sessão afeta apenas cobranças futuras, sem efeito retroativo"
-  - "O mecanismo de sessão/logout segue o que o shell do app definiu na PSI-028 (mock de autenticação até a PSI-039)"
+  - "O valor da mensalidade deriva do valor acordado por paciente (PSI-033) ou, na ausência, do valor padrão de sessão das configurações"
+  - "Mensalidade vencida e não paga torna-se 'atrasada' no dia seguinte ao vencimento, no fuso do navegador"
+  - "A calculadora usa juros simples pró-rata dia, como no card da landing, e apenas exibe o resultado (não altera a cobrança)"
 open_questions:
-  - "As preferências de lembrete definidas aqui devem sobrescrever configurações feitas por lembrete individual na PSI-036, ou atuar apenas como padrão inicial?"
-  - "O onboarding do clinic é a PSI-029, mas as dependências especificadas listam apenas PSI-028; a PSI-029 não deveria constar como dependência, já que o SettingsAdapter reutiliza o contrato do onboarding?"
+  - "O dia de vencimento da mensalidade é fixo por paciente, global da conta ou informado na geração do mês? Assumido dia único global configurável na geração até definição de produto"

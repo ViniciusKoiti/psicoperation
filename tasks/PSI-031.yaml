@@ -1,25 +1,32 @@
 id: PSI-031
-title: "clinic: pacientes (lista e cadastro)"
+title: "clinic: onboarding"
 project: clinic
 shared_change: false
-branch: "agent/psi-031-clinic-pacientes"
-commit_message: "feat(clinic): lista e cadastro de pacientes [PSI-031]"
-pr_title: "PSI-031: clinic — pacientes (lista e cadastro)"
+branch: "agent/psi-031-onboarding"
+commit_message: "feat(clinic): fluxo de onboarding pós-registro em passos [PSI-031]"
+pr_title: "PSI-031: clinic — onboarding pós-registro"
 description: |
-  Implementa no app clinic (Vite + React + Mantine) o módulo de pacientes,
-  primeira funcionalidade de domínio da área logada. Entrega a lista de
-  pacientes com busca por nome e paginação, o fluxo de cadastro e edição
-  com validação baseada exclusivamente nos schemas Zod de @psiops/contracts,
-  e o arquivamento de paciente com confirmação explícita. Todo o acesso a
-  dados passa por um PatientsAdapter mock em memória, fiel aos contratos,
-  de modo que a troca pelo adapter HTTP real (PSI-039) não exija mudanças
-  nas telas. A UI cobre os estados de lista vazia, carregamento e erro,
-  garantindo que o módulo seja utilizável e testável de ponta a ponta sem
-  backend. Nenhum DTO local é criado: tipos e validações vêm somente de
-  @psiops/contracts.
+  Implementa o fluxo de onboarding exibido após o registro no app clinic,
+  guiando a psicóloga na configuração inicial da conta em passos sequenciais:
+
+  1. Perfil profissional — nome de exibição e CRP (opcional);
+  2. Valor padrão de sessão — em centavos BRL, exibido/formatado como moeda
+     brasileira na UI;
+  3. Dias e horários de atendimento — seleção dos dias da semana e janelas
+     de horário;
+  4. Preferências de lembrete — canais e antecedência padrão.
+
+  O fluxo é construído com Mantine (Stepper ou equivalente tematizado pelos
+  tokens @psiops/ui) e persiste os dados via SettingsAdapter, com
+  MockSettingsAdapter em memória como implementação padrão. O onboarding é
+  interrompível: a usuária pode pular qualquer passo (ou o fluxo inteiro) e
+  retomar depois de onde parou — o progresso parcial persistido pelo adapter
+  determina o passo de retomada. Ao concluir ou pular, a usuária é levada ao
+  dashboard. O contrato do SettingsAdapter é definido de forma a ser
+  reutilizado sem alterações pela tela de configurações (PSI-039).
 dependencies:
-  - "PSI-028"
-  - "PSI-019"
+  - "PSI-030"
+  - "PSI-020"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -31,36 +38,32 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Lista de pacientes exibe nome e dados essenciais definidos nos DTOs de @psiops/contracts"
-  - "Busca por nome filtra a lista e paginação funciona em conjunto com a busca"
-  - "Formulário de cadastro valida os campos com os schemas Zod de @psiops/contracts, exibindo mensagens de erro por campo"
-  - "Edição de paciente reutiliza o formulário de cadastro pré-preenchido e persiste as alterações via adapter"
-  - "Arquivamento exige confirmação explícita do usuário e remove o paciente da listagem padrão"
-  - "PatientsAdapter mock em memória implementa a interface derivada dos contratos, sem tipos duplicados no app"
-  - "Estados de lista vazia, carregamento e erro são renderizados com feedback claro em pt-BR"
-  - "Testes cobrem busca, paginação, validação de formulário, arquivamento com confirmação e os estados vazio/carregando/erro"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Fluxo em passos exibido após o registro: perfil profissional (nome de exibição, CRP opcional), valor padrão de sessão, dias/horários de atendimento e preferências de lembrete"
+  - "UI em pt-BR com Mantine e tema dos tokens @psiops/ui; valor de sessão armazenado em centavos BRL e exibido formatado como R$"
+  - "Cada passo valida seus campos antes de avançar; CRP é opcional e, quando preenchido, tem formato validado"
+  - "É possível pular passos individuais e o fluxo completo; o progresso parcial é persistido via SettingsAdapter e a retomada reabre no passo pendente"
+  - "SettingsAdapter tipado com MockSettingsAdapter (memória) como padrão em dev/test; contrato desenhado para reutilização direta na PSI-039"
+  - "Conclusão ou pulo do onboarding redireciona ao dashboard; usuária que já concluiu não vê o fluxo novamente"
+  - "Testes cobrem navegação entre passos (avançar/voltar), pulo, retomada do ponto salvo e persistência dos dados no adapter mock"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Interface do PatientsAdapter mock divergente do contrato real dificultaria a troca pelo adapter HTTP na PSI-039"
-  - "Comportamento de paginação implementado apenas no client pode divergir da semântica de paginação da API real"
-  - "Validações duplicadas fora dos schemas Zod dos contratos podem criar regras conflitantes entre client e API"
+  - "Conteúdo dos passos ainda não validado com produto pode exigir retrabalho de UI e do contrato do SettingsAdapter"
+  - "Se o contrato do SettingsAdapter divergir do que a PSI-039 precisar, haverá refatoração dupla — mitigado definindo o contrato pelo domínio (perfil, valor, horários, lembretes) e não pela UI do wizard"
+  - "Estado de retomada mal definido (ex.: passo salvo parcialmente) pode gerar loops ou perda de dados no reingresso"
 out_of_scope:
-  - "Integração com a API real (adapters HTTP são entregues na PSI-039)"
-  - "Página de detalhe e histórico do paciente (PSI-032)"
-  - "Criação ou alteração de schemas em packages/contracts"
-  - "Exclusão definitiva de pacientes (apenas arquivamento)"
-  - "Campos clínicos, diagnóstico ou qualquer recomendação clínica automatizada"
-  - "Instalação de novas dependências"
+  - "Persistência real na API (integração completa só na PSI-044)"
+  - "Tela de configurações completa (PSI-039)"
+  - "Envio real de lembretes (PSI-038)"
+  - "Importação de pacientes ou agenda durante o onboarding"
 assumptions:
-  - "PSI-028 entregou o shell do app clinic (roteamento, layout autenticado e infraestrutura de adapters) e PSI-019 entregou os contratos de paciente em @psiops/contracts"
-  - "O nome do workspace do app é @psiops/clinic, seguindo a convenção @psiops/* dos demais pacotes"
-  - "A busca e a paginação são resolvidas pelo adapter (no mock, em memória), mantendo a assinatura parametrizada por página e termo conforme os contratos"
-  - "Arquivamento é uma mudança de status prevista nos contratos, e não remoção do registro"
-open_questions: []
+  - "O fluxo de autenticação e a rota pós-registro da PSI-030 estão disponíveis"
+  - "Enquanto os contratos de settings não estiverem em gen/ts, os tipos do adapter ficam locais ao app e serão alinhados aos contratos quando publicados"
+  - "Validação de CRP limita-se a formato (região/número), sem consulta a base externa do CFP"
+open_questions:
+  - "O conteúdo exato dos passos (campos, ordem e obrigatoriedade) pede validação de produto — os quatro passos listados são a hipótese de trabalho"
+  - "Preferências de lembrete no onboarding devem oferecer apenas o canal email (escopo da PSI-038) ou já exibir canais futuros desabilitados?"

@@ -1,25 +1,34 @@
 id: PSI-033
-title: "clinic: agenda e consultas"
+title: "clinic: pacientes (lista e cadastro)"
 project: clinic
 shared_change: false
-branch: "agent/psi-033-clinic-agenda-consultas"
-commit_message: "feat(clinic): agenda com consultas e detecção de conflito [PSI-033]"
-pr_title: "PSI-033: clinic — agenda e consultas"
+branch: "agent/psi-033-pacientes-lista-cadastro"
+commit_message: "feat(clinic): lista, cadastro e arquivamento de pacientes [PSI-033]"
+pr_title: "PSI-033: clinic — pacientes (lista e cadastro)"
 description: |
-  Implementa no app clinic o módulo de agenda, coração operacional do
-  produto para a psicóloga solo. Entrega as visões semanal e diária da
-  agenda, com criação, remarcação e cancelamento de consultas vinculadas
-  a pacientes. A detecção de conflito de horário roda no client aplicando
-  exatamente a mesma regra expressa nos contratos de @psiops/contracts,
-  evitando divergência entre o que a UI bloqueia e o que a API rejeitará.
-  Inclui recorrência semanal simples: ao criar uma consulta recorrente,
-  as ocorrências seguintes são geradas no mesmo dia da semana e horário.
-  Todo o acesso a dados passa por um AgendaAdapter mock em memória fiel
-  aos contratos, preparado para substituição pelo adapter HTTP na
-  PSI-039. Estados de carregamento, erro e agenda vazia são tratados.
+  Implementa a gestão básica de pacientes no app clinic: listagem, cadastro,
+  edição e arquivamento.
+
+  A lista apresenta os pacientes ativos com busca por nome (filtro com
+  debounce) e paginação, ambas resolvidas pelo adapter para que o
+  comportamento seja idêntico quando o HttpPatientsAdapter entrar em uso.
+  O cadastro e a edição usam formulários Mantine validados de forma
+  consistente com os contratos de pacientes — os tipos de
+  packages/contracts/gen/ts são a fonte única dos DTOs, sem redeclaração
+  no app. Dados cadastrais são administrativos (nome, contato, valor de
+  sessão acordado em centavos BRL etc.); nenhum campo clínico existe no
+  formulário.
+
+  O arquivamento substitui exclusão: exige confirmação em modal explicando
+  a consequência (paciente sai da lista ativa, histórico preservado) e é
+  reversível pelo adapter. Todo acesso a dados passa pelo PatientsAdapter
+  tipado, com MockPatientsAdapter em memória (padrão em dev/test, com
+  dados semente paginados) e a seleção mock/http no ponto único de
+  composição. A lista trata estados vazio (sem pacientes e busca sem
+  resultados), carregando e erro com retry.
 dependencies:
-  - "PSI-028"
-  - "PSI-019"
+  - "PSI-030"
+  - "PSI-020"
 allowed_paths:
   - "apps/clinic/**"
 forbidden_paths:
@@ -31,38 +40,32 @@ forbidden_paths:
   - "turbo.json"
   - ".github/workflows/**"
   - "packages/contracts/**"
-  - "packages/database/**"
-  - "**/migrations/**"
+  - "**/db/migration/**"
 acceptance_criteria:
-  - "Visão semanal exibe as consultas da semana corrente com navegação para semanas anteriores e seguintes"
-  - "Visão diária exibe as consultas do dia selecionado, com alternância fluida entre as duas visões"
-  - "Criação de consulta vincula paciente, data, horário e duração, validados pelos schemas Zod de @psiops/contracts"
-  - "Remarcação altera data/horário de uma consulta existente preservando o vínculo com o paciente"
-  - "Cancelamento exige confirmação e mantém a consulta com status cancelado, conforme os contratos"
-  - "Tentativa de criar ou remarcar consulta em horário conflitante é bloqueada no client, aplicando a mesma regra de conflito expressa nos contratos"
-  - "Recorrência semanal simples gera ocorrências no mesmo dia da semana e horário"
-  - "AgendaAdapter mock em memória implementa a interface derivada dos contratos, sem tipos duplicados no app"
-  - "Testes cobrem criação, remarcação, cancelamento, recorrência e cenários de conflito (sobreposição total e parcial de horários)"
-  - "Nenhuma dependência nova é adicionada ao workspace"
+  - "Lista de pacientes ativos com busca por nome (debounce) e paginação, ambas delegadas ao PatientsAdapter"
+  - "Cadastro e edição com formulários Mantine validados de forma consistente com os contratos de pacientes, usando exclusivamente os tipos de packages/contracts/gen/ts"
+  - "Nenhum campo clínico nos formulários; dados são estritamente administrativos e financeiros (valores em centavos BRL, datas ISO 8601)"
+  - "Arquivamento com modal de confirmação em pt-BR explicando a consequência; paciente arquivado sai da lista padrão"
+  - "PatientsAdapter tipado com MockPatientsAdapter (memória, dados semente, padrão em dev/test); seleção mock/http no ponto único de composição; sem chamadas HTTP reais"
+  - "Estados tratados na lista: vazio sem pacientes, busca sem resultados, carregando (skeleton) e erro com ação de tentar novamente"
+  - "Testes cobrem busca, paginação, criação, edição, arquivamento com confirmação e os estados vazio/carregando/erro"
+  - "pnpm --filter @psiops/clinic test e pnpm --filter @psiops/clinic build passam sem erros"
 validation_commands:
-  - "pnpm --filter @psiops/clinic lint"
-  - "pnpm --filter @psiops/clinic typecheck"
   - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
 risks:
-  - "Reimplementar a regra de conflito no app em vez de consumi-la dos contratos criaria divergência silenciosa entre client e API"
-  - "Manipulação de datas e fusos horários é fonte clássica de bugs em agendas; casos de virada de dia e horário de verão precisam de atenção nos testes"
-  - "Recorrência mal delimitada pode gerar ocorrências ilimitadas no mock e degradar a renderização das visões"
+  - "Semântica de busca/paginação do mock (case/acentos, tamanho de página) pode divergir da API real e mudar o comportamento percebido na integração (PSI-044)"
+  - "Validações client-side mais frouxas ou mais rígidas que os contratos causam rejeições inesperadas na integração — mitigado derivando regras dos tipos gerados"
+  - "Arquivamento sem regra clara sobre consultas futuras agendadas do paciente pode deixar dados órfãos na agenda"
 out_of_scope:
-  - "Registros administrativos de presença/falta (PSI-034)"
-  - "Lembretes de consulta (configuração na PSI-036, envio na PSI-038)"
-  - "Integração com a API real (PSI-039)"
-  - "Recorrências complexas (quinzenal, mensal, exceções por data)"
-  - "Sincronização com calendários externos (Google Calendar etc.)"
-  - "Instalação de novas dependências"
+  - "Tela de detalhe e histórico do paciente (PSI-034)"
+  - "Exclusão definitiva de pacientes e fluxos de LGPD (portabilidade/eliminação)"
+  - "Importação em massa de pacientes"
+  - "Integração real com a API (PSI-044)"
+  - "Alterações em packages/contracts"
 assumptions:
-  - "A regra de conflito de horário está expressa em @psiops/contracts (schema ou função pura exportada) e o app apenas a consome; nada é alterado em packages/contracts"
-  - "Recorrência semanal simples significa repetição no mesmo dia da semana e horário, com um horizonte finito de geração definido na implementação e coberto por testes"
-  - "Consultas pertencem à única psicóloga logada; não há agenda multiprofissional"
+  - "PSI-020 fornece os contratos de pacientes com tipos gerados em packages/contracts/gen/ts"
+  - "A busca do mock é insensível a maiúsculas e acentos, como comportamento esperado da API"
+  - "Pacientes arquivados ficam acessíveis por um filtro/aba dedicada na própria lista"
 open_questions:
-  - "Qual o horizonte padrão de geração de ocorrências recorrentes (número de semanas ou data-limite)?"
-  - "Consulta cancelada deve liberar o horário para novo agendamento imediatamente?"
+  - "Ao arquivar paciente com consultas futuras agendadas, as consultas devem ser canceladas automaticamente, mantidas ou o arquivamento deve ser bloqueado? Pede definição de produto"
