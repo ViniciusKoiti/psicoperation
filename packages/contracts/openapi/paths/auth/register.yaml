@@ -1,0 +1,33 @@
+# Path item: /auth/register
+post:
+  tags:
+    - auth
+  operationId: registerUser
+  summary: Registra uma nova conta
+  description: >-
+    Cria a conta da psicóloga e já inicia a sessão, retornando a conta criada
+    e o par de tokens (access JWT + refresh). Endpoint público.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/auth/schemas.yaml#/RegisterRequest"
+  responses:
+    "201":
+      description: Conta criada e sessão iniciada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/auth/schemas.yaml#/AuthResponse"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "409":
+      description: E-mail já cadastrado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

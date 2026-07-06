@@ -1,0 +1,22 @@
+# Path item: /auth/session
+get:
+  tags:
+    - auth
+  operationId: getCurrentSession
+  summary: Consulta a sessão corrente
+  description: >-
+    Retorna a conta autenticada e a expiração do access token apresentado.
+    Requer bearer token JWT válido.
+  security:
+    - bearerAuth: []
+  responses:
+    "200":
+      description: Sessão válida.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/auth/schemas.yaml#/SessionResponse"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

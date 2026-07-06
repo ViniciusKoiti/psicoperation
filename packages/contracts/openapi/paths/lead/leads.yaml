@@ -1,0 +1,33 @@
+# Path item: /leads
+post:
+  tags:
+    - lead
+  operationId: createLead
+  summary: Entra na lista de espera
+  description: >-
+    Registra um lead da lista de espera capturado pelo formulário da landing
+    page (nome, WhatsApp brasileiro em E.164 e e-mail). Endpoint público.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/lead/schemas.yaml#/LeadCreateRequest"
+  responses:
+    "201":
+      description: Lead registrado na lista de espera.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/lead/schemas.yaml#/Lead"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "409":
+      description: E-mail já registrado na lista de espera.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

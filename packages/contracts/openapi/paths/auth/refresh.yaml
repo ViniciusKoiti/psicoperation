@@ -1,0 +1,34 @@
+# Path item: /auth/refresh
+post:
+  tags:
+    - auth
+  operationId: refreshToken
+  summary: Renova o par de tokens
+  description: >-
+    Troca um refresh token válido por um novo par de tokens. O refresh token
+    apresentado é invalidado (rotação de uso único). Endpoint público — a
+    credencial é o próprio refresh token no corpo.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/auth/schemas.yaml#/RefreshTokenRequest"
+  responses:
+    "200":
+      description: Novo par de tokens emitido.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/auth/schemas.yaml#/TokenPair"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      description: Refresh token inválido, expirado ou já utilizado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

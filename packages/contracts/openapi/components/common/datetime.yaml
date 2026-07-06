@@ -1,0 +1,20 @@
+# Representações canônicas de data e data/hora na API: ISO 8601
+# (restrição de produto inviolável).
+IsoDate:
+  type: string
+  format: date
+  description: >-
+    Data de calendário ISO 8601 (`YYYY-MM-DD`), sem componente de hora nem
+    fuso. Usada para conceitos de "dia civil" (ex.: dia de vencimento).
+  examples:
+    - "2026-07-05"
+
+IsoDateTime:
+  type: string
+  format: date-time
+  description: >-
+    Instante ISO 8601 / RFC 3339 com offset explícito. O backend sempre emite
+    em UTC com sufixo `Z` (ex.: `2026-07-05T12:00:00Z`); a conversão para o
+    fuso da usuária é responsabilidade da camada de apresentação.
+  examples:
+    - "2026-07-05T12:00:00Z"
