@@ -1,0 +1,161 @@
+# CI do monorepo PsiOps (PSI-004).
+#
+# Jobs independentes por ecossistema:
+#   - js:     Node 22 (via .nvmrc) + pnpm com cache; turbo orquestra lint,
+#             typecheck, test e build do lado JS.
+#   - api:    JDK 21 (temurin) + ./mvnw -f apps/api verify. Condicionado à
+#             existência de apps/api (scaffold chega na PSI-010) — o guard
+#             apenas PULA os passos quando o diretório não existe; quando
+#             existir, qualquer falha de build/teste falha o job normalmente.
+#   - mobile: Flutter (versão fixada) + analyze/test em apps/mobile, com o
+#             mesmo mecanismo de guard por existência do diretório.
+#   - scope:  em branches agent/*, extrai o ID da tarefa do nome da branch
+#             (agent/psi-0nn-slug -> PSI-0NN) e valida o diff contra o
+#             manifesto com scripts/validate-task-scope.mjs.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  js:
+    name: JS (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm (versão do packageManager)
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node (versão do .nvmrc) com cache de pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint, typecheck, test e build via Turborepo
+        run: pnpm turbo run lint typecheck test build
+
+  api:
+    name: API (Java 21 / Maven)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Guard de existência: apps/api só chega na PSI-010. O guard decide se os
+      # passos seguintes rodam; ele nunca engole erro de build — quando o
+      # diretório existir, o mvnw verify roda e falha o job em caso de erro.
+      - name: Verificar existência de apps/api
+        id: guard
+        run: |
+          if [ -f apps/api/pom.xml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "apps/api ainda não existe (scaffold previsto na PSI-010); pulando build da API."
+          fi
+
+      - name: Instalar JDK 21 (temurin) com cache de Maven
+        if: steps.guard.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build e testes da API
+        if: steps.guard.outputs.exists == 'true'
+        run: ./mvnw -f apps/api verify
+
+  mobile:
+    name: Mobile (Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Guard de existência: apps/mobile só chega em tarefa futura. Mesmo
+      # contrato do job api — pula quando não existe, nunca mascara falha real.
+      - name: Verificar existência de apps/mobile
+        id: guard
+        run: |
+          if [ -f apps/mobile/pubspec.yaml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "apps/mobile ainda não existe (scaffold previsto em tarefa futura); pulando build do mobile."
+          fi
+
+      - name: Instalar Flutter (stable, versão fixada)
+        if: steps.guard.outputs.exists == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.32.5
+          cache: true
+
+      - name: Instalar dependências do Flutter
+        if: steps.guard.outputs.exists == 'true'
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Analyze
+        if: steps.guard.outputs.exists == 'true'
+        working-directory: apps/mobile
+        run: flutter analyze
+
+      - name: Testes
+        if: steps.guard.outputs.exists == 'true'
+        working-directory: apps/mobile
+        run: flutter test
+
+  scope:
+    name: Escopo da tarefa (branches agent/*)
+    if: startsWith(github.head_ref || github.ref_name, 'agent/')
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 traz o histórico completo (todas as branches), garantindo
+      # que origin/main exista e que o merge-base com HEAD seja calculável.
+      - name: Checkout (histórico completo para merge-base)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar Node (versão do .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Convenção: agent/psi-0nn-slug -> PSI-0NN. Branches agent/* fora do
+      # padrão falham aqui de forma explícita e legível.
+      - name: Extrair ID da tarefa do nome da branch
+        id: task
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if [[ "$BRANCH_NAME" =~ ^agent/(psi-[0-9]{3})- ]]; then
+            task_id="$(echo "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')"
+            echo "id=$task_id" >> "$GITHUB_OUTPUT"
+            echo "Branch '$BRANCH_NAME' -> tarefa $task_id"
+          else
+            echo "::error::Branch '$BRANCH_NAME' não segue a convenção agent/psi-0nn-slug; impossível extrair o ID da tarefa."
+            exit 1
+          fi
+
+      - name: Validar escopo do diff contra o manifesto
+        env:
+          TASK_ID: ${{ steps.task.outputs.id }}
+        run: node scripts/validate-task-scope.mjs --task "$TASK_ID" --base origin/main
