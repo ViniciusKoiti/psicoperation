@@ -1,0 +1,54 @@
+id: PSI-014
+title: "landing: hero com mockup de dashboard"
+project: landing
+shared_change: false
+branch: "agent/psi-014-landing-hero"
+commit_message: "feat(landing): hero com mockup de dashboard [PSI-014]"
+pr_title: "PSI-014: landing: hero com mockup de dashboard"
+description: |
+  Implementa a seção hero da landing page como componentes semânticos,
+  seguindo docs/design/landing-page-spec.md e reutilizando as primitivas
+  criadas na PSI-013. O hero é um grid de duas colunas: à esquerda, headline
+  e CTAs; à direita, um mockup de dashboard com chips flutuantes reproduzindo
+  a composição da referência. Abaixo de 920px o grid colapsa em coluna única.
+  Os CTAs apontam para a âncora #lista (formulário de lista de espera). A
+  referência project/PsiOps Landing.html é somente leitura e não pode ser
+  convertida diretamente para JSX; a fidelidade visual deve ser pixel-perfect.
+dependencies:
+  - "PSI-013"
+allowed_paths:
+  - "apps/landing/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Seção hero implementada como componentes semânticos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
+  - "Grid de duas colunas: headline e CTAs à esquerda; mockup de dashboard com chips flutuantes à direita, fiel à referência"
+  - "Grid colapsa em coluna única no breakpoint de 920px"
+  - "CTAs do hero apontam para a âncora #lista"
+  - "Componentes reutilizam as primitivas e botões da PSI-013 (Section, Wrap, Eyebrow, Pill, variantes de botão via @psiops/ui)"
+  - "Fidelidade visual pixel-perfect à referência na seção hero"
+  - "Testes de componentes cobrindo a renderização do hero (conteúdo, CTAs e destino #lista)"
+validation_commands:
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing build"
+risks:
+  - "O mockup de dashboard com chips flutuantes tem posicionamento absoluto delicado; pequenas diferenças quebram a fidelidade pixel-perfect"
+  - "Chips flutuantes podem causar overflow horizontal em viewports estreitos se o colapso em 920px não for cuidadoso"
+  - "Divergência entre as primitivas da PSI-013 e o que o hero precisa pode induzir a criar variantes duplicadas em vez de evoluir o componente base"
+out_of_scope:
+  - "Formulário #lista em si (PSI-017) — o hero apenas aponta para a âncora"
+  - "Scroll reveal e composição final da página (PSI-018)"
+  - "Demais seções da landing (problema, solução, como funciona, quote, FAQ, CTA final)"
+  - "Alterações em pacotes compartilhados"
+assumptions:
+  - "A âncora #lista será renderizada pela composição da página (PSI-018) usando a seção da PSI-017; nesta tarefa os CTAs apenas referenciam o fragmento"
+open_questions: []

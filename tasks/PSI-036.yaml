@@ -1,0 +1,63 @@
+id: PSI-036
+title: "clinic: tarefas e lembretes"
+project: clinic
+shared_change: false
+branch: "agent/psi-036-clinic-tarefas-lembretes"
+commit_message: "feat(clinic): tarefas e configuração de lembretes [PSI-036]"
+pr_title: "PSI-036: clinic — tarefas e lembretes"
+description: |
+  Implementa no app clinic a organização pessoal da psicóloga: uma lista
+  de tarefas com criação rápida, data de vencimento e conclusão, e a
+  configuração de lembretes vinculados a uma consulta ou a uma cobrança,
+  com canal de envio por email. Esta tarefa entrega apenas o lado de
+  gestão e configuração dentro do app — o disparo real dos emails é
+  responsabilidade do worker de automação (PSI-038). O acesso a dados
+  passa por TasksAdapter e RemindersAdapter mock em memória, fiéis aos
+  contratos de @psiops/contracts, prontos para substituição pelos
+  adapters HTTP na PSI-039. A UI trata estados de lista vazia,
+  carregamento e erro, e diferencia visualmente tarefas vencidas,
+  pendentes e concluídas.
+dependencies:
+  - "PSI-028"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Lista de tarefas permite criação rápida (título e opcionalmente vencimento) sem sair da tela"
+  - "Tarefa pode receber data de vencimento e ser marcada como concluída; tarefas vencidas são destacadas"
+  - "Configuração de lembrete vincula o lembrete a uma consulta ou a uma cobrança, com canal email"
+  - "Formulários validam os dados com os schemas Zod de @psiops/contracts, sem tipos duplicados no app"
+  - "TasksAdapter e RemindersAdapter mock em memória implementam as interfaces derivadas dos contratos"
+  - "Estados de lista vazia, carregamento e erro são tratados em tarefas e lembretes"
+  - "Testes cobrem criação rápida, conclusão, destaque de vencidas e a configuração de lembrete para consulta e para cobrança"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Modelo de lembrete definido no mock em desacordo com o que o worker da PSI-038 espera consumir criaria retrabalho na integração"
+  - "Vincular lembretes a consultas e cobranças cujos módulos evoluem em paralelo (PSI-033, PSI-035) pode gerar referências mock inconsistentes entre adapters"
+  - "Confusão de expectativa da usuária: a UI deve deixar claro que o lembrete será enviado por email, sem prometer outros canais"
+out_of_scope:
+  - "Envio real de emails e processamento de filas (PSI-038)"
+  - "Canais de lembrete além de email (WhatsApp, SMS, push)"
+  - "Integração com a API real (PSI-039)"
+  - "Notificações in-app em tempo real"
+  - "Instalação de novas dependências"
+assumptions:
+  - "Os contratos de tarefa e lembrete já existem em @psiops/contracts, incluindo o vínculo polimórfico com consulta ou cobrança e o canal email"
+  - "Nesta fase o canal email é o único disponível e pode ser exibido como opção fixa na UI"
+  - "Os momentos de disparo (véspera e dia, para consultas) são definidos pelos contratos e apenas exibidos/configurados aqui; a interpretação temporal é do worker da PSI-038"
+open_questions:
+  - "A criação de lembrete deve ser oferecida também nos fluxos da agenda e do financeiro, ou somente na tela de lembretes nesta fase?"

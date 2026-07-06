@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PsiOps — O financeiro da sua clínica, finalmente em ordem</title>
+<meta name="description" content="Controle de mensalidades, lembretes automáticos e cobrança pelo WhatsApp para psicólogos autônomos. Organize o financeiro do seu consultório com o PsiOps." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://psiops.com.br/" />
+<!-- Favicon — substitua por um .ico gerado a partir da marca -->
+<link rel="icon" type="image/png" href="assets/psiops-mark.png" />
+<!-- Open Graph — crie assets/og-image.png (1200×630) para redes sociais -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://psiops.com.br/" />
+<meta property="og:title" content="PsiOps — O financeiro da sua clínica, finalmente em ordem" />
+<meta property="og:description" content="Controle de mensalidades, lembretes automáticos e cobrança pelo WhatsApp para psicólogos autônomos." />
+<meta property="og:image" content="https://psiops.com.br/assets/og-image.png" />
+<meta property="og:locale" content="pt_BR" />
+<meta property="og:site_name" content="PsiOps" />
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="PsiOps — O financeiro da sua clínica, finalmente em ordem" />
+<meta name="twitter:description" content="Controle de mensalidades, lembretes automáticos e cobrança pelo WhatsApp para psicólogos autônomos." />
+<meta name="twitter:image" content="https://psiops.com.br/assets/og-image.png" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@400;500;600&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500;0,9..144,500;0,9..144,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ---- PsiOps palette ---- */
+    --psi-primary-50:#F5F3FA; --psi-primary-100:#EBE7F4; --psi-primary-200:#D9D2EA;
+    --psi-primary-300:#C0B5DC; --psi-primary-400:#A294C9; --psi-primary-500:#8676B5;
+    --psi-primary-600:#6E5E9E; --psi-primary-700:#594C81; --psi-primary-800:#443A61;
+    --psi-primary-900:#2F2842;
+    --psi-accent-50:#FCF3F0; --psi-accent-100:#FAE6DF; --psi-accent-200:#F4CCBF;
+    --psi-accent-300:#ECAE9B; --psi-accent-400:#E08E75; --psi-accent-500:#D2725A;
+    --psi-accent-600:#BC5C45; --psi-accent-700:#9C4A37; --psi-accent-800:#7A3A2C;
+    --psi-accent-900:#532823;
+    --psi-neutral-0:#FFFFFF; --psi-neutral-50:#FAF9F7; --psi-neutral-100:#F4F2EE;
+    --psi-neutral-200:#E9E5DF; --psi-neutral-300:#D8D2C9; --psi-neutral-400:#BAB2A6;
+    --psi-neutral-500:#968D7F; --psi-neutral-600:#756D61; --psi-neutral-700:#595348;
+    --psi-neutral-800:#3D3833; --psi-neutral-900:#262320; --psi-neutral-950:#181614;
+    --psi-success-light:#E7F1EA; --psi-success-medium:#7FB08D; --psi-success-dark:#3D6B4E;
+    --psi-warning-light:#FBF1DE; --psi-warning-medium:#E0B057; --psi-warning-dark:#8A6321;
+    --psi-error-light:#F9E9E6; --psi-error-medium:#D38478; --psi-error-dark:#9B4035;
+    --psi-info-light:#E7EEF4; --psi-info-medium:#7CA0C4; --psi-info-dark:#3C5F84;
+    --psi-calm-soft:#DCEBE8; --psi-calm-base:#88BAB2; --psi-calm-deep:#436E68;
+
+    --font-display:"DM Sans","Inter",sans-serif;
+    --font-body:"Inter",sans-serif;
+    --font-serif:"Fraunces",Georgia,serif;
+
+    --shadow-soft: 0 2px 8px rgba(110,94,158,.06), 0 12px 32px rgba(110,94,158,.07);
+    --shadow-lift: 0 4px 12px rgba(110,94,158,.08), 0 24px 56px rgba(110,94,158,.12);
+    --shadow-card: 0 1px 2px rgba(47,40,66,.05), 0 6px 20px rgba(47,40,66,.06);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--psi-neutral-50);
+    color: var(--psi-neutral-900);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.7;
+  }
+  h1,h2,h3,h4 { font-family: var(--font-display); letter-spacing: -0.02em; line-height: 1.08; margin: 0; font-weight: 600; }
+  .serif { font-family: var(--font-serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+
+  /* ---- buttons ---- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    font-family: var(--font-display); font-weight: 600; font-size: 16px;
+    padding: 15px 26px; border-radius: 14px; cursor: pointer; border: 1px solid transparent;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, background .2s ease, color .2s ease;
+    text-decoration: none; white-space: nowrap;
+  }
+  .btn-primary { background: var(--psi-accent-600); color: #fff; box-shadow: 0 6px 18px rgba(188,92,69,.28); }
+  .btn-primary:hover { background: var(--psi-accent-700); transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 28px rgba(188,92,69,.34); }
+  .btn-ghost { background: transparent; color: var(--psi-primary-700); border-color: var(--psi-primary-200); }
+  .btn-ghost:hover { background: var(--psi-primary-50); border-color: var(--psi-primary-300); transform: translateY(-2px); }
+  .btn-white { background: #fff; color: var(--psi-primary-700); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  .btn-white:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 14px 34px rgba(0,0,0,.24); }
+
+  .eyebrow {
+    font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--psi-accent-700);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display);
+    font-weight: 500; font-size: 13.5px; color: var(--psi-primary-700);
+    background: var(--psi-primary-100); border: 1px solid var(--psi-primary-200);
+    padding: 7px 14px 7px 11px; border-radius: 999px;
+  }
+
+  /* ---- cards & motion ---- */
+  .card { background: var(--psi-neutral-0); border: 1px solid var(--psi-neutral-200); border-radius: 22px; box-shadow: var(--shadow-card); }
+  /* Content is visible by default; the hidden state is armed by JS only when
+     scroll-reveal can run (progressive enhancement — no JS means no hiding). */
+  .reveal { transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+  html.reveal-on .reveal:not(.in) { opacity: 0; transform: translateY(26px); }
+
+  .lift { transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
+  .lift:hover { transform: translateY(-4px) scale(1.015); box-shadow: var(--shadow-lift); }
+
+  .ico { stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+  /* nav */
+  header.nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(250,249,247,.82); border-bottom: 1px solid transparent; transition: border-color .3s ease, background .3s ease; }
+  header.nav.scrolled { border-color: var(--psi-neutral-200); background: rgba(250,249,247,.92); }
+  .nav-link { font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--psi-neutral-700); text-decoration: none; transition: color .2s ease; }
+  .nav-link:hover { color: var(--psi-primary-700); }
+
+  /* faq accordion */
+  .faq-item { border-bottom: 1px solid var(--psi-neutral-200); }
+  .faq-q { width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 26px 4px; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-family: var(--font-display); font-weight: 600; font-size: 19px; color: var(--psi-neutral-900); }
+  .faq-q > span:first-child { flex: 1; }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height .4s cubic-bezier(.4,0,.2,1), opacity .4s ease; opacity: 0; color: var(--psi-neutral-600); font-size: 16.5px; }
+  .faq-a-inner { padding: 0 4px 26px; max-width: 760px; }
+  .faq-item.open .faq-a { opacity: 1; }
+  .faq-chev { flex: none; transition: transform .35s cubic-bezier(.4,0,.2,1); color: var(--psi-primary-500); }
+  .faq-item.open .faq-chev { transform: rotate(45deg); }
+
+  /* input */
+  .field { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--psi-neutral-900); background: var(--psi-neutral-0); border: 1px solid var(--psi-neutral-300); border-radius: 13px; padding: 14px 16px; transition: border-color .2s ease, box-shadow .2s ease; }
+  .field:focus { outline: none; border-color: var(--psi-primary-400); box-shadow: 0 0 0 4px var(--psi-primary-100); }
+  .field::placeholder { color: var(--psi-neutral-500); }
+  label.lbl { font-family: var(--font-display); font-weight: 500; font-size: 13.5px; color: var(--psi-neutral-700); display: block; margin-bottom: 7px; }
+
+  .divider-line { height: 1px; width: 64px; background: var(--psi-accent-300); }
+
+  @media (max-width: 860px) {
+    .wrap { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+<!-- Meta Pixel — substitua XXXXXXXXXXXXXXXXXX pelo seu Pixel ID em business.facebook.com -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','XXXXXXXXXXXXXXXXXX');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=XXXXXXXXXXXXXXXXXX&ev=PageView&noscript=1"/></noscript>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; height:74px;">
+    <a href="#top" style="display:flex; align-items:center;">
+      <img src="assets/psiops-logo-trim.png" alt="PsiOps" style="height:34px; width:auto;" />
+    </a>
+    <nav style="align-items:center; gap:38px;" class="hidden md:flex">
+      <a href="#problema" class="nav-link">O problema</a>
+      <a href="#solucao" class="nav-link">Recursos</a>
+      <a href="#como" class="nav-link">Como funciona</a>
+      <a href="#faq" class="nav-link">Dúvidas</a>
+    </nav>
+    <a href="#lista" class="btn btn-primary" style="padding:11px 20px; font-size:15px;">Acesso antecipado</a>
+  </div>
+</header>
+
+<a id="top"></a>
+
+<!-- ============ HERO ============ -->
+<section style="position:relative; overflow:hidden;">
+  <!-- subtle background wash -->
+  <div style="position:absolute; inset:0; pointer-events:none; background:
+      radial-gradient(680px 460px at 78% -8%, rgba(160,148,201,.20), transparent 70%),
+      radial-gradient(560px 420px at 4% 18%, rgba(220,235,232,.55), transparent 65%);"></div>
+  <div class="wrap" style="position:relative; padding-top:74px; padding-bottom:86px;">
+    <div style="display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center;" class="hero-grid">
+
+      <!-- left -->
+      <div class="reveal">
+        <span class="pill" style="margin-bottom:26px;">
+          <span class="status-dot" style="background:var(--psi-accent-500);"></span>
+          Feito para psicólogos que trabalham com mensalidade
+        </span>
+        <h1 style="font-size:62px; font-weight:700; color:var(--psi-neutral-900); margin-bottom:22px; text-wrap:balance;">
+          Cuidar da sua clínica é cuidar de <span class="serif" style="color:var(--psi-primary-600);">você</span> também.
+        </h1>
+        <p style="font-size:19px; color:var(--psi-neutral-600); max-width:520px; margin:0 0 34px;">
+          Controle de mensalidades, lembretes automáticos e cobrança pelo WhatsApp — o financeiro do seu consultório organizado num só lugar, com a calma que a sua rotina merece.
+        </p>
+        <div style="display:flex; flex-wrap:wrap; gap:14px;">
+          <a href="#lista" class="btn btn-primary">Quero acesso antecipado</a>
+          <a href="#solucao" class="btn btn-ghost">
+            Ver como funciona
+            <svg width="18" height="18" viewBox="0 0 24 24" class="ico"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+        <div style="display:flex; align-items:center; gap:13px; margin-top:30px;">
+          <div style="display:flex;">
+            <span style="width:32px;height:32px;border-radius:50%;background:var(--psi-primary-300);border:2px solid var(--psi-neutral-50);"></span>
+            <span style="width:32px;height:32px;border-radius:50%;background:var(--psi-calm-base);border:2px solid var(--psi-neutral-50);margin-left:-10px;"></span>
+            <span style="width:32px;height:32px;border-radius:50%;background:var(--psi-accent-300);border:2px solid var(--psi-neutral-50);margin-left:-10px;"></span>
+          </div>
+          <p style="font-size:14.5px; color:var(--psi-neutral-600); margin:0;">Sendo construído junto com psicólogas autônomas do Brasil</p>
+        </div>
+      </div>
+
+      <!-- right: dashboard mockup -->
+      <div class="reveal" style="transition-delay:.12s;">
+        <div style="position:relative;">
+          <!-- floating revenue chip -->
+          <div class="card hero-chip" style="position:absolute; top:-26px; right:6px; z-index:3; padding:16px 20px; border-radius:18px; box-shadow:var(--shadow-lift);">
+            <p style="font-family:var(--font-display); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--psi-neutral-500); margin:0 0 4px;">Receita do mês</p>
+            <p style="font-family:var(--font-display); font-weight:700; font-size:26px; color:var(--psi-primary-700); margin:0;">R$ 4.200</p>
+          </div>
+
+          <div class="card" style="padding:24px; box-shadow:var(--shadow-lift); border-radius:24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+              <div>
+                <p style="font-family:var(--font-display); font-weight:600; font-size:16px; color:var(--psi-neutral-900); margin:0;">Pacientes — Maio</p>
+                <p style="font-size:13px; color:var(--psi-neutral-500); margin:2px 0 0;">8 mensalistas ativos</p>
+              </div>
+              <span style="display:inline-flex; align-items:center; gap:7px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-success-dark); background:var(--psi-success-light); padding:6px 11px; border-radius:999px;">
+                <span class="status-dot" style="background:var(--psi-success-medium);"></span> 5 em dia
+              </span>
+            </div>
+
+            <!-- patient rows -->
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <!-- paid -->
+              <div style="display:flex; align-items:center; gap:14px; padding:14px; background:var(--psi-neutral-50); border:1px solid var(--psi-neutral-200); border-radius:15px;">
+                <span style="width:40px;height:40px;border-radius:50%;background:var(--psi-primary-100);color:var(--psi-primary-700);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:14px;flex:none;">MR</span>
+                <div style="flex:1; min-width:0;">
+                  <p style="font-family:var(--font-display); font-weight:600; font-size:15px; color:var(--psi-neutral-900); margin:0;">Marcos Rocha</p>
+                  <p style="font-size:13px; color:var(--psi-neutral-500); margin:1px 0 0;">Venc. dia 5 · R$ 350</p>
+                </div>
+                <span style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-success-dark);">
+                  <span class="status-dot" style="background:var(--psi-success-medium);"></span> Pago
+                </span>
+              </div>
+              <!-- open -->
+              <div style="display:flex; align-items:center; gap:14px; padding:14px; background:var(--psi-neutral-50); border:1px solid var(--psi-neutral-200); border-radius:15px;">
+                <span style="width:40px;height:40px;border-radius:50%;background:var(--psi-calm-soft);color:var(--psi-calm-deep);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:14px;flex:none;">BL</span>
+                <div style="flex:1; min-width:0;">
+                  <p style="font-family:var(--font-display); font-weight:600; font-size:15px; color:var(--psi-neutral-900); margin:0;">Beatriz Lima</p>
+                  <p style="font-size:13px; color:var(--psi-neutral-500); margin:1px 0 0;">Venc. dia 10 · R$ 300</p>
+                </div>
+                <span style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-warning-dark);">
+                  <span class="status-dot" style="background:var(--psi-warning-medium);"></span> Em aberto
+                </span>
+              </div>
+              <!-- late -->
+              <div style="display:flex; align-items:center; gap:14px; padding:14px; background:var(--psi-error-light); border:1px solid var(--psi-error-medium); border-radius:15px;">
+                <span style="width:40px;height:40px;border-radius:50%;background:#fff;color:var(--psi-error-dark);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:14px;flex:none;">CD</span>
+                <div style="flex:1; min-width:0;">
+                  <p style="font-family:var(--font-display); font-weight:600; font-size:15px; color:var(--psi-neutral-900); margin:0;">Carla Dias</p>
+                  <p style="font-size:13px; color:var(--psi-error-dark); margin:1px 0 0;">Atrasado 4 dias · R$ 357 com juros</p>
+                </div>
+                <span style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-error-dark);">
+                  <span class="status-dot" style="background:var(--psi-error-medium);"></span> Atrasado
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- floating whatsapp chip -->
+          <div class="card hero-chip" style="position:absolute; bottom:-30px; left:-14px; z-index:3; padding:13px 16px; border-radius:16px; box-shadow:var(--shadow-lift); display:flex; align-items:center; gap:11px; max-width:248px;">
+            <span style="width:34px;height:34px;border-radius:50%;background:var(--psi-success-light);color:var(--psi-success-dark);display:flex;align-items:center;justify-content:center;flex:none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" class="ico"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 1 1 16.1-3.8z"/></svg>
+            </span>
+            <p style="font-size:13px; color:var(--psi-neutral-700); margin:0; line-height:1.4;">Lembrete enviado <strong style="color:var(--psi-success-dark);">automaticamente</strong></p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROBLEMA ============ -->
+<section id="problema" style="padding:96px 0;">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center; max-width:620px; margin:0 auto 56px;">
+      <span class="eyebrow">A realidade de quem atende sozinho</span>
+      <h2 style="font-size:44px; font-weight:700; color:var(--psi-neutral-900); margin-top:16px;">Você já passou por isso?</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;" class="grid-3">
+      <!-- card 1 -->
+      <div class="card lift reveal" style="padding:34px 30px;">
+        <span style="width:52px;height:52px;border-radius:15px;background:var(--psi-primary-100);color:var(--psi-primary-600);display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" class="ico"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+        </span>
+        <h3 style="font-size:20px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:10px;">Perdeu o controle de quem pagou</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">A planilha cresce e cada mês fica mais difícil saber quem está em dia.</p>
+      </div>
+      <!-- card 2 -->
+      <div class="card lift reveal" style="padding:34px 30px; transition-delay:.08s;">
+        <span style="width:52px;height:52px;border-radius:15px;background:var(--psi-accent-100);color:var(--psi-accent-700);display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </span>
+        <h3 style="font-size:20px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:10px;">Cobrança toma tempo da semana</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">Digitar mensagem para cada paciente atrasado, entre uma sessão e outra.</p>
+      </div>
+      <!-- card 3 -->
+      <div class="card lift reveal" style="padding:34px 30px; transition-delay:.16s;">
+        <span style="width:52px;height:52px;border-radius:15px;background:var(--psi-calm-soft);color:var(--psi-calm-deep);display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" class="ico"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M16 15h0"/></svg>
+        </span>
+        <h3 style="font-size:20px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:10px;">Juros e multa calculados na mão</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">Fazer a conta toda vez que alguém atrasa é desgastante e dá margem para erro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOLUÇÃO ============ -->
+<section id="solucao" style="padding:96px 0; background:var(--psi-neutral-100);">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center; max-width:640px; margin:0 auto 72px;">
+      <span class="eyebrow">A solução</span>
+      <h2 style="font-size:44px; font-weight:700; color:var(--psi-neutral-900); margin-top:16px;">Tudo em um lugar, finalmente.</h2>
+    </div>
+
+    <!-- feature 1 -->
+    <div class="feature reveal" style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; margin-bottom:104px;">
+      <div class="feat-visual">
+        <div class="card" style="padding:22px; box-shadow:var(--shadow-soft); border-radius:22px;">
+          <p style="font-family:var(--font-display); font-weight:600; font-size:15px; color:var(--psi-neutral-900); margin:0 0 16px;">Carteira de pacientes</p>
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 15px; background:var(--psi-neutral-50); border:1px solid var(--psi-neutral-200); border-radius:13px;">
+              <span style="display:flex; align-items:center; gap:11px;"><span class="status-dot" style="background:var(--psi-success-medium);width:9px;height:9px;"></span><span style="font-weight:500;color:var(--psi-neutral-800);">Marcos Rocha</span></span>
+              <span style="font-family:var(--font-display);font-size:14px;color:var(--psi-neutral-600);white-space:nowrap;">R$ 350</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 15px; background:var(--psi-neutral-50); border:1px solid var(--psi-neutral-200); border-radius:13px;">
+              <span style="display:flex; align-items:center; gap:11px;"><span class="status-dot" style="background:var(--psi-warning-medium);width:9px;height:9px;"></span><span style="font-weight:500;color:var(--psi-neutral-800);">Beatriz Lima</span></span>
+              <span style="font-family:var(--font-display);font-size:14px;color:var(--psi-neutral-600);white-space:nowrap;">R$ 300</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 15px; background:var(--psi-neutral-50); border:1px solid var(--psi-neutral-200); border-radius:13px;">
+              <span style="display:flex; align-items:center; gap:11px;"><span class="status-dot" style="background:var(--psi-error-medium);width:9px;height:9px;"></span><span style="font-weight:500;color:var(--psi-neutral-800);">Carla Dias</span></span>
+              <span style="font-family:var(--font-display);font-size:14px;color:var(--psi-neutral-600);white-space:nowrap;">R$ 357</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 15px; background:var(--psi-neutral-50); border:1px solid var(--psi-neutral-200); border-radius:13px;">
+              <span style="display:flex; align-items:center; gap:11px;"><span class="status-dot" style="background:var(--psi-success-medium);width:9px;height:9px;"></span><span style="font-weight:500;color:var(--psi-neutral-800);">João Prado</span></span>
+              <span style="font-family:var(--font-display);font-size:14px;color:var(--psi-neutral-600);white-space:nowrap;">R$ 320</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-text">
+        <span style="display:inline-flex; align-items:center; gap:7px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-primary-700); background:var(--psi-primary-100); padding:6px 12px; border-radius:999px; margin-bottom:18px;">Cadastro</span>
+        <h3 style="font-size:32px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:16px;">Carteira de pacientes mensalistas</h3>
+        <p style="font-size:18px; color:var(--psi-neutral-600); margin:0; max-width:440px;">Cadastre cada paciente uma vez. Defina o valor da mensalidade e o dia de vencimento. Pronto — o sistema acompanha tudo para você.</p>
+      </div>
+    </div>
+
+    <!-- feature 2 (reversed) -->
+    <div class="feature reveal" style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; margin-bottom:104px;">
+      <div class="feat-text feat-order-1">
+        <span style="display:inline-flex; align-items:center; gap:7px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-success-dark); background:var(--psi-success-light); padding:6px 12px; border-radius:999px; margin-bottom:18px;">
+          <span class="status-dot" style="background:var(--psi-success-medium);"></span> Automático
+        </span>
+        <h3 style="font-size:32px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:16px;">Lembretes automáticos pelo WhatsApp</h3>
+        <p style="font-size:18px; color:var(--psi-neutral-600); margin:0; max-width:440px;">Configure uma vez e esqueça. Antes do vencimento, o sistema avisa seu paciente educadamente. Você só entra em cena quando precisa.</p>
+      </div>
+      <div class="feat-visual feat-order-2">
+        <!-- whatsapp mock -->
+        <div style="background:#E9E2D7; border-radius:22px; padding:26px; box-shadow:var(--shadow-soft); position:relative;">
+          <div style="display:flex; align-items:center; gap:11px; margin-bottom:18px;">
+            <span style="width:38px;height:38px;border-radius:50%;background:var(--psi-success-medium);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;">
+              <svg width="20" height="20" viewBox="0 0 24 24" class="ico"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 1 1 16.1-3.8z"/></svg>
+            </span>
+            <div>
+              <p style="font-family:var(--font-display); font-weight:600; font-size:14px; color:var(--psi-neutral-900); margin:0;">PsiOps · Lembrete</p>
+              <p style="font-size:12px; color:var(--psi-neutral-600); margin:1px 0 0;">hoje, 09:02</p>
+            </div>
+          </div>
+          <div style="background:#fff; border-radius:4px 16px 16px 16px; padding:14px 16px; box-shadow:0 1px 2px rgba(0,0,0,.08); max-width:330px;">
+            <p style="font-size:15px; color:var(--psi-neutral-800); margin:0; line-height:1.55;">Olá Marcos, sua mensalidade de <strong>R$ 350</strong> vence em <strong>3 dias</strong>. Segue o link para pagamento. 💜</p>
+            <p style="font-size:12px; color:var(--psi-success-dark); margin:8px 0 0; text-align:right;">Entregue ✓✓</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- feature 3 -->
+    <div class="feature reveal" style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;">
+      <div class="feat-visual">
+        <div class="card" style="padding:24px; box-shadow:var(--shadow-soft); border-radius:22px; max-width:380px;">
+          <p style="font-family:var(--font-display); font-weight:600; font-size:15px; color:var(--psi-neutral-900); margin:0 0 4px;">Carla Dias</p>
+          <p style="font-size:13px; color:var(--psi-error-dark); margin:0 0 18px;">Atrasado há 4 dias</p>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; font-size:15px;"><span style="color:var(--psi-neutral-600);">Valor original</span><span style="font-family:var(--font-display);color:var(--psi-neutral-800);">R$ 350,00</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:15px;"><span style="color:var(--psi-neutral-600);">Juros (1% a.m.)</span><span style="font-family:var(--font-display);color:var(--psi-neutral-800);">R$ 0,47</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:15px;"><span style="color:var(--psi-neutral-600);">Multa (2%)</span><span style="font-family:var(--font-display);color:var(--psi-neutral-800);">R$ 7,00</span></div>
+            <div style="height:1px; background:var(--psi-neutral-200); margin:2px 0;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-family:var(--font-display); font-weight:600; color:var(--psi-neutral-900);">Total atualizado</span><span style="font-family:var(--font-display); font-weight:700; font-size:20px; color:var(--psi-accent-700);">R$ 357,47</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-text">
+        <span style="display:inline-flex; align-items:center; gap:7px; font-family:var(--font-display); font-weight:500; font-size:12.5px; color:var(--psi-accent-700); background:var(--psi-accent-100); padding:6px 12px; border-radius:999px; margin-bottom:18px;">Sem conta de cabeça</span>
+        <h3 style="font-size:32px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:16px;">Juros calculados automaticamente</h3>
+        <p style="font-size:18px; color:var(--psi-neutral-600); margin:0; max-width:440px;">Defina a regra uma vez — 1% ao mês, multa de 2%, o que fizer sentido pra você — e o sistema aplica em todos os atrasos. Sem conta de cabeça, sem erro.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMO FUNCIONA ============ -->
+<section id="como" style="padding:96px 0;">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center; max-width:620px; margin:0 auto 60px;">
+      <span class="eyebrow">Passo a passo</span>
+      <h2 style="font-size:44px; font-weight:700; color:var(--psi-neutral-900); margin-top:16px;">Simples como deve ser</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:30px;" class="grid-3">
+      <div class="reveal" style="padding:8px 12px;">
+        <span class="serif" style="font-size:60px; color:var(--psi-primary-300); font-style:normal; font-weight:500; display:block; line-height:1; margin-bottom:18px;">01</span>
+        <h3 style="font-size:21px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:10px;">Cadastre seus pacientes</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">Em menos de 2 minutos por paciente. Sem complicação.</p>
+      </div>
+      <div class="reveal" style="padding:8px 12px; transition-delay:.08s; position:relative;">
+        <span class="serif" style="font-size:60px; color:var(--psi-primary-300); font-style:normal; font-weight:500; display:block; line-height:1; margin-bottom:18px;">02</span>
+        <h3 style="font-size:21px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:10px;">Configure as regras</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">Defina valores, vencimentos e juros uma única vez.</p>
+      </div>
+      <div class="reveal" style="padding:8px 12px; transition-delay:.16s;">
+        <span class="serif" style="font-size:60px; color:var(--psi-primary-300); font-style:normal; font-weight:500; display:block; line-height:1; margin-bottom:18px;">03</span>
+        <h3 style="font-size:21px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:10px;">Acompanhe e cobre</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">Receba alertas, envie lembretes, mantenha tudo em ordem.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUOTE ============ -->
+<section style="padding:110px 0; background:var(--psi-primary-50);">
+  <div class="wrap reveal" style="text-align:center; max-width:860px;">
+    <div class="divider-line" style="margin:0 auto 40px;"></div>
+    <p class="serif" style="font-size:42px; color:var(--psi-primary-800); line-height:1.32; margin:0; text-wrap:balance;">
+      “Você cuida das pessoas. A gente cuida do que vem depois da sessão.”
+    </p>
+    <div class="divider-line" style="margin:40px auto 0;"></div>
+  </div>
+</section>
+
+<!-- ============ LEAD FORM ============ -->
+<section id="lista" style="padding:96px 0;">
+  <div class="wrap">
+    <div class="card reveal" style="max-width:760px; margin:0 auto; padding:54px 56px; background:var(--psi-primary-50); border-color:var(--psi-primary-200); border-radius:26px; box-shadow:var(--shadow-soft);">
+      <div style="text-align:center; margin-bottom:34px;">
+        <span class="eyebrow">Lista de espera</span>
+        <h2 style="font-size:38px; font-weight:700; color:var(--psi-neutral-900); margin:14px 0 14px;">Entre na lista de espera</h2>
+        <p style="font-size:17px; color:var(--psi-neutral-600); margin:0; max-width:520px; margin:0 auto;">Estamos construindo junto com psicólogas. Quem entrar agora terá acesso antecipado e condições especiais no lançamento.</p>
+      </div>
+      <form id="leadForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" style="display:flex; flex-direction:column; gap:18px;" novalidate>
+        <div>
+          <label class="lbl" for="nome">Nome completo</label>
+          <input class="field" type="text" id="nome" name="nome" placeholder="Como podemos te chamar?" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;" class="form-grid">
+          <div>
+            <label class="lbl" for="whats">WhatsApp</label>
+            <input class="field" type="tel" id="whats" name="whats" placeholder="(11) 90000-0000" inputmode="numeric" required />
+          </div>
+          <div>
+            <label class="lbl" for="email">E-mail</label>
+            <input class="field" type="email" id="email" name="email" placeholder="voce@email.com" required />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:17px; font-size:17px; margin-top:6px;">Quero acesso antecipado</button>
+        <p style="text-align:center; font-size:13.5px; color:var(--psi-neutral-600); margin:4px 0 0;">Sem spam. Você só recebe quando a gente lançar.</p>
+      </form>
+      <!-- success state -->
+      <div id="leadSuccess" style="display:none; text-align:center; padding:18px 0;">
+        <span style="width:64px;height:64px;border-radius:50%;background:var(--psi-success-light);color:var(--psi-success-dark);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" class="ico" style="stroke-width:2;"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <h3 style="font-size:26px; font-weight:600; color:var(--psi-neutral-900); margin-bottom:8px;">Você está na lista!</h3>
+        <p style="font-size:16px; color:var(--psi-neutral-600); margin:0;">Vamos te avisar pelo WhatsApp assim que o PsiOps abrir. Acesso antecipado e condições especiais garantidos para você.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" style="padding:60px 0 100px;">
+  <div class="wrap" style="max-width:820px;">
+    <div class="reveal" style="text-align:center; margin-bottom:44px;">
+      <span class="eyebrow">Dúvidas</span>
+      <h2 style="font-size:40px; font-weight:700; color:var(--psi-neutral-900); margin-top:16px;">Perguntas que você pode ter</h2>
+    </div>
+    <div class="reveal" id="faqList">
+      <!-- items injected pattern -->
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section style="padding:0 0 96px;">
+  <div class="wrap">
+    <div class="reveal" style="position:relative; overflow:hidden; border-radius:30px; padding:78px 56px; text-align:center;
+        background:linear-gradient(135deg, var(--psi-primary-800) 0%, var(--psi-primary-600) 100%);">
+      <div style="position:absolute; inset:0; pointer-events:none; opacity:.5; background:
+          radial-gradient(420px 300px at 88% 0%, rgba(220,235,232,.22), transparent 70%),
+          radial-gradient(420px 320px at 6% 100%, rgba(224,142,117,.20), transparent 70%);"></div>
+      <div style="position:relative;">
+        <img src="assets/psiops-mark.png" alt="" style="height:54px; width:auto; margin:0 auto 26px; display:block; filter:brightness(0) invert(1); opacity:.92;" />
+        <h2 style="font-size:42px; font-weight:700; color:#fff; margin-bottom:14px; text-wrap:balance;">Pronto para colocar o financeiro em ordem?</h2>
+        <p style="font-size:18px; color:rgba(255,255,255,.8); margin:0 auto 32px; max-width:480px;">Entre na lista de espera e ganhe acesso antecipado.</p>
+        <a href="#lista" class="btn btn-white">Quero acesso antecipado</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer style="border-top:1px solid var(--psi-neutral-200); padding:54px 0 60px;">
+  <div class="wrap">
+    <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; gap:40px;" class="footer-grid">
+      <div>
+        <img src="assets/psiops-logo-trim.png" alt="PsiOps" style="height:30px; width:auto; margin-bottom:16px;" />
+        <p style="font-size:15px; color:var(--psi-neutral-600); margin:0 0 16px; max-width:280px;">O financeiro da sua clínica, com a calma que a sua rotina merece.</p>
+        <p style="font-size:13.5px; color:var(--psi-neutral-600); margin:0;">© 2026 PsiOps</p>
+      </div>
+      <div>
+        <p style="font-family:var(--font-display); font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--psi-neutral-500); margin:0 0 16px;">Navegação</p>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:11px;">
+          <li><a href="#solucao" class="nav-link" style="font-size:15px;">Sobre</a></li>
+          <li><a href="#faq" class="nav-link" style="font-size:15px;">FAQ</a></li>
+          <li><a href="#lista" class="nav-link" style="font-size:15px;">Contato</a></li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-family:var(--font-display); font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--psi-neutral-500); margin:0 0 16px;">Legal</p>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:11px;">
+          <li><a href="#" class="nav-link" style="font-size:15px;">Política de Privacidade</a></li>
+          <li><a href="#" class="nav-link" style="font-size:15px;">Termos de Uso</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ---- FAQ build + accordion ----
+  const faqs = [
+    ["Quando vai lançar?", "Estamos na fase final de construção. Quem entrar na lista de espera será avisado primeiro, com previsão para os próximos 2–3 meses."],
+    ["Quanto vai custar?", "Ainda estamos definindo, mas a faixa será acessível para profissionais autônomos. Quem entrar agora terá condição especial garantida."],
+    ["Funciona com WhatsApp comum?", "Sim. Você não precisa de WhatsApp Business para usar o PsiOps."],
+    ["E se eu não trabalho só com mensalidade?", "Por enquanto o foco é mensalidade. Em breve, sessão avulsa também."],
+    ["Meus dados de pacientes ficam seguros?", "Sim. Seguimos as boas práticas de segurança e a LGPD. Seus dados nunca são compartilhados."]
+  ];
+  const faqList = document.getElementById('faqList');
+  faqs.forEach(([q,a]) => {
+    const item = document.createElement('div');
+    item.className = 'faq-item';
+    item.innerHTML = `
+      <button class="faq-q" aria-expanded="false">
+        <span>${q}</span>
+        <svg class="faq-chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">${a}</div></div>`;
+    faqList.appendChild(item);
+    const btn = item.querySelector('.faq-q');
+    const ans = item.querySelector('.faq-a');
+    btn.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(o => {
+        o.classList.remove('open');
+        o.querySelector('.faq-a').style.maxHeight = null;
+        o.querySelector('.faq-q').setAttribute('aria-expanded','false');
+      });
+      if (!isOpen) {
+        item.classList.add('open');
+        ans.style.maxHeight = ans.scrollHeight + 'px';
+        btn.setAttribute('aria-expanded','true');
+      }
+    });
+  });
+
+  // ---- scroll reveal (progressive enhancement) ----
+  const revealEls = Array.from(document.querySelectorAll('.reveal'));
+  document.documentElement.classList.add('reveal-on'); // arm hidden state now that JS runs
+  const reveal = (el) => {
+    el.classList.add('in');
+    el.style.opacity = '1'; el.style.transform = 'none';
+    // Safety: if the transition timeline is paused (e.g. backgrounded tab),
+    // the fade never advances — snap to the final state after it should have finished.
+    setTimeout(() => { if (parseFloat(getComputedStyle(el).opacity) < 0.99) { el.style.transition = 'none'; el.style.opacity = '1'; el.style.transform = 'none'; } }, 850);
+  };
+  const showInView = () => {
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    revealEls.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.top < vh - 40 && r.bottom > 0) reveal(el);
+    });
+  };
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { reveal(e.target); io.unobserve(e.target); } });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    revealEls.forEach(el => io.observe(el));
+  }
+  showInView();
+  window.addEventListener('load', showInView);
+  window.addEventListener('scroll', showInView, { passive: true });
+  // Guarantee nothing stays hidden, regardless of scroll/observer/render state.
+  setTimeout(() => revealEls.forEach(reveal), 2600);
+
+  // ---- nav scrolled state ----
+  const nav = document.getElementById('nav');
+  const onScroll = () => { nav.classList.toggle('scrolled', window.scrollY > 12); };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // ---- whatsapp mask ----
+  const whats = document.getElementById('whats');
+  whats.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    let out = v;
+    if (v.length > 0) out = '(' + v.slice(0,2);
+    if (v.length >= 2) out += ') ' + v.slice(2,7);
+    if (v.length >= 7) out += '-' + v.slice(7,11);
+    e.target.value = out;
+  });
+
+  // ---- form submit → Formspree ----
+  // TODO: após criar conta em formspree.io, substitua YOUR_FORM_ID (no action do form e na const abaixo)
+  const FORMSPREE_ID = 'YOUR_FORM_ID';
+  document.getElementById('leadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    let ok = true;
+    ['nome','whats','email'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) { el.style.borderColor = 'var(--psi-error-medium)'; ok = false; }
+      else { el.style.borderColor = ''; }
+    });
+    const emailEl = document.getElementById('email');
+    if (emailEl.value && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailEl.value)) { emailEl.style.borderColor = 'var(--psi-error-medium)'; ok = false; }
+    if (!ok) return;
+    const btn = f.querySelector('button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+    try {
+      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(f)
+      });
+      if (!res.ok) throw new Error();
+      f.style.display = 'none';
+      document.getElementById('leadSuccess').style.display = 'block';
+      if (typeof fbq !== 'undefined') fbq('track', 'Lead');
+    } catch {
+      btn.disabled = false;
+      btn.textContent = originalText;
+      alert('Erro ao enviar. Verifique sua conexão e tente novamente.');
+    }
+  });
+</script>
+
+<style>
+  /* ---- responsive ---- */
+  @media (max-width: 920px) {
+    .hero-grid { grid-template-columns: 1fr !important; gap: 56px !important; }
+    .hero-grid h1 { font-size: 48px !important; }
+    .feature { grid-template-columns: 1fr !important; gap: 36px !important; margin-bottom: 72px !important; }
+    .feat-order-1 { order: 1; }
+    .feat-order-2 { order: 2; }
+    .grid-3 { grid-template-columns: 1fr !important; gap: 18px !important; }
+    /* chips flutuantes não funcionam em layout single-column */
+    .hero-chip { display: none !important; }
+    /* dashboard sem espaço para chips que extrapolam */
+    .hero-grid .reveal:last-child > div { padding-top: 0 !important; padding-bottom: 0 !important; }
+  }
+  @media (max-width: 600px) {
+    .hero-grid h1 { font-size: 38px !important; }
+    section h2 { font-size: 32px !important; }
+    /* quote é um <p>, não h2 — precisa de regra própria */
+    .serif[style*="font-size:42px"] { font-size: 26px !important; line-height: 1.4 !important; }
+    .form-grid { grid-template-columns: 1fr !important; }
+    .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .wrap { padding-left: 18px; padding-right: 18px; }
+    #lista .card { padding: 36px 24px !important; }
+    /* reduz padding vertical de seções em mobile */
+    section { padding-top: 60px !important; padding-bottom: 60px !important; }
+    /* CTA final — padding horizontal menor */
+    .wrap > .reveal > div[style*="padding:78px"] { padding: 52px 28px !important; }
+    /* faq question — tamanho legível */
+    .faq-q { font-size: 16px !important; padding: 20px 4px !important; }
+  }
+</style>
+
+</body>
+</html>

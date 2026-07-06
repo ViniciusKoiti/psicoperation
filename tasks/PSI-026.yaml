@@ -1,0 +1,67 @@
+id: PSI-026
+title: "api: tarefas e lembretes"
+project: api
+shared_change: false
+branch: "agent/psi-026-api-tarefas-lembretes"
+commit_message: "feat(api): tarefas e lembretes com eventos via outbox [PSI-026]"
+pr_title: "PSI-026: api: tarefas e lembretes"
+description: |
+  Implementa na API NestJS o módulo de organização pessoal da psicóloga:
+  tarefas (título, vencimento, conclusão) e lembretes por email, com vínculo
+  opcional a paciente, consulta ou cobrança. O agendamento de um lembrete
+  não envia nada diretamente: a API grava um evento na tabela Outbox via
+  @psiops/database e o app automation (BullMQ) é o único responsável por
+  consumir a Outbox e disparar o email — é proibido a API falar com Redis ou
+  com filas diretamente. Todo o CRUD é escopado à psicóloga autenticada
+  (userId em toda query) e toda validação de entrada e saída usa
+  exclusivamente os schemas de tarefas/lembretes de @psiops/contracts, sem
+  DTOs duplicados. A tarefa consome @psiops/database como está: não altera
+  schema, migrations nem qualquer arquivo de packages/contracts ou
+  packages/database.
+dependencies:
+  - "PSI-021"
+allowed_paths:
+  - "apps/api/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "CRUD de tarefas com título, vencimento e marcação de conclusão, conforme os contratos de @psiops/contracts, escopado por userId em toda query"
+  - "CRUD de lembretes com canal email e vínculo opcional a paciente, consulta ou cobrança; vínculo apontando para recurso inexistente ou de outra usuária retorna 404"
+  - "Criar ou reagendar um lembrete grava um evento na tabela Outbox na mesma transação da escrita do lembrete; cancelar o lembrete registra o evento correspondente"
+  - "A API não contém nenhuma conexão com Redis nem cliente de fila; a comunicação com o app automation ocorre exclusivamente via tabela Outbox"
+  - "Listagens de tarefas e lembretes são paginadas e permitem filtrar por estado (pendente/concluída; lembrete futuro/passado)"
+  - "Entrada e saída validadas exclusivamente pelos schemas de @psiops/contracts; payload inválido retorna 400"
+  - "Testes cobrem CRUD de tarefas e lembretes, conclusão de tarefa, gravação de evento na Outbox no agendamento/reagendamento/cancelamento, validação de vínculos e isolamento entre tenants"
+validation_commands:
+  - "pnpm --filter @psiops/api lint"
+  - "pnpm --filter @psiops/api typecheck"
+  - "pnpm --filter @psiops/api test"
+  - "pnpm --filter @psiops/api test:e2e"
+risks:
+  - "Gravar o evento de lembrete fora da transação da escrita pode gerar lembrete sem evento (nunca dispara) ou evento sem lembrete (dispara indevidamente)"
+  - "Reagendamento sem invalidar/atualizar o evento anterior na Outbox pode gerar envio duplicado pelo automation"
+  - "Contrato do payload do evento na Outbox mal definido acopla API e automation de forma frágil; o formato deve vir de @psiops/contracts"
+  - "Vínculos opcionais a três tipos de recurso (paciente/consulta/cobrança) multiplicam casos de borda de validação e de tenant"
+out_of_scope:
+  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
+  - "Envio efetivo de emails e processamento da Outbox (responsabilidade do app automation)"
+  - "Canais além de email (WhatsApp, push, SMS)"
+  - "Recorrência de tarefas ou de lembretes"
+  - "Telas de tarefas/lembretes no clinic"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "Os modelos de tarefa, lembrete e a tabela Outbox já existem em @psiops/database conforme migrations anteriores"
+  - "Os schemas de tarefas/lembretes e o formato dos eventos de Outbox já existem em @psiops/contracts"
+  - "O tratamento de reagendamento adotado (evento de cancelamento + novo evento, ou atualização do evento pendente) segue o que a estrutura da Outbox permitir, com a decisão registrada no código"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "Semântica exata de reagendamento na Outbox (cancelar + recriar vs atualizar evento pendente) caso os contratos não a determinem — registrar a decisão adotada para alinhamento com o app automation"

@@ -1,0 +1,69 @@
+id: PSI-030
+title: "clinic: dashboard"
+project: clinic
+shared_change: false
+branch: "agent/psi-030-clinic-dashboard"
+commit_message: "feat(clinic): dashboard com visão do dia [PSI-030]"
+pr_title: "PSI-030: clinic: dashboard"
+description: |
+  Implementa a tela inicial do app clinic: um dashboard com a visão do dia
+  da psicóloga. A tela reúne as próximas consultas do dia, as pendências
+  financeiras (mensalidades atrasadas e pendentes, com valores em centavos
+  formatados em BRL), as tarefas do dia e atalhos de ação rápida para os
+  fluxos mais frequentes. Todos os dados chegam por adapters mock
+  (consultas, financeiro, tarefas) que respeitam exatamente os schemas de
+  @psiops/contracts — nenhuma chamada à API real nesta fase; a integração
+  acontece na PSI-039. Cada bloco do dashboard define explicitamente seus
+  estados de carregamento (skeletons) e vazio (mensagem orientativa com
+  ação sugerida), de modo que a tela seja útil tanto para conta recém-criada
+  quanto para conta com dados. A construção usa Mantine com os tokens de
+  design de @psiops/ui e é rota protegida atrás da sessão da PSI-028.
+  Nenhuma dependência nova é instalada.
+dependencies:
+  - "PSI-028"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Dashboard é a tela inicial autenticada e exibe: próximas consultas do dia (horário, paciente, status), pendências financeiras (mensalidades atrasadas e pendentes com totais em BRL) e tarefas do dia"
+  - "Atalhos de ação rápida estão presentes para os fluxos frequentes (ex.: nova consulta, nova paciente, registrar pagamento), navegando para as rotas correspondentes mesmo que ainda sejam placeholders"
+  - "Todos os dados vêm de adapters mock (agenda, financeiro, tarefas) tipados e conformes aos schemas de @psiops/contracts; nenhuma chamada HTTP real"
+  - "Cada bloco possui estado de carregamento próprio (skeleton) exibido enquanto o adapter resolve"
+  - "Cada bloco possui estado vazio bem definido com mensagem orientativa (ex.: sem consultas hoje, nenhuma pendência financeira, sem tarefas), distinto do estado de carregamento"
+  - "Valores monetários são recebidos em centavos e formatados em BRL apenas na apresentação"
+  - "Construção com Mantine seguindo os tokens de @psiops/ui; rota protegida pela sessão da PSI-028"
+  - "Testes cobrem: renderização com dados mock, estados de carregamento, estados vazios de cada bloco e navegação dos atalhos rápidos"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Adapters mock que divergem dos contratos criam um dashboard que quebra na integração real (PSI-039); a conformidade com os schemas é o ponto crítico"
+  - "Definição de dia (timezone da usuária) aplicada de forma inconsistente entre os blocos pode mostrar consultas ou tarefas do dia errado"
+  - "Atalhos rápidos apontando para fluxos ainda inexistentes podem gerar becos sem saída; destinos placeholder devem ser explícitos"
+  - "Formatação monetária local (BRL) feita fora de um utilitário único tende a divergir entre blocos"
+out_of_scope:
+  - "Integração com API real (somente na PSI-039)"
+  - "Alterar packages/contracts, packages/database ou packages/ui"
+  - "Telas completas de agenda, pacientes, financeiro e tarefas (os atalhos apenas navegam)"
+  - "Gráficos, relatórios e indicadores históricos de faturamento"
+  - "Qualquer recomendação automática ou insight de IA sobre os dados"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "Os contratos de agenda, financeiro e tarefas em @psiops/contracts já definem as formas de dados que os adapters mock reproduzem"
+  - "Os adapters mock seguem o mesmo padrão de interface + seleção por env estabelecido na PSI-028 para o AuthAdapter"
+  - "A visão do dia usa o fuso horário do dispositivo da usuária nesta fase"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "Priorização e ordem dos blocos do dashboard (consultas vs financeiro vs tarefas) precisam de validação de produto; adotar ordem consultas → financeiro → tarefas e registrar"
+  - "Conjunto exato de atalhos de ação rápida precisa de confirmação de produto"

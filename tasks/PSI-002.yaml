@@ -1,0 +1,50 @@
+id: PSI-002
+title: "packages/config: configurações compartilhadas"
+project: config
+shared_change: true
+branch: "agent/psi-002-packages-config"
+commit_message: "feat(config): configurações compartilhadas do workspace [PSI-002]"
+pr_title: "PSI-002: packages/config — configurações compartilhadas"
+description: |
+  Cria o pacote @psiops/config em packages/config, centralizando as
+  configurações de tooling compartilhadas por todos os apps e packages do
+  monorepo. O pacote exporta: um tsconfig base consumível via extends
+  (apoiado no tsconfig.base.json da raiz), uma ESLint flat config, uma
+  configuração de Prettier e um preset de Vitest. Os demais workspaces
+  consomem o pacote via protocolo workspace:*, evitando duplicação de
+  regras e garantindo que mudanças de estilo/qualidade sejam aplicadas de
+  forma uniforme. O próprio pacote deve passar em lint e typecheck para
+  servir de referência de conformidade.
+dependencies:
+  - "PSI-001"
+allowed_paths:
+  - "packages/config/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "O pacote @psiops/config existe em packages/config e é reconhecido como workspace pelo pnpm"
+  - "Exporta um tsconfig base consumível por outros pacotes via extends"
+  - "Exporta uma ESLint flat config pronta para ser importada pelos demais workspaces"
+  - "Exporta uma configuração de Prettier reutilizável"
+  - "Exporta um preset de Vitest reutilizável pelos pacotes que definirem testes"
+  - "Os exports do package.json do pacote apontam corretamente para cada configuração publicada"
+  - "O pacote é consumível via workspace:* por outros workspaces do monorepo"
+  - "pnpm --filter @psiops/config lint executa sem erros"
+  - "pnpm --filter @psiops/config typecheck executa sem erros"
+validation_commands:
+  - "pnpm --filter @psiops/config lint"
+  - "pnpm --filter @psiops/config typecheck"
+risks:
+  - "Regras de ESLint muito agressivas neste pacote geram atrito em todas as tarefas seguintes que o consomem"
+  - "Divergência entre a flat config do ESLint e plugins esperados por frameworks (Next.js, NestJS) pode exigir overrides locais nos apps"
+  - "Erro no mapa de exports do package.json quebraria o consumo por extends/import em todos os workspaces dependentes"
+out_of_scope:
+  - "Aplicar as configurações aos demais apps/packages (cada tarefa de scaffold consome o pacote por conta própria)"
+  - "Configuração de CI (PSI-004)"
+  - "Tokens de design ou temas visuais (PSI-007)"
+assumptions:
+  - "O tsconfig base do pacote estende o tsconfig.base.json da raiz criado na PSI-001, mantendo strict"
+  - "Não havendo testes especificados para este pacote, a validação se limita a lint e typecheck conforme o enunciado"
+open_questions: []

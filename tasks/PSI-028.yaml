@@ -1,0 +1,69 @@
+id: PSI-028
+title: "clinic: autenticação e sessão"
+project: clinic
+shared_change: false
+branch: "agent/psi-028-clinic-autenticacao-sessao"
+commit_message: "feat(clinic): autenticação e gestão de sessão [PSI-028]"
+pr_title: "PSI-028: clinic: autenticação e sessão"
+description: |
+  Implementa no app clinic (Vite + React + Mantine) as telas de login e
+  registro e toda a gestão de sessão do lado do cliente. As telas seguem os
+  tokens de design de @psiops/ui e validam os formulários no cliente usando
+  os mesmos schemas de auth de @psiops/contracts consumidos pela API, sem
+  duplicar validação. A sessão mantém o access token apenas em memória
+  (nunca em localStorage) com refresh transparente quando o token expira, e
+  rotas protegidas redirecionam para o login preservando o destino
+  original. O acesso à autenticação passa por uma interface AuthAdapter com
+  duas implementações: MockAuthAdapter, padrão em dev e test, simulando o
+  comportamento do backend em memória com fidelidade aos contratos; e
+  HttpAuthAdapter, totalmente tipado pelos contratos mas ainda sem uso real
+  — a ligação com a API real acontece somente na PSI-039. A seleção do
+  adapter é feita por variável de ambiente. Nenhuma dependência nova é
+  instalada; usa-se o que o scaffold do clinic (PSI-011) já provê.
+dependencies:
+  - "PSI-011"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Telas de login e registro implementadas com componentes Mantine, seguindo os tokens de design de @psiops/ui"
+  - "Validação client-side dos formulários usa os schemas de auth de @psiops/contracts; erros de validação aparecem inline por campo antes de qualquer chamada ao adapter"
+  - "Access token vive apenas em memória (estado da aplicação); nada de token em localStorage ou sessionStorage"
+  - "Refresh transparente: quando o access token expira, a sessão é renovada sem interação da usuária; falha no refresh encerra a sessão e leva ao login"
+  - "Rotas protegidas redirecionam usuária não autenticada para o login e retornam ao destino original após autenticar"
+  - "Interface AuthAdapter definida com MockAuthAdapter (padrão em dev/test) simulando registro, login, refresh e logout com respostas conformes aos contratos, incluindo casos de erro (credenciais inválidas)"
+  - "HttpAuthAdapter existe, é tipado integralmente pelos contratos de @psiops/contracts e não é usado em nenhum fluxo real nesta tarefa"
+  - "A escolha do adapter é controlada por variável de ambiente, com o mock como padrão em dev e test"
+  - "Testes cobrem com o MockAuthAdapter: login com sucesso, credenciais inválidas, registro, redirecionamento de rota protegida, refresh transparente e logout"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "MockAuthAdapter que diverge dos contratos cria falsa confiança e quebra na integração real (PSI-039); a fidelidade aos schemas é o ponto crítico"
+  - "Token apenas em memória significa perda de sessão em refresh de página; a experiência de reautenticação/refresh inicial deve ser definida e testada"
+  - "Lógica de refresh concorrente (várias chamadas expirando juntas) pode disparar múltiplos refreshes; deve haver deduplicação da renovação"
+  - "HttpAuthAdapter sem uso real pode apodrecer silenciosamente; a tipagem estrita pelos contratos é a única proteção nesta fase"
+out_of_scope:
+  - "Integração com a API real (HttpAuthAdapter só entra em uso na PSI-039)"
+  - "Alterar packages/contracts, packages/database ou packages/ui"
+  - "Recuperação de senha, verificação de email e MFA"
+  - "Onboarding pós-registro (tratado na PSI-029)"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "O scaffold do clinic (PSI-011) já provê roteador, ferramentas de teste e acesso a @psiops/ui e @psiops/contracts como dependências de workspace"
+  - "Os schemas de auth de @psiops/contracts são reutilizáveis no browser (Zod isomórfico)"
+  - "Ao recarregar a página, a sessão tenta um refresh silencioso na inicialização; se não houver mecanismo de refresh persistível no mock, a usuária volta ao login — comportamento registrado"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "Onde o refresh token deve viver no cliente quando a API real chegar (cookie httpOnly vs memória) — decisão de segurança a alinhar antes da PSI-039; o mock não deve travar essa escolha"

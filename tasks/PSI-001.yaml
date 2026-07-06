@@ -1,0 +1,59 @@
+id: PSI-001
+title: "Bootstrap do monorepo (pnpm + Turborepo)"
+project: root
+shared_change: true
+branch: "agent/psi-001-bootstrap-monorepo"
+commit_message: "chore(root): bootstrap do monorepo com pnpm e turborepo [PSI-001]"
+pr_title: "PSI-001: Bootstrap do monorepo (pnpm + Turborepo)"
+description: |
+  Cria a fundação do monorepo PsiOps na raiz do repositório, usando pnpm
+  workspaces e Turborepo como orquestrador de tarefas. Esta tarefa entrega
+  apenas o esqueleto de tooling: manifesto raiz, declaração de workspaces,
+  pipelines do Turborepo, TypeScript base estrito e arquivos de higiene do
+  repositório (.gitignore, .editorconfig, .nvmrc, .npmrc, README.md).
+  Nenhum app ou package é criado aqui — os diretórios apps/* e packages/*
+  ficam apenas declarados como workspaces para as tarefas seguintes.
+  Todas as demais tarefas do lote dependem direta ou indiretamente desta,
+  portanto ela deve deixar o repositório instalável e com o grafo de
+  pipelines resolvível mesmo sem nenhum workspace concreto presente.
+dependencies: []
+allowed_paths:
+  - "package.json"
+  - "pnpm-workspace.yaml"
+  - "pnpm-lock.yaml"
+  - "turbo.json"
+  - "tsconfig.base.json"
+  - ".gitignore"
+  - ".editorconfig"
+  - ".nvmrc"
+  - ".npmrc"
+  - "README.md"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "pnpm install executa com sucesso a partir de um clone limpo, sem erros nem prompts interativos"
+  - "pnpm-workspace.yaml declara os globs de workspaces apps/* e packages/*"
+  - "turbo.json define as pipelines lint, typecheck, test e build"
+  - "A pipeline build declara dependsOn com ^build, garantindo que dependências internas sejam construídas antes dos dependentes"
+  - ".nvmrc fixa Node >= 20 e o campo engines do package.json raiz é coerente com essa versão"
+  - "tsconfig.base.json habilita strict e serve como base para extends dos demais pacotes"
+  - "package.json raiz expõe scripts que delegam lint, typecheck, test e build ao Turborepo"
+  - ".gitignore cobre node_modules, artefatos de build e caches do Turborepo (.turbo)"
+  - "pnpm turbo run build --dry-run resolve o grafo de tarefas sem erros"
+validation_commands:
+  - "pnpm install"
+  - "pnpm turbo run build --dry-run"
+risks:
+  - "Escolhas de versão do Turborepo e do pnpm feitas aqui propagam para todas as tarefas seguintes; uma versão incompatível bloqueia o lote inteiro"
+  - "Pipelines mal declaradas em turbo.json (outputs/dependsOn incorretos) podem causar cache incorreto ou builds fora de ordem detectados apenas em tarefas futuras"
+  - "tsconfig.base.json excessivamente restritivo pode gerar atrito ao integrar frameworks (Next.js, NestJS) nas tarefas de scaffold"
+out_of_scope:
+  - "Criar qualquer app ou package (apps/* e packages/* ficam vazios)"
+  - "Configurar CI (tratado na PSI-004)"
+  - "Configurações compartilhadas de ESLint/Prettier/Vitest (tratadas na PSI-002)"
+  - "Docker Compose e infraestrutura local (tratados na PSI-003)"
+assumptions:
+  - "Como nenhum workspace existe ainda, considera-se aceitável que pnpm turbo run build --dry-run resolva um grafo vazio, desde que sem erros"
+  - "O gerenciador de pacotes é fixado via campo packageManager no package.json raiz, com .npmrc contendo apenas ajustes necessários ao pnpm"
+open_questions: []

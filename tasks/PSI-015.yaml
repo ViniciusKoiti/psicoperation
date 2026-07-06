@@ -1,0 +1,55 @@
+id: PSI-015
+title: "landing: seções problema e solução"
+project: landing
+shared_change: false
+branch: "agent/psi-015-landing-problema-solucao"
+commit_message: "feat(landing): seções problema e solução [PSI-015]"
+pr_title: "PSI-015: landing: seções problema e solução"
+description: |
+  Implementa as seções "problema" e "solução" da landing page como
+  componentes semânticos, seguindo docs/design/landing-page-spec.md e
+  reutilizando as primitivas da PSI-013. A seção problema apresenta 3 cards
+  com efeito de hover lift. A seção solução usa feature rows alternadas
+  (imagem/mock de um lado, texto do outro, alternando a cada linha) com três
+  composições: lista de carteira de pacientes, mock de conversa de WhatsApp
+  e card de calculadora de juros. O conteúdo textual deve ser idêntico ao da
+  referência project/PsiOps Landing.html, que é somente leitura — proibido
+  converter seu HTML diretamente para JSX. Fidelidade visual pixel-perfect.
+dependencies:
+  - "PSI-013"
+allowed_paths:
+  - "apps/landing/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Seção problema com 3 cards, cada um com efeito de hover lift fiel à referência"
+  - "Seção solução com feature rows alternadas contendo: lista de carteira de pacientes, mock de conversa de WhatsApp e card de calculadora de juros, conforme a spec"
+  - "Conteúdo textual (títulos, parágrafos, itens dos mocks) idêntico ao da referência project/PsiOps Landing.html"
+  - "Componentes semânticos construídos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
+  - "Reutilização das primitivas da PSI-013 (Section, Wrap, Eyebrow, Pill, cards)"
+  - "Fidelidade visual pixel-perfect à referência nas duas seções, incluindo o comportamento responsivo"
+  - "Testes de componentes cobrindo a renderização das duas seções e do conteúdo textual"
+validation_commands:
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing build"
+risks:
+  - "Os mocks internos (carteira de pacientes, conversa de WhatsApp, calculadora de juros) são visualmente densos; reproduzi-los sem copiar o HTML exige atenção extra para manter pixel-perfect"
+  - "Divergência de conteúdo textual em relação à referência é fácil de introduzir ao redigitar os textos"
+  - "Feature rows alternadas podem quebrar a ordem visual esperada no colapso responsivo se a alternância for feita apenas por ordem no DOM"
+out_of_scope:
+  - "Demais seções da landing (hero, como funciona, quote, FAQ, formulário, CTA final)"
+  - "Interatividade funcional na calculadora de juros ou no mock de WhatsApp (são composições estáticas de marketing)"
+  - "Scroll reveal e composição final da página (PSI-018)"
+  - "Alterações em pacotes compartilhados"
+assumptions:
+  - "Os mocks (carteira, WhatsApp, calculadora) são estáticos, como na referência, sem lógica real de cálculo ou mensagens"
+open_questions: []

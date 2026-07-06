@@ -1,0 +1,66 @@
+id: PSI-018
+title: "landing: CTA final, scroll reveal, composição e E2E"
+project: landing
+shared_change: false
+branch: "agent/psi-018-landing-composicao-e2e"
+commit_message: "feat(landing): CTA final, scroll reveal, composição e E2E [PSI-018]"
+pr_title: "PSI-018: landing: CTA final, scroll reveal, composição e E2E"
+description: |
+  Fecha a implementação da landing page. Entrega a seção de CTA final (card
+  com gradiente, overlays radiais e a marca invertida em branco), o
+  comportamento de scroll reveal como progressive enhancement (o
+  IntersectionObserver adiciona a classe de revelação quando a seção entra
+  na viewport; sem JavaScript, todo o conteúdo permanece visível) e a
+  composição da página completa na ordem exata da referência: nav, hero,
+  problema, solução, como funciona, quote, formulário, FAQ, CTA final e
+  footer. Adiciona a suíte E2E com Playwright validando o conjunto: todas
+  as seções renderizam, o accordion do FAQ abre e fecha, o submit do
+  formulário exibe o estado de sucesso e a página em viewport de 390px não
+  apresenta overflow horizontal. A referência project/PsiOps Landing.html é
+  somente leitura — proibido converter seu HTML diretamente para JSX.
+dependencies:
+  - "PSI-014"
+  - "PSI-015"
+  - "PSI-016"
+  - "PSI-017"
+allowed_paths:
+  - "apps/landing/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Seção de CTA final em card com gradiente, overlays radiais e marca invertida (branca), pixel-perfect em relação à referência"
+  - "Scroll reveal implementado como progressive enhancement: IntersectionObserver adiciona a classe de revelação na entrada da viewport; sem JavaScript, nenhum conteúdo fica oculto"
+  - "Página completa composta na ordem da referência: nav, hero, problema, solução, como funciona, quote, formulário (#lista), FAQ, CTA final, footer"
+  - "Suíte E2E Playwright configurada no app landing"
+  - "E2E: todas as seções da página renderizam"
+  - "E2E: accordion do FAQ abre e fecha"
+  - "E2E: submit do formulário exibe o estado de sucesso"
+  - "E2E: em viewport de 390px a página não apresenta overflow horizontal"
+  - "pnpm --filter @psiops/landing exec playwright test executa com sucesso"
+validation_commands:
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing exec playwright test"
+risks:
+  - "Scroll reveal mal implementado pode ocultar conteúdo permanentemente quando o JavaScript falha ou demora (quebra do progressive enhancement e do SEO)"
+  - "Testes E2E dependem do servidor do app no ambiente de CI; configuração de webServer do Playwright frágil gera flakiness"
+  - "Overflow horizontal em 390px costuma vir de elementos absolutos das seções anteriores (chips do hero); a correção deve respeitar os limites de cada tarefa já integrada"
+  - "Integração das seções pode revelar divergências de espaçamento entre tarefas feitas isoladamente, exigindo ajustes finos para manter o pixel-perfect da página inteira"
+out_of_scope:
+  - "Alterações estruturais nas seções entregues por PSI-013 a PSI-017 além de ajustes de composição/integração"
+  - "Integração do formulário com API real (PSI-039)"
+  - "Testes E2E de outros apps do monorepo"
+  - "Métricas de analytics ou tags de marketing"
+assumptions:
+  - "A dependência do Playwright é adicionada apenas em apps/landing/package.json, o que não altera arquivos proibidos; assume-se que o lockfile raiz é regenerado por processo/tarefa autorizada, já que pnpm-lock.yaml é proibido nesta tarefa"
+open_questions:
+  - "Como a instalação da dependência Playwright deve refletir no pnpm-lock.yaml raiz, dado que o lockfile é proibido em tarefas shared_change: false?"

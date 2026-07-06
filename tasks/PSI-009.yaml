@@ -1,0 +1,56 @@
+id: PSI-009
+title: "apps/landing: scaffold Next.js"
+project: landing
+shared_change: true
+branch: "agent/psi-009-landing-scaffold"
+commit_message: "feat(landing): scaffold next.js [PSI-009]"
+pr_title: "PSI-009: apps/landing — scaffold Next.js"
+description: |
+  Cria o scaffold do app landing em apps/landing usando Next.js com App
+  Router e TypeScript. O Tailwind é configurado com pipeline própria de
+  build, consumindo o preset de tokens exportado por @psiops/ui — o uso
+  de Tailwind via CDN é proibido, diferentemente do protótipo de
+  referência. As fontes da marca (DM Sans para display, Inter para corpo
+  e Fraunces para acentos serifados em itálico) são carregadas via
+  next/font, garantindo self-hosting e ausência de layout shift. A página
+  inicial é um placeholder que comprova a integração dos tokens e das
+  fontes; a implementação real da landing (seções, formulário, FAQ) fica
+  para tarefas futuras. O Vitest é configurado para testes unitários e o
+  Playwright é instalado e configurado com webServer apontando para o
+  app, deixando a base de E2E pronta — os specs reais ficam para a
+  PSI-018.
+dependencies:
+  - "PSI-002"
+  - "PSI-007"
+allowed_paths:
+  - "apps/landing/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "O app landing existe em apps/landing com Next.js (App Router) e TypeScript, consumindo as configurações de @psiops/config"
+  - "Tailwind está configurado com pipeline própria de build e consome o preset de tokens de @psiops/ui; não há nenhuma referência a Tailwind via CDN"
+  - "As fontes DM Sans, Inter e Fraunces são carregadas via next/font"
+  - "A página inicial placeholder renderiza usando os tokens e as fontes configuradas"
+  - "Vitest está configurado e executa ao menos um teste do app"
+  - "Playwright está instalado e configurado com webServer que sobe o app automaticamente para os testes E2E"
+  - "pnpm --filter @psiops/landing build gera o build de produção sem erros"
+  - "pnpm --filter @psiops/landing test executa com todos os testes passando"
+validation_commands:
+  - "pnpm --filter @psiops/landing build"
+  - "pnpm --filter @psiops/landing test"
+risks:
+  - "Compatibilidade entre a versão do Tailwind escolhida e o formato do preset exportado por @psiops/ui (a API de presets difere entre majors do Tailwind)"
+  - "Fraunces em itálico via next/font exige configurar os eixos/estilos corretos da fonte variável; configuração incompleta degrada os acentos serifados"
+  - "Coexistência de Vitest e Playwright no mesmo app pode causar colisão de globs de teste se os diretórios não forem bem separados"
+out_of_scope:
+  - "Implementação real das seções da landing page (hero, problema, solução, FAQ etc.)"
+  - "Specs E2E de Playwright (ficam para a PSI-018)"
+  - "Formulário de captura de leads e integração com a API"
+  - "Deploy ou configuração de hospedagem"
+assumptions:
+  - "O nome do package do app é landing (sem escopo @psiops/), conforme o filtro usado nos comandos de validação"
+  - "A página placeholder não precisa reproduzir o design da referência; basta evidenciar tokens e fontes funcionando"
+open_questions:
+  - "PSI-018 é referenciada como destino dos specs E2E, mas não faz parte deste lote; o escopo exato desses specs será definido quando ela for especificada"

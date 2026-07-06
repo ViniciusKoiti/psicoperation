@@ -1,0 +1,61 @@
+id: PSI-017
+title: "landing: formulário de lista de espera"
+project: landing
+shared_change: false
+branch: "agent/psi-017-landing-form-lista"
+commit_message: "feat(landing): formulário de lista de espera [PSI-017]"
+pr_title: "PSI-017: landing: formulário de lista de espera"
+description: |
+  Implementa a seção do formulário de lista de espera (#lista) da landing
+  page, conforme docs/design/landing-page-spec.md e com as primitivas da
+  PSI-013. O formulário captura nome, WhatsApp e email. O campo WhatsApp
+  recebe máscara (XX) XXXXX-XXXX aplicada durante a digitação. A validação
+  usa o schema LeadCapture de @psiops/contracts — é proibido duplicar o DTO
+  no app. Erros são exibidos inline por campo. Em envio bem-sucedido, o
+  formulário é substituído pelo estado de sucesso, como na referência. O
+  envio passa por uma interface LeadAdapter, com implementação mock em
+  memória (nenhuma chamada de rede); a integração com a API real fica para
+  a PSI-039. A referência project/PsiOps Landing.html é somente leitura e
+  não pode ser convertida diretamente para JSX. Fidelidade visual
+  pixel-perfect.
+dependencies:
+  - "PSI-013"
+allowed_paths:
+  - "apps/landing/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Seção do formulário identificada pela âncora #lista, com campos nome, WhatsApp e email, fiel à referência"
+  - "Máscara (XX) XXXXX-XXXX aplicada ao campo WhatsApp no evento de input, conforme o comportamento da referência"
+  - "Validação implementada com o schema LeadCapture de @psiops/contracts, importado do pacote; nenhum DTO/schema duplicado no app"
+  - "Estado de erro inline por campo (mensagem e indicação visual no campo inválido)"
+  - "Ao enviar com sucesso, o formulário é substituído pelo estado de sucesso, como na referência"
+  - "Envio realizado exclusivamente através da interface LeadAdapter, com implementação mock em memória; nenhuma chamada de rede é feita"
+  - "Componentes construídos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
+  - "Fidelidade visual pixel-perfect à referência na seção do formulário, incluindo os estados de erro e sucesso"
+  - "Testes cobrindo a máscara de WhatsApp, a validação por campo (erros inline) e o fluxo de envio com sucesso"
+validation_commands:
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing build"
+risks:
+  - "Divergência entre a máscara visual e o formato aceito pelo schema LeadCapture pode fazer entradas visualmente válidas falharem na validação"
+  - "Máscara aplicada no evento de input pode conflitar com o gerenciamento de estado do React (posição do cursor, colar texto)"
+  - "Se a interface LeadAdapter não for definida com cuidado, a troca do mock pela API real (PSI-039) exigirá refatoração do componente"
+  - "Duplicar regras do DTO no app por conveniência viola o critério e cria fonte dupla de verdade"
+out_of_scope:
+  - "Integração com a API real de captura de leads (PSI-039)"
+  - "Persistência de leads (banco, fila, e-mail)"
+  - "Anti-spam, rate limiting ou captcha"
+  - "Alterações em packages/contracts (o schema LeadCapture é apenas consumido)"
+assumptions:
+  - "O schema LeadCapture já existe em @psiops/contracts e cobre nome, WhatsApp e email; esta tarefa apenas o consome"
+open_questions: []

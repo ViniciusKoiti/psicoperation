@@ -1,0 +1,53 @@
+id: PSI-008
+title: "packages/testing: fixtures e utilitários de teste"
+project: testing
+shared_change: true
+branch: "agent/psi-008-testing-fixtures"
+commit_message: "feat(testing): fixtures e utilitários de teste [PSI-008]"
+pr_title: "PSI-008: packages/testing — fixtures e utilitários de teste"
+description: |
+  Cria o pacote @psiops/testing em packages/testing, concentrando a
+  infraestrutura de testes compartilhada do monorepo. Entrega três
+  frentes: builders de fixtures determinísticos (com seed fixo, para que
+  execuções repetidas produzam exatamente os mesmos dados) para as
+  entidades já definidas nos contratos existentes — user e lead;
+  infraestrutura de mock adapters em memória reutilizável, permitindo que
+  apps testem casos de uso sem depender de banco, filas ou serviços
+  externos; e helpers de Vitest que reduzam boilerplate nos testes dos
+  demais pacotes. O próprio pacote possui testes que garantem o
+  determinismo dos builders e o comportamento dos adapters em memória.
+dependencies:
+  - "PSI-002"
+  - "PSI-005"
+allowed_paths:
+  - "packages/testing/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "O pacote @psiops/testing existe em packages/testing e consome as configurações de @psiops/config via workspace:*"
+  - "Builders de fixtures existem para user e lead, produzindo dados válidos segundo os contratos existentes"
+  - "Os builders são determinísticos: com o mesmo seed fixo, execuções repetidas geram exatamente os mesmos dados"
+  - "Os builders aceitam overrides parciais para customizar campos específicos em cada teste"
+  - "Existe infraestrutura de mock adapters em memória reutilizável pelos apps, com contrato claro de leitura/escrita/reset"
+  - "Helpers de Vitest são exportados e documentados no próprio pacote"
+  - "O pacote possui testes cobrindo determinismo dos builders e comportamento dos mock adapters"
+  - "pnpm --filter @psiops/testing test executa com todos os testes passando"
+  - "pnpm --filter @psiops/testing typecheck executa sem erros"
+validation_commands:
+  - "pnpm --filter @psiops/testing test"
+  - "pnpm --filter @psiops/testing typecheck"
+risks:
+  - "Se os builders não espelharem fielmente os schemas de @psiops/contracts, testes dos apps passarão com dados que a validação real rejeitaria"
+  - "Mock adapters com semântica diferente das implementações reais (ex.: unicidade de email não aplicada) mascaram bugs de integração"
+  - "Dependência da PSI-005 é indireta (via contratos existentes); se este pacote rodar antes dos contratos estarem publicados, os builders não terão tipos para consumir"
+out_of_scope:
+  - "Fixtures do domínio clínico antes da PSI-019 (extensão registrada como open_question de sequenciamento)"
+  - "Testes de integração com banco real ou Redis (os adapters são exclusivamente em memória)"
+  - "Configuração de testes dos apps (cada scaffold cuida da própria configuração)"
+assumptions:
+  - "As entidades dos contratos existentes referem-se a user e lead conforme definidos em @psiops/contracts (PSI-005); embora PSI-005 não esteja listada como dependência direta, os builders tipam contra esses contratos"
+open_questions:
+  - "Sequenciamento: as fixtures do domínio clínico serão adicionadas em qual tarefa após a PSI-019 definir os contratos clínicos — extensão desta ou tarefa nova?"
+  - "PSI-005 não consta das dependências declaradas, mas os builders de user e lead pressupõem os contratos dela; confirmar se a dependência deveria ser explícita no grafo"

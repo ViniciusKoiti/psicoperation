@@ -1,0 +1,65 @@
+id: PSI-037
+title: "clinic: configurações"
+project: clinic
+shared_change: false
+branch: "agent/psi-037-clinic-configuracoes"
+commit_message: "feat(clinic): tela de configurações e logout [PSI-037]"
+pr_title: "PSI-037: clinic — configurações"
+description: |
+  Implementa no app clinic a área de configurações da conta, permitindo
+  que a psicóloga edite seu perfil profissional, o valor padrão de
+  sessão, os dias e horários de atendimento e as preferências de
+  lembrete, além de encerrar a sessão (logout). A persistência usa o
+  SettingsAdapter sob o mesmo contrato de configurações já empregado no
+  onboarding, garantindo que um dado ajustado no onboarding e o mesmo
+  dado ajustado nas configurações sejam lidos e escritos de forma
+  idêntica. Os formulários validam com os schemas Zod de
+  @psiops/contracts e a tela trata estados de carregamento, erro e
+  salvamento, com feedback claro de sucesso em pt-BR.
+dependencies:
+  - "PSI-028"
+  - "PSI-029"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Edição de perfil profissional (dados exibidos conforme os DTOs de @psiops/contracts) com validação Zod e feedback de sucesso ao salvar"
+  - "Edição do valor padrão de sessão com validação de valor monetário conforme os contratos"
+  - "Configuração de dias e horários de atendimento consistente com o formato usado pelos contratos"
+  - "Edição das preferências de lembrete (canal email e momentos de envio previstos nos contratos)"
+  - "Logout encerra a sessão e redireciona para a tela de entrada, limpando o estado autenticado do app"
+  - "Persistência realizada via SettingsAdapter usando o mesmo contrato de configurações do onboarding; valores salvos no onboarding aparecem pré-carregados aqui"
+  - "Estados de carregamento, erro de carregamento e erro de salvamento são tratados"
+  - "Testes cobrem edição e persistência de cada seção, pré-carregamento dos valores existentes e o fluxo de logout"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Divergência entre o formulário de configurações e o de onboarding sobre o mesmo contrato criaria dois comportamentos para o mesmo dado"
+  - "Alterar o valor padrão de sessão levanta a questão de efeito retroativo sobre mensalidades já geradas; sem definição, o comportamento seguro é não retroagir"
+  - "Logout incompleto (estado residual em memória ou storage) pode vazar dados entre sessões no mesmo navegador"
+out_of_scope:
+  - "Alteração de email de login, senha ou exclusão de conta"
+  - "Novos campos ou mudanças nos contratos de configurações (packages/contracts é intocável)"
+  - "Integração com a API real (PSI-039)"
+  - "Faturamento/assinatura do próprio PsiOps (billing da plataforma)"
+  - "Instalação de novas dependências"
+assumptions:
+  - "O contrato de configurações e o SettingsAdapter foram estabelecidos no fluxo de onboarding do clinic e esta tarefa os reutiliza sem alterações de interface"
+  - "Alterar o valor padrão de sessão afeta apenas cobranças futuras, sem efeito retroativo"
+  - "O mecanismo de sessão/logout segue o que o shell do app definiu na PSI-028 (mock de autenticação até a PSI-039)"
+open_questions:
+  - "As preferências de lembrete definidas aqui devem sobrescrever configurações feitas por lembrete individual na PSI-036, ou atuar apenas como padrão inicial?"
+  - "O onboarding do clinic é a PSI-029, mas as dependências especificadas listam apenas PSI-028; a PSI-029 não deveria constar como dependência, já que o SettingsAdapter reutiliza o contrato do onboarding?"

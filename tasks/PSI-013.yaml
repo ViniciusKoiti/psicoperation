@@ -1,0 +1,65 @@
+id: PSI-013
+title: "landing: layout base, navegação e rodapé"
+project: landing
+shared_change: false
+branch: "agent/psi-013-landing-layout-base"
+commit_message: "feat(landing): layout base, navegação e rodapé [PSI-013]"
+pr_title: "PSI-013: landing: layout base, navegação e rodapé"
+description: |
+  Constrói a fundação visual da landing page em apps/landing (Next.js) como
+  componentes semânticos reutilizáveis, seguindo docs/design/landing-page-spec.md.
+  A referência project/PsiOps Landing.html é somente leitura e serve apenas
+  para conferência de fidelidade visual — é proibido converter o HTML da
+  referência diretamente para JSX; a implementação deve ser reconstruída como
+  componentes próprios. Esta tarefa entrega a Nav sticky (com blur e fundo
+  opaco quando scrollY > 12), o Footer de 3 colunas (marca + tagline, links de
+  navegação, links legais) e as primitivas de layout usadas por todas as
+  seções seguintes: Section, Wrap (container centralizado de max-width 1180px),
+  Eyebrow, Pill e os botões primary/ghost/white consumidos via @psiops/ui.
+  O logo é copiado de project/assets para o diretório public do app. O
+  resultado deve ser responsivo (colapso em 920px) e pixel-perfect em relação
+  à referência.
+dependencies:
+  - "PSI-009"
+allowed_paths:
+  - "apps/landing/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Componentes semânticos reutilizáveis implementados conforme docs/design/landing-page-spec.md, sem cópia direta do HTML da referência para JSX"
+  - "Nav sticky com efeito de blur, tornando-se opaca quando scrollY > 12, com transição fiel à referência"
+  - "Footer de 3 colunas: marca + tagline, links de navegação e links legais"
+  - "Primitivas Section, Wrap (max-width 1180px centralizado), Eyebrow e Pill criadas e reutilizáveis pelas demais seções"
+  - "Botões nas variantes primary, ghost e white consumidos via @psiops/ui (sem duplicar estilos de botão no app)"
+  - "Logo copiado de project/assets para o public do app e referenciado a partir de lá (nenhum asset servido de project/)"
+  - "Layout responsivo com colapso no breakpoint de 920px conforme a referência"
+  - "Fidelidade visual pixel-perfect à referência project/PsiOps Landing.html nas partes cobertas por esta tarefa"
+  - "Testes de componentes cobrindo Nav (estado sticky/opaco), Footer e primitivas"
+validation_commands:
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing build"
+risks:
+  - "Fidelidade pixel-perfect depende de fontes (DM Sans, Inter, Fraunces) e tokens corretos; pequenas divergências de tipografia se propagam para todas as seções"
+  - "Comportamento de scroll da Nav depende de listener no cliente; em Next.js é preciso cuidar de hydration/SSR para não gerar mismatch"
+  - "Tentação de copiar o HTML da referência para JSX viola a regra da tarefa e compromete a manutenção dos componentes"
+  - "Primitivas mal dimensionadas (Wrap, Section) forçam retrabalho nas tarefas PSI-014 a PSI-018 que dependem delas"
+out_of_scope:
+  - "Seções de conteúdo da landing (hero, problema, solução, como funciona, quote, FAQ, CTA final) — tarefas PSI-014 a PSI-018"
+  - "Formulário de lista de espera (PSI-017)"
+  - "Scroll reveal e composição final da página (PSI-018)"
+  - "Testes E2E com Playwright (PSI-018)"
+  - "Alterações em @psiops/ui ou em qualquer pacote compartilhado"
+assumptions:
+  - "PSI-009 deixou apps/landing (Next.js) criado e docs/design/landing-page-spec.md disponível no repositório"
+  - "Ler project/assets para copiar o logo é permitido; a proibição de project/** vale apenas para modificação"
+  - "O filtro pnpm do app é 'landing'"
+open_questions: []

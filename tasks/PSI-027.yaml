@@ -1,0 +1,68 @@
+id: PSI-027
+title: "api: captura de leads (lista de espera)"
+project: api
+shared_change: false
+branch: "agent/psi-027-api-captura-leads"
+commit_message: "feat(api): captura de leads da lista de espera [PSI-027]"
+pr_title: "PSI-027: api: captura de leads (lista de espera)"
+description: |
+  Implementa na API NestJS o endpoint público de captura de leads que
+  atende ao formulário de lista de espera da landing page do PsiOps.
+  Entrega o POST /leads sem autenticação (rota marcada como pública),
+  validado exclusivamente pelo contrato LeadCapture de @psiops/contracts,
+  com deduplicação por email de forma idempotente: reenvio do mesmo email
+  retorna sucesso sem criar registro duplicado e sem revelar ao cliente que
+  o email já existia. Inclui rate-limit para conter abuso de um endpoint
+  aberto à internet e persiste via @psiops/database usando o modelo Lead
+  criado na migration 0001. A tarefa consome contracts e database como
+  estão: não altera schema, migrations nem qualquer arquivo desses
+  packages. Por depender apenas do scaffold da API (PSI-010), pode ser
+  desenvolvida em paralelo aos módulos autenticados.
+dependencies:
+  - "PSI-010"
+allowed_paths:
+  - "apps/api/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "POST /leads é acessível sem autenticação e valida o corpo exclusivamente pelo contrato LeadCapture de @psiops/contracts, sem DTO duplicado na API"
+  - "Payload inválido (email malformado, campos obrigatórios ausentes, campos extras) retorna 400 com detalhes de validação"
+  - "Envio de email já cadastrado é idempotente: retorna a mesma resposta de sucesso do primeiro envio, sem criar duplicata e sem indicar que o email já existia"
+  - "Deduplicação por email é resistente a variações triviais (normalização de caixa e espaços antes de comparar/persistir)"
+  - "Endpoint possui rate-limit; exceder o limite retorna 429"
+  - "Persistência usa o modelo Lead da migration 0001 via @psiops/database, sem qualquer alteração de schema"
+  - "Testes cobrem: fluxo feliz, dedupe (segundo envio do mesmo email), payload inválido e comportamento do rate-limit"
+validation_commands:
+  - "pnpm --filter @psiops/api lint"
+  - "pnpm --filter @psiops/api typecheck"
+  - "pnpm --filter @psiops/api test"
+  - "pnpm --filter @psiops/api test:e2e"
+risks:
+  - "Endpoint público é alvo natural de spam/bots; rate-limit por IP é mitigação parcial e a limitação deve ficar registrada"
+  - "Dedupe sem apoio de constraint única no banco pode duplicar sob concorrência; se a migration 0001 tiver unique em email, tratar o erro de violação como sucesso idempotente"
+  - "Resposta diferente para email novo vs existente permitiria enumeração de emails cadastrados — as respostas devem ser indistinguíveis"
+  - "Se esta tarefa rodar antes da PSI-021, o mecanismo de rota pública deve funcionar mesmo sem o guard global existir ainda, sem conflitar quando ele chegar"
+out_of_scope:
+  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
+  - "Integração do formulário da landing com este endpoint (tarefa do app landing)"
+  - "Email de confirmação/boas-vindas ao lead e double opt-in"
+  - "Painel administrativo ou listagem de leads"
+  - "Proteções anti-bot adicionais (captcha, honeypot no backend)"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "O contrato LeadCapture já existe em @psiops/contracts com os campos do formulário da landing (nome, WhatsApp, email)"
+  - "O modelo Lead da migration 0001 já existe em @psiops/database com email como chave de deduplicação"
+  - "O rate-limit usa o mecanismo já instalado no scaffold da API; a chave é o IP de origem"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "Se o scaffold não tiver mecanismo de rate-limit instalado (ex.: @nestjs/throttler), registrar bloqueio — esta tarefa não pode instalar dependências novas"
+  - "Limites exatos do rate-limit (requisições/janela) precisam de validação de produto; adotar valor conservador e registrá-lo"

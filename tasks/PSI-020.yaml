@@ -1,0 +1,54 @@
+id: PSI-020
+title: "database: schema MVP e migration 0002"
+project: database
+shared_change: true
+branch: "agent/psi-020-database-schema-mvp"
+commit_message: "feat(database): schema MVP e migration 0002 [PSI-020]"
+pr_title: "PSI-020: database: schema MVP e migration 0002"
+description: |
+  Evolui o pacote @psiops/database com os modelos Prisma do MVP, alinhados
+  aos contratos definidos na PSI-019: Patient, Appointment, SessionRecord,
+  Charge, Task, Reminder e Outbox (persistência de eventos de domínio a
+  serem consumidos pelo app automation). Todos os modelos são escopados ao
+  User (multi-tenant por userId), com índices compostos por usuário +
+  período para as consultas típicas do produto (agenda do mês, cobranças do
+  período). A mudança é entregue como a migration 0002, sequencial após a
+  0001, sem alterar a migration 0001 já aplicada. O schema deve passar em
+  prisma validate e a migration deve aplicar com prisma migrate dev no
+  banco local.
+dependencies:
+  - "PSI-006"
+  - "PSI-019"
+allowed_paths:
+  - "packages/database/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "Modelos Prisma Patient, Appointment, SessionRecord, Charge, Task, Reminder e Outbox criados, alinhados campo a campo aos contratos da PSI-019 (nomes, enums e semântica compatíveis)"
+  - "Todos os modelos escopados ao User via userId (multi-tenant), com relação e integridade referencial adequadas"
+  - "Índices compostos por usuário + período nos modelos consultados por intervalo de tempo (ex.: Appointment, Charge, Reminder)"
+  - "Modelo Outbox adequado ao padrão outbox: registra eventos de domínio para consumo posterior pelo automation"
+  - "Migration 0002 criada sequencialmente após a 0001; a migration 0001 permanece intocada"
+  - "prisma validate passa sem erros"
+  - "prisma migrate dev aplica a migration 0002 com sucesso no banco local"
+validation_commands:
+  - "pnpm --filter @psiops/database exec prisma validate"
+  - "pnpm --filter @psiops/database exec prisma migrate dev"
+risks:
+  - "Desalinhamento entre modelos Prisma e schemas Zod da PSI-019 cria mapeamentos manuais e bugs silenciosos na API"
+  - "Esquecer o escopo por userId em algum modelo ou índice quebra o isolamento multi-tenant"
+  - "Índices mal escolhidos por usuário+período degradam as consultas principais do produto conforme o volume cresce"
+  - "Editar a migration 0001 em vez de criar a 0002 corromperia ambientes que já a aplicaram"
+  - "Tarefa shared_change altera pnpm-lock.yaml; execução concorrente com outra tarefa shared_change gera conflito de lockfile"
+out_of_scope:
+  - "Seeds de dados (PSI-040)"
+  - "Repositórios, serviços ou uso dos modelos pela API"
+  - "Worker/processo que consome a Outbox (fica no app automation)"
+  - "Campos de conteúdo clínico ou diagnóstico em SessionRecord (restrição herdada da PSI-019)"
+assumptions:
+  - "PSI-006 deixou o pacote @psiops/database com Prisma configurado, banco Postgres local disponível e a migration 0001 existente"
+  - "O filtro pnpm do pacote é '@psiops/database'"
+  - "prisma migrate dev requer banco local acessível; a validação assume o ambiente de desenvolvimento provisionado pelas tarefas anteriores"
+open_questions: []

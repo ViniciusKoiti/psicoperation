@@ -1,0 +1,66 @@
+id: PSI-031
+title: "clinic: pacientes (lista e cadastro)"
+project: clinic
+shared_change: false
+branch: "agent/psi-031-clinic-pacientes"
+commit_message: "feat(clinic): lista e cadastro de pacientes [PSI-031]"
+pr_title: "PSI-031: clinic — pacientes (lista e cadastro)"
+description: |
+  Implementa no app clinic (Vite + React + Mantine) o módulo de pacientes,
+  primeira funcionalidade de domínio da área logada. Entrega a lista de
+  pacientes com busca por nome e paginação, o fluxo de cadastro e edição
+  com validação baseada exclusivamente nos schemas Zod de @psiops/contracts,
+  e o arquivamento de paciente com confirmação explícita. Todo o acesso a
+  dados passa por um PatientsAdapter mock em memória, fiel aos contratos,
+  de modo que a troca pelo adapter HTTP real (PSI-039) não exija mudanças
+  nas telas. A UI cobre os estados de lista vazia, carregamento e erro,
+  garantindo que o módulo seja utilizável e testável de ponta a ponta sem
+  backend. Nenhum DTO local é criado: tipos e validações vêm somente de
+  @psiops/contracts.
+dependencies:
+  - "PSI-028"
+  - "PSI-019"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Lista de pacientes exibe nome e dados essenciais definidos nos DTOs de @psiops/contracts"
+  - "Busca por nome filtra a lista e paginação funciona em conjunto com a busca"
+  - "Formulário de cadastro valida os campos com os schemas Zod de @psiops/contracts, exibindo mensagens de erro por campo"
+  - "Edição de paciente reutiliza o formulário de cadastro pré-preenchido e persiste as alterações via adapter"
+  - "Arquivamento exige confirmação explícita do usuário e remove o paciente da listagem padrão"
+  - "PatientsAdapter mock em memória implementa a interface derivada dos contratos, sem tipos duplicados no app"
+  - "Estados de lista vazia, carregamento e erro são renderizados com feedback claro em pt-BR"
+  - "Testes cobrem busca, paginação, validação de formulário, arquivamento com confirmação e os estados vazio/carregando/erro"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Interface do PatientsAdapter mock divergente do contrato real dificultaria a troca pelo adapter HTTP na PSI-039"
+  - "Comportamento de paginação implementado apenas no client pode divergir da semântica de paginação da API real"
+  - "Validações duplicadas fora dos schemas Zod dos contratos podem criar regras conflitantes entre client e API"
+out_of_scope:
+  - "Integração com a API real (adapters HTTP são entregues na PSI-039)"
+  - "Página de detalhe e histórico do paciente (PSI-032)"
+  - "Criação ou alteração de schemas em packages/contracts"
+  - "Exclusão definitiva de pacientes (apenas arquivamento)"
+  - "Campos clínicos, diagnóstico ou qualquer recomendação clínica automatizada"
+  - "Instalação de novas dependências"
+assumptions:
+  - "PSI-028 entregou o shell do app clinic (roteamento, layout autenticado e infraestrutura de adapters) e PSI-019 entregou os contratos de paciente em @psiops/contracts"
+  - "O nome do workspace do app é @psiops/clinic, seguindo a convenção @psiops/* dos demais pacotes"
+  - "A busca e a paginação são resolvidas pelo adapter (no mock, em memória), mantendo a assinatura parametrizada por página e termo conforme os contratos"
+  - "Arquivamento é uma mudança de status prevista nos contratos, e não remoção do registro"
+open_questions: []

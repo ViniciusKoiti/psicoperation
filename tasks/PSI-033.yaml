@@ -1,0 +1,68 @@
+id: PSI-033
+title: "clinic: agenda e consultas"
+project: clinic
+shared_change: false
+branch: "agent/psi-033-clinic-agenda-consultas"
+commit_message: "feat(clinic): agenda com consultas e detecção de conflito [PSI-033]"
+pr_title: "PSI-033: clinic — agenda e consultas"
+description: |
+  Implementa no app clinic o módulo de agenda, coração operacional do
+  produto para a psicóloga solo. Entrega as visões semanal e diária da
+  agenda, com criação, remarcação e cancelamento de consultas vinculadas
+  a pacientes. A detecção de conflito de horário roda no client aplicando
+  exatamente a mesma regra expressa nos contratos de @psiops/contracts,
+  evitando divergência entre o que a UI bloqueia e o que a API rejeitará.
+  Inclui recorrência semanal simples: ao criar uma consulta recorrente,
+  as ocorrências seguintes são geradas no mesmo dia da semana e horário.
+  Todo o acesso a dados passa por um AgendaAdapter mock em memória fiel
+  aos contratos, preparado para substituição pelo adapter HTTP na
+  PSI-039. Estados de carregamento, erro e agenda vazia são tratados.
+dependencies:
+  - "PSI-028"
+  - "PSI-019"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Visão semanal exibe as consultas da semana corrente com navegação para semanas anteriores e seguintes"
+  - "Visão diária exibe as consultas do dia selecionado, com alternância fluida entre as duas visões"
+  - "Criação de consulta vincula paciente, data, horário e duração, validados pelos schemas Zod de @psiops/contracts"
+  - "Remarcação altera data/horário de uma consulta existente preservando o vínculo com o paciente"
+  - "Cancelamento exige confirmação e mantém a consulta com status cancelado, conforme os contratos"
+  - "Tentativa de criar ou remarcar consulta em horário conflitante é bloqueada no client, aplicando a mesma regra de conflito expressa nos contratos"
+  - "Recorrência semanal simples gera ocorrências no mesmo dia da semana e horário"
+  - "AgendaAdapter mock em memória implementa a interface derivada dos contratos, sem tipos duplicados no app"
+  - "Testes cobrem criação, remarcação, cancelamento, recorrência e cenários de conflito (sobreposição total e parcial de horários)"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Reimplementar a regra de conflito no app em vez de consumi-la dos contratos criaria divergência silenciosa entre client e API"
+  - "Manipulação de datas e fusos horários é fonte clássica de bugs em agendas; casos de virada de dia e horário de verão precisam de atenção nos testes"
+  - "Recorrência mal delimitada pode gerar ocorrências ilimitadas no mock e degradar a renderização das visões"
+out_of_scope:
+  - "Registros administrativos de presença/falta (PSI-034)"
+  - "Lembretes de consulta (configuração na PSI-036, envio na PSI-038)"
+  - "Integração com a API real (PSI-039)"
+  - "Recorrências complexas (quinzenal, mensal, exceções por data)"
+  - "Sincronização com calendários externos (Google Calendar etc.)"
+  - "Instalação de novas dependências"
+assumptions:
+  - "A regra de conflito de horário está expressa em @psiops/contracts (schema ou função pura exportada) e o app apenas a consome; nada é alterado em packages/contracts"
+  - "Recorrência semanal simples significa repetição no mesmo dia da semana e horário, com um horizonte finito de geração definido na implementação e coberto por testes"
+  - "Consultas pertencem à única psicóloga logada; não há agenda multiprofissional"
+open_questions:
+  - "Qual o horizonte padrão de geração de ocorrências recorrentes (número de semanas ou data-limite)?"
+  - "Consulta cancelada deve liberar o horário para novo agendamento imediatamente?"

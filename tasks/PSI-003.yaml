@@ -1,0 +1,59 @@
+id: PSI-003
+title: "Infraestrutura local com Docker Compose"
+project: infra
+shared_change: false
+branch: "agent/psi-003-docker-compose"
+commit_message: "chore(infra): docker compose para infraestrutura local [PSI-003]"
+pr_title: "PSI-003: Infraestrutura local com Docker Compose"
+description: |
+  Provisiona a infraestrutura de desenvolvimento local do PsiOps via
+  Docker Compose: PostgreSQL 16 (banco principal, consumido futuramente
+  pelo Prisma), Redis 7 (backend das filas BullMQ do app automation) e
+  Mailpit (captura de e-mails em desenvolvimento). Cada serviço deve ter
+  healthcheck configurado e persistência em volumes nomeados, permitindo
+  destruir e recriar containers sem perda de dados. As credenciais e
+  portas expostas ficam documentadas em .env.example na raiz, servindo de
+  contrato para os apps que se conectarem a esses serviços. Documentação
+  de uso (subir, derrubar, resetar volumes, portas) fica em docs/infra.
+dependencies:
+  - "PSI-001"
+allowed_paths:
+  - "docker-compose.yml"
+  - "infra/**"
+  - ".env.example"
+  - "docs/infra/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "docker compose up -d sobe Postgres 16, Redis 7 e Mailpit sem erros"
+  - "Cada serviço declara healthcheck e atinge o estado healthy após a subida"
+  - "Postgres e Redis usam volumes nomeados, preservando dados entre recriações de containers"
+  - "As imagens fixam as versões maiores exigidas (Postgres 16 e Redis 7)"
+  - "Todas as credenciais e portas expostas estão documentadas em .env.example, com valores padrão funcionais para desenvolvimento local"
+  - "Mailpit expõe a interface web e a porta SMTP, ambas documentadas em .env.example"
+  - "docs/infra contém instruções de como subir, derrubar e resetar a infraestrutura local"
+  - "docker compose config valida o arquivo sem erros nem warnings de sintaxe"
+validation_commands:
+  - "docker compose config"
+risks:
+  - "Conflito de portas locais com serviços já em execução na máquina da desenvolvedora (Postgres/Redis nativos, outros composes)"
+  - "docker compose config valida apenas a sintaxe; problemas de runtime (imagem indisponível, healthcheck mal calibrado) só aparecem ao subir os serviços"
+  - "Credenciais padrão de desenvolvimento em .env.example podem ser copiadas por engano para ambientes não locais"
+out_of_scope:
+  - "Infraestrutura de produção ou provisionamento em nuvem"
+  - "Configuração do Prisma ou execução de migrations (PSI-006)"
+  - "Configuração de filas BullMQ no app automation"
+  - "CI/CD (PSI-004)"
+assumptions:
+  - "As portas padrão dos serviços (5432, 6379, SMTP e web do Mailpit) são usadas, com possibilidade de override via variáveis do .env.example"
+  - "Arquivos auxiliares de inicialização (ex.: scripts de init do Postgres), se necessários, residem em infra/**"
+open_questions: []

@@ -1,0 +1,21 @@
+# dependências
+node_modules/
+
+# builds
+dist/
+build/
+.next/
+.turbo/
+out/
+coverage/
+
+# ambiente
+.env
+.env.*
+!.env.example
+
+# ferramentas
+*.log
+.DS_Store
+playwright-report/
+test-results/

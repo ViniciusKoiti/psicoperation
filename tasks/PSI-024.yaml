@@ -1,0 +1,70 @@
+id: PSI-024
+title: "api: registros administrativos de consulta"
+project: api
+shared_change: false
+branch: "agent/psi-024-api-registros-administrativos"
+commit_message: "feat(api): registros administrativos de consulta [PSI-024]"
+pr_title: "PSI-024: api: registros administrativos de consulta"
+description: |
+  Implementa na API NestJS o registro administrativo vinculado a consulta:
+  para cada consulta a psicóloga pode registrar o desfecho administrativo
+  (compareceu, faltou ou remarcada) e anotações estritamente administrativas
+  e não clínicas (ex.: combinados de pagamento, ajuste de horário). Inclui
+  histórico paginado por paciente para consulta rápida do comportamento de
+  comparecimento. Restrição de produto explícita e inegociável: este módulo
+  NÃO possui campos de diagnóstico, evolução clínica ou conteúdo
+  terapêutico — o PsiOps é uma ferramenta financeira/administrativa e não
+  um prontuário; essa restrição deve estar registrada em comentário/doc do
+  módulo e refletida nos contratos consumidos. Igualmente proibido
+  introduzir qualquer diagnóstico automático, recomendação clínica ou
+  decisão de saúde por IA. Toda validação usa exclusivamente os schemas de
+  @psiops/contracts, sem DTOs duplicados; a tarefa consome @psiops/database
+  como está, sem alterar schema ou migrations.
+dependencies:
+  - "PSI-022"
+  - "PSI-023"
+allowed_paths:
+  - "apps/api/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Registro administrativo pode ser criado vinculado a uma consulta existente da própria psicóloga, com desfecho compareceu/faltou/remarcada e anotações administrativas opcionais"
+  - "Tentativa de registrar em consulta inexistente ou de outra usuária retorna 404; escopo por userId em toda query"
+  - "Registro pode ser atualizado (corrigir desfecho ou anotação) mantendo o vínculo com a consulta"
+  - "Histórico de registros por paciente é paginado, ordenado do mais recente para o mais antigo, e escopado à psicóloga autenticada"
+  - "Os payloads aceitos não contêm nenhum campo de diagnóstico, evolução clínica ou conteúdo terapêutico; a restrição está documentada no módulo e campos extras no payload são rejeitados pela validação dos contratos"
+  - "Nenhuma funcionalidade de diagnóstico automático, recomendação clínica ou decisão de saúde por IA é introduzida"
+  - "Entrada e saída validadas exclusivamente pelos schemas de @psiops/contracts; payload inválido retorna 400"
+  - "Testes cobrem criação para cada desfecho, atualização, histórico paginado por paciente, isolamento entre tenants e rejeição de payload com campos não previstos"
+validation_commands:
+  - "pnpm --filter @psiops/api lint"
+  - "pnpm --filter @psiops/api typecheck"
+  - "pnpm --filter @psiops/api test"
+  - "pnpm --filter @psiops/api test:e2e"
+risks:
+  - "Anotações em texto livre podem ser usadas na prática para conteúdo clínico; a mitigação disponível é documentação e comunicação de produto, não validação técnica — limitação deve ficar registrada"
+  - "Desalinhamento entre desfecho administrativo (faltou/remarcada) e o status da consulta na agenda (PSI-023) pode gerar dados contraditórios; a relação entre os dois deve ser definida e documentada"
+  - "Validação permissiva (sem rejeitar campos extras) abriria brecha para armazenar dados sensíveis não previstos"
+out_of_scope:
+  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
+  - "Prontuário eletrônico, evolução clínica, diagnóstico ou qualquer registro terapêutico"
+  - "Qualquer recurso de IA sobre os registros (resumo, classificação, recomendação)"
+  - "Efeitos financeiros automáticos do desfecho (ex.: cobrar falta) — o financeiro é tratado na PSI-025"
+  - "Telas de registros no clinic"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "O modelo de registro administrativo em @psiops/database já existe com desfecho, anotação e vínculos a consulta e paciente"
+  - "Os schemas correspondentes já existem em @psiops/contracts, com validação estrita que rejeita campos desconhecidos"
+  - "Um registro administrativo por consulta é o caso base; se o contrato permitir múltiplos, a implementação segue o contrato"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "O desfecho remarcada deve refletir ou disparar automaticamente a remarcação na agenda (PSI-023) ou é apenas informativo? Implementar como informativo e registrar a decisão até validação de produto"

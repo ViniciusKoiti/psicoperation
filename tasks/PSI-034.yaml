@@ -1,0 +1,66 @@
+id: PSI-034
+title: "clinic: registros administrativos de consulta"
+project: clinic
+shared_change: false
+branch: "agent/psi-034-clinic-registros-administrativos"
+commit_message: "feat(clinic): registros administrativos de consulta [PSI-034]"
+pr_title: "PSI-034: clinic — registros administrativos de consulta"
+description: |
+  Adiciona ao app clinic o registro administrativo de consultas: presença,
+  falta, remarcação e anotações de natureza puramente administrativa
+  (por exemplo, combinados de horário e pagamento). O registro pode ser
+  criado a partir de dois pontos de entrada — a agenda (PSI-033) e a
+  página de detalhe do paciente (PSI-032) — e, uma vez criado, passa a
+  aparecer no histórico do paciente. O escopo é deliberadamente
+  restrito ao lado administrativo do consultório: o produto não armazena
+  conteúdo clínico, e esta tarefa deve deixar essa fronteira explícita na
+  UI (rótulos e textos de apoio em pt-BR) e nos tipos consumidos de
+  @psiops/contracts. É proibido qualquer campo de diagnóstico, evolução
+  terapêutica ou recomendação clínica, inclusive gerada por IA.
+dependencies:
+  - "PSI-032"
+  - "PSI-033"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "A partir de uma consulta na agenda é possível registrar presença, falta ou remarcação"
+  - "A partir da página de detalhe do paciente é possível criar registro administrativo com anotação livre de caráter administrativo"
+  - "Registro criado aparece imediatamente no histórico do paciente (seção entregue na PSI-032)"
+  - "Formulários validam os dados com os schemas Zod de @psiops/contracts, sem tipos duplicados no app"
+  - "A UI não contém nenhum campo de diagnóstico, evolução terapêutica, hipótese clínica ou conteúdo de prontuário, e os textos deixam claro o caráter administrativo do registro"
+  - "Nenhuma funcionalidade sugere, classifica ou recomenda condutas clínicas, com ou sem IA"
+  - "Estados de carregamento, erro e ausência de registros são tratados"
+  - "Testes cobrem os dois pontos de entrada (agenda e detalhe do paciente), a exibição no histórico e a validação dos formulários"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Campo de anotação livre pode ser usado para conteúdo clínico apesar dos rótulos; a mitigação nesta fase é textual (avisos na UI), não técnica"
+  - "Registrar falta ou remarcação sem refletir o status da consulta na agenda criaria inconsistência entre os módulos"
+  - "Divergência entre o formato de registro usado no mock da PSI-032 e o desta tarefa exigiria reconciliação dos adapters"
+out_of_scope:
+  - "Prontuário eletrônico, evolução terapêutica ou qualquer campo clínico"
+  - "Diagnóstico automático, recomendação clínica ou decisão de saúde assistida por IA"
+  - "Efeitos financeiros de faltas (cobrança de sessão perdida) — domínio da PSI-035"
+  - "Integração com a API real (PSI-039)"
+  - "Edição ou exclusão de registros já criados, salvo se prevista nos contratos"
+  - "Instalação de novas dependências"
+assumptions:
+  - "Os tipos de registro administrativo (presença, falta, remarcação, anotação) já estão definidos em @psiops/contracts e o app apenas os consome"
+  - "Registrar remarcação a partir da consulta reutiliza o fluxo de remarcação da agenda (PSI-033), adicionando o registro correspondente ao histórico"
+  - "Os registros são persistidos pelo mesmo mecanismo de adapters mock em memória das tarefas anteriores"
+open_questions:
+  - "Registros administrativos devem ser imutáveis após criação ou os contratos preveem edição/estorno?"

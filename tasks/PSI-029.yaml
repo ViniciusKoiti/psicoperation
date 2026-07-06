@@ -1,0 +1,68 @@
+id: PSI-029
+title: "clinic: onboarding"
+project: clinic
+shared_change: false
+branch: "agent/psi-029-clinic-onboarding"
+commit_message: "feat(clinic): fluxo de onboarding pós-registro [PSI-029]"
+pr_title: "PSI-029: clinic: onboarding"
+description: |
+  Implementa no app clinic o fluxo de onboarding pós-registro em passos,
+  guiando a psicóloga recém-cadastrada pela configuração inicial da conta:
+  perfil profissional (nome de exibição e CRP opcional), valor padrão de
+  sessão, dias e horários de atendimento e preferências de lembrete. O
+  fluxo usa componentes Mantine seguindo os tokens de @psiops/ui, permite
+  pular o onboarding a qualquer momento e retomá-lo depois do ponto onde
+  parou, e persiste as respostas via um SettingsAdapter mock — nenhuma
+  chamada à API real nesta fase (integração real só na PSI-039). Cada passo
+  valida seus campos antes de avançar, mas nenhum passo é obrigatório para
+  concluir, já que o fluxo inteiro é pulável. O conteúdo exato dos passos
+  ainda precisa de validação de produto, o que fica registrado como questão
+  aberta; a implementação deve manter os passos modulares para facilitar
+  ajuste posterior. Nenhuma dependência nova é instalada.
+dependencies:
+  - "PSI-028"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Fluxo de onboarding é apresentado após o registro, em passos sequenciais com indicador de progresso, construído com Mantine e tokens de @psiops/ui"
+  - "Passos cobrem: perfil profissional (nome de exibição obrigatório no passo, CRP opcional), valor padrão de sessão, dias/horários de atendimento e preferências de lembrete"
+  - "Navegação entre passos funciona para frente e para trás sem perder dados já preenchidos"
+  - "Cada passo valida seus campos antes de avançar; valores monetários são tratados em centavos, coerentes com os contratos"
+  - "Onboarding pode ser pulado a qualquer momento, levando ao app; ao retornar, a usuária pode retomar do passo onde parou, com os dados preenchidos preservados"
+  - "Persistência ocorre exclusivamente via interface SettingsAdapter com implementação mock respeitando os contratos correspondentes; nenhuma chamada HTTP real"
+  - "Onboarding concluído (ou pulado) não é reapresentado automaticamente em novo login da mesma sessão mock"
+  - "Testes cobrem: navegação completa entre passos, validação de campo impedindo avanço, pular e retomar, e persistência dos dados no adapter mock"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "O conteúdo dos passos ainda não foi validado por produto; investir demais em conteúdo específico agora pode gerar retrabalho — manter passos modulares"
+  - "Estado de progresso do onboarding persistido apenas no mock pode divergir do modelo real de settings na integração (PSI-039)"
+  - "Formato de dias/horários de atendimento é fácil de modelar de forma incompatível com a agenda da API (PSI-023); seguir os contratos existentes é obrigatório"
+  - "Fluxos puláveis criam estados parciais (metade configurado) que o restante do app precisa tolerar"
+out_of_scope:
+  - "Integração com API real de settings (somente na PSI-039)"
+  - "Alterar packages/contracts, packages/database ou packages/ui"
+  - "Validação do CRP junto a fontes oficiais (Conselho Regional de Psicologia)"
+  - "Edição posterior de configurações fora do fluxo de onboarding (tela de configurações do app)"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "Existem contratos de settings/perfil em @psiops/contracts cobrindo os campos dos passos; o SettingsAdapter mock respeita exatamente esses schemas"
+  - "O estado de sessão e a proteção de rotas da PSI-028 estão disponíveis; o onboarding é rota protegida"
+  - "CRP é tratado como texto opcional com máscara/formato leve, sem validação externa"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "Conteúdo exato dos passos do onboarding (quais perguntas, ordem, obrigatoriedade) precisa de validação de produto; a estrutura implementada deve ser fácil de ajustar"
+  - "Preferências de lembrete disponíveis nesta fase (apenas canal email, conforme PSI-026?) precisam de confirmação de produto"

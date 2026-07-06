@@ -1,0 +1,81 @@
+id: PSI-039
+title: "Integração real e E2E dos fluxos principais"
+project: integration
+shared_change: false
+branch: "agent/psi-039-integracao-e2e"
+commit_message: "feat(integration): adapters http reais e suite e2e cross-app [PSI-039]"
+pr_title: "PSI-039: Integração real e E2E dos fluxos principais"
+description: |
+  Liga o front ao backend de verdade e prova os fluxos principais de
+  ponta a ponta. No app clinic, implementa os HttpAdapters correspondentes
+  aos adapters mock existentes (pacientes, agenda, financeiro, tarefas,
+  lembretes, configurações), conectados à API NestJS real; a seleção
+  entre mock e http é feita por variável de ambiente, e o build de
+  produção proíbe o mock — com verificação automatizada dessa proibição.
+  No app landing, o formulário de lead passa a enviar ao endpoint real em
+  ambiente de teste. Uma suíte Playwright cross-app, subindo a
+  infraestrutura via docker compose, cobre o caminho crítico do MVP:
+  registro → login → criar paciente → agendar consulta, além de verificar
+  que o lead capturado na landing persiste no banco. Nenhuma tela é
+  alterada: os adapters respeitam as interfaces derivadas de
+  @psiops/contracts já consumidas pelos componentes.
+dependencies:
+  - "PSI-018"
+  - "PSI-021"
+  - "PSI-022"
+  - "PSI-023"
+  - "PSI-027"
+  - "PSI-028"
+  - "PSI-031"
+  - "PSI-033"
+allowed_paths:
+  - "apps/clinic/src/adapters/**"
+  - "apps/clinic/e2e/**"
+  - "apps/landing/src/adapters/**"
+  - "e2e/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "HttpAdapters do clinic implementados para os domínios já entregues (pacientes, agenda, financeiro, tarefas, lembretes, configurações), com as mesmas interfaces dos adapters mock"
+  - "Seleção entre adapter mock e http é controlada por variável de ambiente, sem alteração de componentes de tela"
+  - "Build de produção do clinic não contém o adapter mock, e uma verificação automatizada falha caso o mock seja selecionável ou incluído no bundle de produção"
+  - "Requisições e respostas dos HttpAdapters são validadas contra os schemas Zod de @psiops/contracts"
+  - "Landing envia o lead capturado ao endpoint real da API quando executada em ambiente de teste"
+  - "Suíte Playwright cross-app sobe a infraestrutura necessária via docker compose antes dos testes e a derruba ao final"
+  - "Cenário E2E cobre o fluxo completo: registro → login → criar paciente → agendar consulta, com asserções em cada etapa"
+  - "Cenário E2E da landing verifica que o lead submetido persiste no banco de dados"
+  - "A suíte E2E é executável localmente por um único comando documentado dentro de e2e/**"
+validation_commands:
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+  - "pnpm --filter @psiops/clinic build"
+  - "pnpm e2e"
+risks:
+  - "Acoplamento de ambiente: a suíte depende de docker compose, portas livres e estado limpo do banco; divergências de ambiente local/CI causam falhas difíceis de reproduzir"
+  - "Flakiness de E2E: esperas baseadas em tempo, corridas entre subida da infra e início dos testes e animações de UI podem gerar falhas intermitentes; mitigar com waits determinísticos e retries do Playwright"
+  - "Contratos desatualizados entre mock e API real só se revelam aqui; qualquer divergência exige correção na origem (API ou contratos), fora do escopo desta tarefa"
+  - "A verificação de exclusão do mock em produção pode gerar falso negativo se depender apenas de análise superficial do bundle"
+out_of_scope:
+  - "Alterar componentes de tela, contratos (packages/contracts) ou schema/migrations do banco"
+  - "Editar o docker-compose ou workflows de CI (arquivos fora dos allowed_paths)"
+  - "Cobertura E2E exaustiva de todos os módulos; apenas os fluxos principais especificados"
+  - "Testes de carga, performance ou acessibilidade"
+  - "Adapters HTTP para o app automation (worker não tem UI)"
+assumptions:
+  - "O arquivo docker compose da infraestrutura local já existe (tarefas anteriores) e é apenas invocado pela suíte, nunca editado"
+  - "Playwright e utilitários de teste já estão disponíveis nos workspaces existentes (por exemplo, packages/testing), pois esta tarefa não pode instalar dependências novas nem tocar package.json"
+  - "Existe um script agregador (como pnpm e2e) exposto por workspace já existente para invocar a suíte; caso contrário, o comando exato é documentado em e2e/** e ajustado nos validation_commands pelo orquestrador"
+  - "A verificação automatizada da ausência de mock em produção é implementada dentro dos allowed_paths (por exemplo, teste que inspeciona o bundle gerado ou a resolução de módulos por env)"
+  - "O endpoint real de lead da landing foi entregue pela API em tarefa anterior (PSI-027)"
+open_questions:
+  - "A execução do E2E em CI fica para uma tarefa futura de workflows, já que .github/workflows/** é proibido aqui?"
+  - "Qual estratégia de reset do banco entre cenários E2E (migrate reset por execução ou truncamento por teste)?"

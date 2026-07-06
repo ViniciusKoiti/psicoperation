@@ -1,0 +1,53 @@
+id: PSI-005
+title: "packages/contracts: fundação de contratos Zod"
+project: contracts
+shared_change: true
+branch: "agent/psi-005-contracts-zod"
+commit_message: "feat(contracts): fundação de contratos zod [PSI-005]"
+pr_title: "PSI-005: packages/contracts — fundação de contratos Zod"
+description: |
+  Cria o pacote @psiops/contracts em packages/contracts, a fonte única de
+  verdade dos contratos de dados do PsiOps, definidos com Zod. Esta
+  fundação cobre três módulos: common (ids UUID, paginação, datas ISO e
+  dinheiro em BRL representado em centavos como inteiro, evitando erros
+  de ponto flutuante em valores financeiros), auth (registro, login,
+  tokens e sessão da psicóloga) e lead (captura da lista de espera da
+  landing: nome, WhatsApp com máscara brasileira e email). Todos os tipos
+  TypeScript inferidos dos schemas são exportados, permitindo que api,
+  landing e demais apps compartilhem tipagem sem duplicação. Cada schema
+  possui testes Vitest cobrindo casos válidos e inválidos, documentando o
+  comportamento esperado das validações.
+dependencies:
+  - "PSI-002"
+allowed_paths:
+  - "packages/contracts/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "O pacote @psiops/contracts existe em packages/contracts, usa Zod e consome as configurações de @psiops/config via workspace:*"
+  - "Módulo common define schemas de id UUID, paginação, datas ISO e dinheiro BRL em centavos como inteiro (valores não inteiros ou negativos indevidos são rejeitados)"
+  - "Módulo auth define schemas de registro, login, tokens e sessão"
+  - "Módulo lead define o schema de captura de lista de espera com nome, whatsapp no formato de máscara brasileira e email"
+  - "O schema de whatsapp rejeita números fora do padrão brasileiro esperado e o de email rejeita endereços inválidos"
+  - "Todos os tipos inferidos (z.infer) são exportados junto aos schemas"
+  - "Cada schema possui testes Vitest com ao menos um caso válido e casos inválidos representativos"
+  - "pnpm --filter @psiops/contracts test executa com todos os testes passando"
+  - "pnpm --filter @psiops/contracts typecheck executa sem erros"
+validation_commands:
+  - "pnpm --filter @psiops/contracts test"
+  - "pnpm --filter @psiops/contracts typecheck"
+risks:
+  - "Definições de dinheiro em centavos precisam ser respeitadas por todos os consumidores; qualquer conversão implícita para reais com decimais reintroduz erros de arredondamento"
+  - "Regras de validação do WhatsApp muito estritas podem rejeitar números legítimos (ex.: variações com/sem nono dígito ou DDI)"
+  - "Mudanças futuras nesses schemas quebram api e landing simultaneamente por serem contratos compartilhados"
+out_of_scope:
+  - "Contratos do domínio clínico — pacientes, sessões, mensalidades (ficam na PSI-019)"
+  - "Persistência ou modelos Prisma (PSI-006)"
+  - "Integração dos contratos com endpoints da API (PSI-010)"
+assumptions:
+  - "A máscara brasileira de WhatsApp segue o formato (XX) XXXXX-XXXX usado na landing de referência; aceitar também o valor sem máscara é decisão registrada no próprio schema, mas o formato mascarado é o contrato principal"
+  - "Datas ISO referem-se a strings no formato ISO 8601 validadas pelo Zod, sem imposição de timezone específico"
+open_questions:
+  - "PSI-019 é referenciada como destino dos contratos clínicos, mas não faz parte deste lote; a divisão exata do domínio clínico deve ser confirmada quando essa tarefa for especificada"

@@ -1,0 +1,51 @@
+id: PSI-012
+title: "apps/automation: scaffold do worker BullMQ"
+project: automation
+shared_change: true
+branch: "agent/psi-012-automation-scaffold"
+commit_message: "feat(automation): scaffold do worker BullMQ [PSI-012]"
+pr_title: "PSI-012: apps/automation: scaffold do worker BullMQ"
+description: |
+  Cria o esqueleto do serviço de automação: um worker Node + TypeScript
+  baseado em BullMQ, conectado ao Redis local através de variáveis de
+  ambiente validadas na inicialização. A tarefa estabelece os padrões que
+  todas as filas futuras (cobranças atrasadas, lembretes etc.) vão seguir:
+  a conexão com o Redis fica atrás de uma abstração injetável, de modo que
+  os processors possam ser testados sem um Redis real; o processo trata
+  SIGTERM com graceful shutdown, fechando workers e conexões antes de sair.
+  Como prova do padrão, é criada uma fila de exemplo "heartbeat" com seu
+  processor e testes. Nenhuma regra de negócio é implementada aqui.
+dependencies:
+  - "PSI-003"
+  - "PSI-005"
+allowed_paths:
+  - "apps/automation/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "App em apps/automation criado como worker Node + TypeScript integrado ao workspace, com build sem erros"
+  - "Variáveis de ambiente (incluindo conexão Redis) validadas na inicialização; configuração inválida falha rápido com mensagem clara"
+  - "Fila de exemplo 'heartbeat' registrada com processor funcional demonstrando o padrão de definição de filas"
+  - "Conexão com Redis abstraída atrás de interface injetável; os testes dos processors executam sem Redis real, usando injeção/mocks"
+  - "Graceful shutdown implementado: ao receber SIGTERM o worker para de aceitar jobs, aguarda o encerramento e fecha as conexões antes de sair"
+  - "Testes do processor de heartbeat cobrindo o comportamento esperado, executando sem dependências externas"
+  - "pnpm --filter @psiops/automation test e pnpm --filter @psiops/automation build executam com sucesso"
+validation_commands:
+  - "pnpm --filter @psiops/automation test"
+  - "pnpm --filter @psiops/automation build"
+risks:
+  - "Abstração da conexão mal desenhada pode vazar detalhes do BullMQ e forçar Redis real nos testes"
+  - "Graceful shutdown incompleto pode perder jobs em andamento quando o processo for encerrado em produção"
+  - "Tarefa shared_change altera pnpm-lock.yaml; execução concorrente com outra tarefa shared_change gera conflito de lockfile"
+  - "Divergência entre a versão do BullMQ e a versão do Redis local pode causar falhas apenas em runtime"
+out_of_scope:
+  - "Filas de negócio reais (cobranças, lembretes) e consumo de eventos de domínio"
+  - "Provisionamento ou configuração de infraestrutura Redis (docker-compose, deploy)"
+  - "Agendamento recorrente (repeatable jobs) além do necessário para o exemplo heartbeat"
+  - "Observabilidade avançada (métricas, dashboards de fila)"
+assumptions:
+  - "PSI-003 disponibiliza um Redis local para desenvolvimento acessível via variáveis de ambiente"
+  - "O filtro pnpm do app é 'automation' (nome do package apps/automation)"
+open_questions: []

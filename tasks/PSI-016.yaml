@@ -1,0 +1,58 @@
+id: PSI-016
+title: "landing: como funciona, citação e FAQ"
+project: landing
+shared_change: false
+branch: "agent/psi-016-landing-faq"
+commit_message: "feat(landing): como funciona, citação e FAQ [PSI-016]"
+pr_title: "PSI-016: landing: como funciona, citação e FAQ"
+description: |
+  Implementa três seções da landing page como componentes semânticos,
+  seguindo docs/design/landing-page-spec.md e as primitivas da PSI-013:
+  o fluxo numerado "como funciona" com 3 passos; a pull quote em serif
+  (Fraunces itálico) em largura total; e o FAQ em formato accordion. O
+  accordion deve ser acessível (cada pergunta é um button com aria-expanded),
+  manter apenas um item aberto por vez e animar a altura na abertura e no
+  fechamento. As perguntas e respostas ficam em um array tipado e devem ser
+  idênticas às da referência project/PsiOps Landing.html, que é somente
+  leitura — proibido converter seu HTML diretamente para JSX. Fidelidade
+  visual pixel-perfect.
+dependencies:
+  - "PSI-013"
+allowed_paths:
+  - "apps/landing/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Seção 'como funciona' com fluxo numerado de 3 passos fiel à referência"
+  - "Pull quote em largura total usando Fraunces itálico (serif), fiel à referência"
+  - "FAQ accordion acessível: cada pergunta é um button com aria-expanded refletindo o estado; conteúdo associado corretamente para leitores de tela"
+  - "Apenas um item do accordion aberto por vez; abrir um item fecha o anterior"
+  - "Animação de altura na abertura/fechamento dos itens do accordion"
+  - "Perguntas e respostas definidas em array tipado (TypeScript), com conteúdo idêntico ao da referência project/PsiOps Landing.html"
+  - "Componentes construídos conforme docs/design/landing-page-spec.md, sem conversão direta do HTML da referência para JSX"
+  - "Fidelidade visual pixel-perfect à referência nas três seções"
+  - "Testes de componentes incluindo o comportamento do accordion (abre, fecha, exclusividade de item aberto, aria-expanded)"
+validation_commands:
+  - "pnpm --filter @psiops/landing test"
+  - "pnpm --filter @psiops/landing build"
+risks:
+  - "Animação de altura (max-height/scrollHeight) é sensível a conteúdo dinâmico e pode cortar texto se a medição for feita no momento errado"
+  - "Acessibilidade do accordion exige mais que aria-expanded (foco, associação button/painel); implementação superficial pode passar nos testes visuais e falhar para leitores de tela"
+  - "Redigitar perguntas/respostas pode introduzir divergência de conteúdo em relação à referência"
+out_of_scope:
+  - "Demais seções da landing (hero, problema, solução, formulário, CTA final)"
+  - "Scroll reveal e composição final da página (PSI-018)"
+  - "Busca ou filtragem no FAQ"
+  - "Alterações em pacotes compartilhados"
+assumptions:
+  - "A referência constrói o FAQ dinamicamente a partir de um array em JS; a versão React mantém o mesmo dado como array tipado local ao app"
+open_questions: []

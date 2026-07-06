@@ -1,0 +1,77 @@
+id: PSI-025
+title: "api: módulo financeiro (mensalidades)"
+project: api
+shared_change: false
+branch: "agent/psi-025-api-financeiro-mensalidades"
+commit_message: "feat(api): módulo financeiro de mensalidades [PSI-025]"
+pr_title: "PSI-025: api: módulo financeiro (mensalidades)"
+description: |
+  Implementa o coração do produto: o módulo financeiro de mensalidades da
+  API NestJS. Entrega cobranças por paciente com valor sempre em centavos
+  (inteiro, nunca float), data de vencimento e status em_dia/pendente/
+  atrasada; geração manual das mensalidades do mês via endpoint idempotente
+  (repetir a chamada no mesmo mês não duplica cobranças); marcação de
+  pagamento; visão de inadimplência consolidada por psicóloga; e cálculo de
+  juros simples com taxa configurável, mantendo paridade com a calculadora
+  de juros exibida na landing page. Quando uma cobrança transiciona para
+  atrasada, o módulo grava um evento na tabela Outbox via @psiops/database —
+  a API nunca fala com Redis/filas diretamente; o app automation consome a
+  Outbox. Toda validação usa exclusivamente os schemas financeiros de
+  @psiops/contracts, sem DTOs duplicados; a tarefa consome @psiops/database
+  como está, sem alterar schema ou migrations, e todo acesso é escopado por
+  userId da psicóloga autenticada.
+dependencies:
+  - "PSI-022"
+allowed_paths:
+  - "apps/api/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Cobranças/mensalidades são criadas por paciente com valor em centavos (inteiro), vencimento e status; nenhuma aritmética monetária usa ponto flutuante"
+  - "Status segue o ciclo em_dia/pendente/atrasada com transições válidas definidas e aplicadas no serviço; transição inválida é rejeitada"
+  - "Endpoint de geração das mensalidades do mês é idempotente: a segunda chamada para o mesmo mês/psicóloga não cria duplicatas e retorna resultado consistente"
+  - "Marcação de pagamento registra a quitação da cobrança e atualiza o status coerentemente"
+  - "Visão de inadimplência lista cobranças atrasadas/pendentes da psicóloga com totais agregados em centavos"
+  - "Cálculo de juros simples usa taxa configurável e produz, para as mesmas entradas, os mesmos resultados da calculadora de juros da landing (casos de paridade cobertos em teste)"
+  - "Quando uma cobrança fica atrasada, um evento correspondente é gravado na tabela Outbox na mesma transação da mudança de status; a API não acessa Redis nem filas diretamente"
+  - "Todo acesso é escopado por userId; usuária A não vê nem altera cobranças de pacientes da usuária B"
+  - "Entrada e saída validadas exclusivamente pelos schemas de @psiops/contracts; payload inválido retorna 400"
+  - "Testes cobrem: cálculo de juros (incluindo casos de paridade com a landing e arredondamento em centavos), todas as transições de status válidas e inválidas, idempotência da geração mensal, marcação de pagamento, visão de inadimplência, gravação do evento na Outbox e isolamento entre tenants"
+validation_commands:
+  - "pnpm --filter @psiops/api lint"
+  - "pnpm --filter @psiops/api typecheck"
+  - "pnpm --filter @psiops/api test"
+  - "pnpm --filter @psiops/api test:e2e"
+risks:
+  - "Erro de arredondamento ou uso acidental de float em juros/totais gera divergência financeira — o dano de confiança em um SaaS financeiro é alto"
+  - "Idempotência mal implementada na geração mensal (sem chave única lógica ou verificação transacional) pode duplicar cobranças sob concorrência"
+  - "Gravar o evento de atraso fora da transação da mudança de status pode perder eventos ou emitir eventos sem a mudança correspondente"
+  - "Divergência entre a fórmula de juros da API e a calculadora da landing mina a promessa de paridade do produto"
+  - "A detecção do momento em que a cobrança fica atrasada depende de quem dispara a transição (requisição vs job); a decisão adotada deve ficar documentada"
+out_of_scope:
+  - "Alterar packages/contracts ou packages/database (a API apenas consome esses packages)"
+  - "Integração com meios de pagamento (Pix, boleto, cartão) e conciliação bancária"
+  - "Consumo/processamento dos eventos da Outbox (responsabilidade do app automation)"
+  - "Envio de cobranças por WhatsApp/email"
+  - "Juros compostos, multas escalonadas ou renegociação de dívida"
+  - "Telas financeiras no clinic"
+  - "Instalação de novas dependências no workspace"
+assumptions:
+  - "Os modelos de cobrança/mensalidade e a tabela Outbox já existem em @psiops/database conforme migrations anteriores"
+  - "Os schemas financeiros (criação, geração mensal, pagamento, inadimplência, parâmetros de juros) já existem em @psiops/contracts"
+  - "A fórmula da calculadora da landing é juros simples pro rata sobre dias de atraso; os casos de teste de paridade replicam os exemplos exibidos na landing"
+  - "A taxa de juros configurável tem escopo por psicóloga (configuração da conta), com default do produto quando não definida"
+  - "A transição para atrasada ocorre de forma determinística com base na data de vencimento no momento da leitura/atualização; um job dedicado de vencimento, se existir, é do app automation"
+  - "Os workspaces seguem o escopo @psiops/* nos comandos de validação; ajustar apenas o filtro do pnpm se o nome diferir"
+open_questions:
+  - "Pagamento parcial de mensalidade é permitido ou apenas quitação integral? Implementar quitação integral e registrar a limitação até validação de produto"
+  - "Valores default de taxa de juros e eventual multa fixa precisam de confirmação de produto (usar os da calculadora da landing como referência)"

@@ -1,0 +1,67 @@
+id: PSI-035
+title: "clinic: organização financeira"
+project: clinic
+shared_change: false
+branch: "agent/psi-035-clinic-organizacao-financeira"
+commit_message: "feat(clinic): organização financeira de mensalidades [PSI-035]"
+pr_title: "PSI-035: clinic — organização financeira"
+description: |
+  Implementa no app clinic o módulo financeiro centrado em mensalidades,
+  proposta de valor principal do PsiOps. Entrega a visão mensal das
+  mensalidades agrupadas por status (em dia, pendente, atrasada) com
+  totais por grupo, a geração das mensalidades do mês a partir dos
+  pacientes ativos, a marcação de mensalidade como paga e uma calculadora
+  de juros simples para cobranças atrasadas. A calculadora deve ter
+  paridade de resultado com o card de calculadora exibido na landing page
+  (project/PsiOps Landing.html), garantindo que o número prometido no
+  marketing seja o mesmo apresentado no produto. Todo o acesso a dados
+  passa por um FinanceAdapter mock em memória fiel aos contratos de
+  @psiops/contracts. Os testes cobrem os cálculos de juros e as
+  transições de estado das mensalidades, que são o núcleo de risco do
+  módulo.
+dependencies:
+  - "PSI-031"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Visão mensal lista as mensalidades do mês selecionado agrupadas por status (em dia, pendente, atrasada), com navegação entre meses"
+  - "Cada grupo exibe o total em reais e a contagem de mensalidades, e há um total geral do mês"
+  - "Ação de gerar mensalidades do mês cria as cobranças dos pacientes ativos, sem duplicar mensalidades já geradas para o mesmo mês"
+  - "Marcar mensalidade como paga atualiza o status e os totais imediatamente, seguindo as transições de estado previstas nos contratos"
+  - "Calculadora de juros simples recebe valor, taxa e dias/meses de atraso e produz resultado idêntico ao card da landing para as mesmas entradas"
+  - "FinanceAdapter mock em memória implementa a interface derivada dos contratos, sem tipos duplicados no app"
+  - "Estados de carregamento, erro e mês sem mensalidades são tratados"
+  - "Testes cobrem o cálculo de juros (incluindo os exemplos do card da landing), a geração idempotente do mês e as transições de status válidas e inválidas"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Erros de arredondamento em cálculo monetário (ponto flutuante) podem quebrar a paridade com a landing e gerar valores de cobrança incorretos"
+  - "Regra de transição de status implementada apenas na UI pode divergir da regra dos contratos consumida pela API real na PSI-039"
+  - "Geração de mensalidades não idempotente criaria cobranças duplicadas, o pior tipo de bug para a confiança da usuária"
+out_of_scope:
+  - "Envio de cobrança ou lembrete por email/WhatsApp (PSI-036 e PSI-038)"
+  - "Integração com meios de pagamento (Pix, boleto, cartão)"
+  - "Integração com a API real (PSI-039)"
+  - "Juros compostos, multas escalonadas ou regras de negociação de dívida"
+  - "Alterar o card de calculadora da landing (project/** é intocável)"
+  - "Instalação de novas dependências"
+assumptions:
+  - "A fórmula de juros simples e a representação de valores monetários seguem os DTOs e regras de @psiops/contracts; o card da landing é usado como referência de paridade de resultado, lido mas nunca modificado"
+  - "O status atrasada é derivado da data de vencimento em relação à data corrente, conforme regra expressa nos contratos"
+  - "O valor de cada mensalidade gerada parte do valor de sessão/mensalidade cadastrado no paciente ou do valor padrão das configurações"
+open_questions:
+  - "A geração de mensalidades do mês deve ser disparada apenas manualmente nesta fase, ou também prevista para automação futura?"

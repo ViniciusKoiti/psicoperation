@@ -1,0 +1,52 @@
+id: PSI-011
+title: "apps/clinic: scaffold Vite + React + Mantine"
+project: clinic
+shared_change: true
+branch: "agent/psi-011-clinic-scaffold"
+commit_message: "feat(clinic): scaffold Vite + React + Mantine [PSI-011]"
+pr_title: "PSI-011: apps/clinic: scaffold Vite + React + Mantine"
+description: |
+  Cria o esqueleto do app clinic (painel da psicóloga) dentro do monorepo,
+  usando Vite + React + TypeScript com Mantine como biblioteca de UI. O tema
+  do Mantine deve ser derivado dos tokens de design expostos por @psiops/ui,
+  garantindo consistência visual com o restante do produto desde o primeiro
+  commit. A tarefa entrega apenas a fundação: roteamento com separação entre
+  rotas públicas e protegidas (placeholders), um layout shell com sidebar e
+  topbar, a estrutura de pastas padrão (features, adapters, components) e a
+  base de testes com Vitest + Testing Library. Nenhuma funcionalidade de
+  negócio é implementada aqui; o objetivo é que tarefas futuras encontrem um
+  app que compila, testa e segue as convenções do workspace.
+dependencies:
+  - "PSI-005"
+  - "PSI-007"
+allowed_paths:
+  - "apps/clinic/**"
+  - "pnpm-lock.yaml"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+acceptance_criteria:
+  - "App em apps/clinic criado com Vite + React + TypeScript, integrado ao workspace pnpm/Turborepo, sem erros de type-check no build"
+  - "MantineProvider configurado com tema derivado dos tokens de design de @psiops/ui (cores, tipografia e demais tokens aplicáveis), sem valores de marca hardcoded duplicados"
+  - "React Router configurado com pelo menos uma rota pública e uma rota protegida, ambas como placeholders, com o mecanismo de proteção isolado para ser substituído por autenticação real depois"
+  - "Layout shell com sidebar e topbar renderizando as rotas filhas"
+  - "Estrutura de pastas src/features/*, src/adapters/* e src/components/* criada e utilizada pelos arquivos do scaffold"
+  - "Vitest + Testing Library configurados com ao menos um teste de smoke que renderiza o app/shell e passa"
+  - "pnpm --filter @psiops/clinic build e pnpm --filter @psiops/clinic test executam com sucesso"
+validation_commands:
+  - "pnpm --filter @psiops/clinic build"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "Incompatibilidade de versões entre Mantine, Vite e React pode exigir ajuste de versões dentro do próprio app"
+  - "Derivar o tema dos tokens de @psiops/ui incorretamente cria divergência visual difícil de corrigir depois que features forem construídas em cima"
+  - "Tarefa shared_change altera pnpm-lock.yaml; execução concorrente com outra tarefa shared_change gera conflito de lockfile"
+  - "Estrutura de pastas mal definida agora induz acoplamento errado nas features futuras"
+out_of_scope:
+  - "Qualquer feature de negócio (pacientes, agenda, cobranças)"
+  - "Autenticação real ou integração com a API NestJS"
+  - "Componentes visuais além do shell (sidebar + topbar) e placeholders de rota"
+  - "Configuração de E2E (Playwright) para o app clinic"
+assumptions:
+  - "PSI-007 disponibiliza o pacote @psiops/ui com tokens de design consumíveis por outros apps do workspace"
+  - "O filtro pnpm do app é 'clinic' (nome do package apps/clinic)"
+open_questions: []

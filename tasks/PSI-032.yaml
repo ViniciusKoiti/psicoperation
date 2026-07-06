@@ -1,0 +1,65 @@
+id: PSI-032
+title: "clinic: detalhe e histórico do paciente"
+project: clinic
+shared_change: false
+branch: "agent/psi-032-clinic-detalhe-paciente"
+commit_message: "feat(clinic): detalhe e histórico do paciente [PSI-032]"
+pr_title: "PSI-032: clinic — detalhe e histórico do paciente"
+description: |
+  Adiciona ao app clinic a página de detalhe do paciente, acessível a
+  partir da lista entregue na PSI-031. A página consolida em um só lugar
+  a visão completa do paciente para a psicóloga: dados cadastrais,
+  histórico de consultas, registros administrativos e situação financeira
+  (mensalidades e seus status). É a tela âncora do dia a dia da usuária,
+  e será o destino de navegação de outras funcionalidades (agenda,
+  financeiro, registros administrativos). Os dados são servidos pelos
+  adapters mock existentes e por extensões mock fiéis aos contratos de
+  @psiops/contracts, mantendo a página pronta para receber dados reais na
+  PSI-039 sem alteração de componentes. Seções sem dados exibem estados
+  vazios informativos, e a página trata carregamento e erro por seção.
+dependencies:
+  - "PSI-031"
+allowed_paths:
+  - "apps/clinic/**"
+forbidden_paths:
+  - "project/**"
+  - "tasks/**"
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - "pnpm-workspace.yaml"
+  - "turbo.json"
+  - ".github/workflows/**"
+  - "packages/contracts/**"
+  - "packages/database/**"
+  - "**/migrations/**"
+acceptance_criteria:
+  - "Página de detalhe exibe os dados cadastrais do paciente conforme os DTOs de @psiops/contracts"
+  - "Seção de histórico de consultas lista as consultas do paciente com data, horário e status"
+  - "Seção de registros administrativos exibe os registros associados ao paciente em ordem cronológica"
+  - "Seção de situação financeira apresenta as mensalidades do paciente com seus status (em dia, pendente, atrasada)"
+  - "Clicar em um paciente na lista da PSI-031 navega para a página de detalhe correspondente"
+  - "Cada seção trata os estados de carregamento, erro e ausência de dados de forma independente"
+  - "Todos os dados são obtidos via adapters mock fiéis aos contratos, sem tipos duplicados no app"
+  - "Testes cobrem a navegação lista → detalhe, a renderização de cada seção e os estados vazios"
+  - "Nenhuma dependência nova é adicionada ao workspace"
+validation_commands:
+  - "pnpm --filter @psiops/clinic lint"
+  - "pnpm --filter @psiops/clinic typecheck"
+  - "pnpm --filter @psiops/clinic test"
+risks:
+  - "A página agrega dados de vários domínios (cadastro, agenda, registros, financeiro); acoplamento excessivo entre seções dificultaria evoluções nas tarefas seguintes"
+  - "Estrutura de dados mock de consultas e mensalidades definida aqui antes de PSI-033 e PSI-035 pode divergir das telas dedicadas, exigindo reconciliação"
+  - "Exibir informação financeira incorreta (status de mensalidade) compromete a confiança da usuária no produto"
+out_of_scope:
+  - "Criação e edição de consultas (PSI-033)"
+  - "Criação de registros administrativos (PSI-034); aqui apenas exibição"
+  - "Ações financeiras como gerar mensalidade ou marcar como paga (PSI-035); aqui apenas leitura"
+  - "Integração com a API real (PSI-039)"
+  - "Campos clínicos, evolução terapêutica ou qualquer conteúdo de prontuário"
+  - "Instalação de novas dependências"
+assumptions:
+  - "Os contratos de consulta, registro administrativo e mensalidade já existem em @psiops/contracts; os adapters mock desta tarefa apenas os consomem"
+  - "Como PSI-033, PSI-034 e PSI-035 ainda não existem, o histórico e a situação financeira são populados com dados mock plausíveis servidos pelos adapters em memória"
+  - "A rota de detalhe segue o padrão de roteamento estabelecido pelo shell do app na PSI-028"
+open_questions:
+  - "A situação financeira deve mostrar todo o histórico de mensalidades ou apenas uma janela recente (por exemplo, últimos 12 meses)?"
