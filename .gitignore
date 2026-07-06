@@ -9,6 +9,16 @@ build/
 out/
 coverage/
 
+# java (apps/api)
+target/
+*.class
+
+# flutter (apps/mobile)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
 # ambiente
 .env
 .env.*

@@ -3,9 +3,28 @@
 Monorepo do **PsiOps**, SaaS de gestão financeira e administrativa para psicólogas
 solo brasileiras, com foco em mensalidades.
 
-> Estado atual: **fundação de governança** (onda 0). As aplicações são implementadas
-> em 46 tarefas rastreáveis (PSI-001 a PSI-046) — ver `tasks/` e
-> `docs/architecture/dependency-graph.md`.
+> Estado atual: **fundação de governança** (onda 0) + bootstrap do monorepo
+> (pnpm + Turborepo). As aplicações são implementadas em 46 tarefas rastreáveis
+> (PSI-001 a PSI-046) — ver `tasks/` e `docs/architecture/dependency-graph.md`.
+
+## Setup (lado JS)
+
+Pré-requisitos: Node 22 (fixado em `.nvmrc`) e pnpm 10.15.0 (fixado em
+`packageManager` no `package.json`; `corepack enable` resolve).
+
+```bash
+nvm use          # Node 22
+pnpm install     # instala o workspace JS (apps/* e packages/* com package.json)
+pnpm lint        # turbo run lint
+pnpm typecheck   # turbo run typecheck
+pnpm test        # turbo run test
+pnpm build       # turbo run build
+```
+
+O workspace pnpm/Turborepo orquestra **somente o lado JavaScript/TypeScript**:
+`apps/api` (Spring Boot/Maven) e `apps/mobile` (Flutter) vivem em `apps/` sem
+participar do workspace — são invocados diretamente via Maven wrapper e Flutter
+CLI. Pacotes TS estendem `tsconfig.base.json` (strict).
 
 ## Estrutura
 
