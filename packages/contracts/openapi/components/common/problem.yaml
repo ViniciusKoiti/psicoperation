@@ -1,0 +1,89 @@
+# Schemas de erro no formato Problem Details (RFC 9457).
+#
+# Toda resposta de erro da API usa o media type application/problem+json e um
+# destes schemas (ver ./responses.yaml). Erros de validação de payload usam
+# ValidationProblem, que estende Problem com a lista de violações por campo.
+Problem:
+  type: object
+  description: >-
+    Erro no formato Problem Details (RFC 9457), retornado com o media type
+    `application/problem+json`. Campos de extensão específicos aparecem em
+    schemas derivados (ex.: ValidationProblem).
+  properties:
+    type:
+      type: string
+      format: uri
+      default: "about:blank"
+      description: >-
+        URI que identifica o tipo do problema. `about:blank` quando o erro é
+        totalmente descrito pelo status HTTP.
+      examples:
+        - "https://psiops.com.br/problems/validation"
+    title:
+      type: string
+      description: >-
+        Resumo curto e legível do tipo de problema (pt-BR). Não muda entre
+        ocorrências do mesmo tipo.
+      examples:
+        - "Requisição inválida"
+    status:
+      type: integer
+      format: int32
+      minimum: 100
+      maximum: 599
+      description: Código de status HTTP gerado pelo servidor para esta ocorrência.
+      examples:
+        - 400
+    detail:
+      type: string
+      description: Explicação legível (pt-BR) específica desta ocorrência.
+      examples:
+        - "O campo whatsapp não está em um formato brasileiro válido."
+    instance:
+      type: string
+      format: uri-reference
+      description: >-
+        Referência URI (RFC 9457 permite relativa) que identifica esta
+        ocorrência específica do problema.
+      examples:
+        - "/api/v1/leads"
+  required:
+    - title
+    - status
+
+FieldViolation:
+  type: object
+  description: Violação de validação de um campo específico do payload.
+  properties:
+    field:
+      type: string
+      description: >-
+        Caminho do campo violado no payload, em camelCase (ex.: `whatsapp`,
+        `tokens.refreshToken`).
+      examples:
+        - "whatsapp"
+    message:
+      type: string
+      description: Mensagem legível (pt-BR) descrevendo a violação.
+      examples:
+        - "deve estar no formato +55DDXXXXXXXXX"
+  required:
+    - field
+    - message
+
+ValidationProblem:
+  description: >-
+    Problem Details (RFC 9457) para erros de validação de payload, com a
+    extensão `violations` listando cada campo violado.
+  allOf:
+    - $ref: "#/Problem"
+    - type: object
+      properties:
+        violations:
+          type: array
+          description: Lista de violações por campo (ao menos uma).
+          minItems: 1
+          items:
+            $ref: "#/FieldViolation"
+      required:
+        - violations

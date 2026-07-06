@@ -1,0 +1,14 @@
+# Configuração do Redocly CLI (lint da spec OpenAPI).
+# Rodar com: pnpm --filter @psiops/contracts lint:spec
+apis:
+  psiops@v1:
+    root: openapi/openapi.yaml
+
+extends:
+  - recommended
+
+rules:
+  # Os components de common (paginação, MoneyBRL, IsoDate) são definidos
+  # antes dos primeiros endpoints que os consomem (domínio clínico/financeiro,
+  # PSI-020) por serem convenções transversais da API — ver manifesto PSI-005.
+  no-unused-components: off

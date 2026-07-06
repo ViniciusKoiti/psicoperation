@@ -1,0 +1,60 @@
+# Parâmetros e schemas de paginação.
+#
+# Endpoints de listagem (chegam com o domínio clínico/financeiro, PSI-020)
+# recebem PageParam/PageSizeParam e respondem um objeto com a lista em
+# `items` (schema específico do recurso) e os metadados em `meta: PageMeta`.
+# Paginação base 0, alinhada ao Pageable do Spring.
+PageParam:
+  name: page
+  in: query
+  required: false
+  description: Índice da página desejada (base 0).
+  schema:
+    type: integer
+    format: int32
+    minimum: 0
+    default: 0
+
+PageSizeParam:
+  name: size
+  in: query
+  required: false
+  description: Quantidade de itens por página.
+  schema:
+    type: integer
+    format: int32
+    minimum: 1
+    maximum: 100
+    default: 20
+
+PageMeta:
+  type: object
+  description: >-
+    Metadados de paginação de uma listagem. A lista em si fica na propriedade
+    `items` do schema de resposta específico de cada recurso.
+  properties:
+    page:
+      type: integer
+      format: int32
+      minimum: 0
+      description: Índice da página retornada (base 0).
+    size:
+      type: integer
+      format: int32
+      minimum: 1
+      description: Tamanho de página solicitado.
+    totalElements:
+      type: integer
+      format: int64
+      minimum: 0
+      description: Total de itens existentes em todas as páginas.
+    totalPages:
+      type: integer
+      format: int32
+      minimum: 0
+      description: Total de páginas disponíveis.
+  required:
+    - page
+    - size
+    - totalElements
+    - totalPages

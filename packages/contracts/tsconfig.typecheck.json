@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment": "Escopo do typecheck do Vitest (test.typecheck.tsconfig): apenas os testes de tipo e o código gerado. O typecheck completo do pacote é o script `typecheck` (tsc --noEmit com ./tsconfig.json).",
+  "extends": "./tsconfig.json",
+  "include": ["gen/**/*.ts", "tests/**/*.test-d.ts"]
+}

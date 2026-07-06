@@ -1,0 +1,14 @@
+# Representação canônica de dinheiro na API (restrição de produto inviolável):
+# BRL como inteiro em centavos — nunca ponto flutuante, nunca string decimal.
+MoneyBRL:
+  type: integer
+  format: int64
+  description: >-
+    Valor monetário em reais (BRL) representado como inteiro em centavos.
+    Ex.: R$ 150,00 → 15000; R$ 0,99 → 99. Nunca usar ponto flutuante nem
+    string decimal: toda aritmética monetária acontece sobre centavos
+    inteiros, e a formatação para exibição (R$) é responsabilidade exclusiva
+    da camada de apresentação. Valores negativos são permitidos apenas em
+    contextos que documentem explicitamente estornos/ajustes.
+  examples:
+    - 15000

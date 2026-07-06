@@ -1,0 +1,155 @@
+# Schemas do domínio auth: registro, login, refresh de token e sessão
+# corrente. Autenticação por bearer token JWT (securityScheme bearerAuth no
+# arquivo raiz). O refresh token trafega no corpo das respostas — decisão
+# provisória registrada como open_question no manifesto PSI-005 (alternativa:
+# cookie httpOnly, a definir por produto/segurança).
+User:
+  type: object
+  description: Conta da psicóloga autenticável no PsiOps.
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Identificador único da conta.
+      examples:
+        - "6f1d2c4a-8b3e-4f5a-9c7d-1e2f3a4b5c6d"
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+      description: Nome completo.
+      examples:
+        - "Ana Beatriz Souza"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+      description: E-mail de login (único por conta).
+      examples:
+        - "ana@exemplo.com.br"
+    createdAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+      description: Instante de criação da conta (ISO 8601, UTC).
+  required:
+    - id
+    - name
+    - email
+    - createdAt
+
+RegisterRequest:
+  type: object
+  description: Payload de criação de conta.
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+      description: Nome completo.
+      examples:
+        - "Ana Beatriz Souza"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+      description: E-mail de login (único por conta).
+      examples:
+        - "ana@exemplo.com.br"
+    password:
+      type: string
+      format: password
+      minLength: 8
+      maxLength: 72
+      description: >-
+        Senha em texto claro (transporte sempre via TLS). Mínimo de 8
+        caracteres; máximo de 72 bytes (limite do BCrypt usado no backend).
+  required:
+    - name
+    - email
+    - password
+
+LoginRequest:
+  type: object
+  description: Credenciais de login.
+  properties:
+    email:
+      type: string
+      format: email
+      maxLength: 254
+      examples:
+        - "ana@exemplo.com.br"
+    password:
+      type: string
+      format: password
+      minLength: 1
+      maxLength: 72
+  required:
+    - email
+    - password
+
+RefreshTokenRequest:
+  type: object
+  description: Payload de renovação do par de tokens.
+  properties:
+    refreshToken:
+      type: string
+      minLength: 1
+      description: Refresh token opaco recebido no login/registro/refresh anterior.
+  required:
+    - refreshToken
+
+TokenPair:
+  type: object
+  description: >-
+    Par de tokens emitido no registro, login e refresh. O access token é um
+    JWT de curta duração enviado em `Authorization: Bearer <token>`; o
+    refresh token é opaco, de uso único (rotacionado a cada refresh).
+  properties:
+    tokenType:
+      type: string
+      const: "Bearer"
+      description: Tipo do token, sempre `Bearer`.
+    accessToken:
+      type: string
+      minLength: 1
+      description: JWT de acesso, de curta duração.
+    expiresIn:
+      type: integer
+      format: int32
+      minimum: 1
+      description: Segundos até a expiração do access token, contados da emissão.
+      examples:
+        - 900
+    refreshToken:
+      type: string
+      minLength: 1
+      description: Refresh token opaco para obter um novo par via /auth/refresh.
+  required:
+    - tokenType
+    - accessToken
+    - expiresIn
+    - refreshToken
+
+AuthResponse:
+  type: object
+  description: Resposta de registro e login — conta autenticada + tokens.
+  properties:
+    user:
+      $ref: "#/User"
+    tokens:
+      $ref: "#/TokenPair"
+  required:
+    - user
+    - tokens
+
+SessionResponse:
+  type: object
+  description: Sessão corrente derivada do access token apresentado.
+  properties:
+    user:
+      $ref: "#/User"
+    expiresAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+      description: Instante de expiração do access token corrente (ISO 8601, UTC).
+  required:
+    - user
+    - expiresAt

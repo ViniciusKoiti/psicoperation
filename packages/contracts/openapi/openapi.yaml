@@ -1,0 +1,131 @@
+# Especificação OpenAPI 3.1 do PsiOps — fonte única de contratos (ADR 0008).
+#
+# Arquivo raiz: declara info/servers/tags e mapeia paths e components para os
+# arquivos modulares em ./paths e ./components, organizados por domínio
+# (common, auth, lead). Todo codegen (gen/ts nesta tarefa; Java e Dart na
+# PSI-006) parte deste arquivo.
+#
+# Convenções (invioláveis — ver CLAUDE.md e docs/adr/0008):
+# - Payloads em camelCase.
+# - Dinheiro em BRL como inteiro em centavos (nunca float) — schema MoneyBRL.
+# - Datas/horas em ISO 8601 — schemas IsoDate e IsoDateTime.
+# - Erros no formato Problem Details (RFC 9457), media type application/problem+json.
+openapi: 3.1.0
+info:
+  title: PsiOps API
+  version: 0.1.0
+  description: |
+    Contratos da API do PsiOps — SaaS de gestão financeira para psicólogas
+    solo brasileiras, com foco em mensalidades.
+
+    Esta especificação é a fonte única de verdade dos contratos entre os
+    frontends web (landing e clinic), o app mobile (Flutter) e o backend
+    (Spring Boot). Os tipos consumidos pelas aplicações vêm exclusivamente
+    do codegen comitado em `gen/` — nunca duplicados à mão.
+
+    Domínios cobertos nesta versão: `common` (erros RFC 9457, paginação,
+    dinheiro, datas), `auth` (registro, login, refresh e sessão) e `lead`
+    (lista de espera da landing page). O domínio clínico/financeiro
+    (pacientes, mensalidades, cobranças) chega em tarefa futura (PSI-020).
+  contact:
+    name: PsiOps
+  license:
+    name: Proprietária — uso interno do monorepo PsiOps
+    url: https://github.com/viniciusk/psicoperation
+
+servers:
+  - url: /api/v1
+    description: >-
+      Caminho relativo ao host do backend Spring Boot (mesma origem ou via
+      proxy reverso). Ambientes concretos são configurados por env, não na spec.
+
+tags:
+  - name: auth
+    description: >-
+      Autenticação e sessão da psicóloga: registro de conta, login, refresh de
+      token e consulta da sessão corrente. Esquema bearer JWT.
+  - name: lead
+    description: >-
+      Captura de leads da lista de espera da landing page (nome, WhatsApp
+      brasileiro e e-mail).
+
+paths:
+  /auth/register:
+    $ref: "./paths/auth/register.yaml"
+  /auth/login:
+    $ref: "./paths/auth/login.yaml"
+  /auth/refresh:
+    $ref: "./paths/auth/refresh.yaml"
+  /auth/session:
+    $ref: "./paths/auth/session.yaml"
+  /leads:
+    $ref: "./paths/lead/leads.yaml"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Access token JWT emitido por /auth/register, /auth/login ou
+        /auth/refresh, enviado em `Authorization: Bearer <token>`.
+
+  # Schemas nomeados da API. A ordem de declaração aqui define a ordem dos
+  # aliases em gen/ts/index.d.ts (ver scripts/generate.mjs).
+  schemas:
+    # --- common ---
+    Problem:
+      $ref: "./components/common/problem.yaml#/Problem"
+    FieldViolation:
+      $ref: "./components/common/problem.yaml#/FieldViolation"
+    ValidationProblem:
+      $ref: "./components/common/problem.yaml#/ValidationProblem"
+    PageMeta:
+      $ref: "./components/common/pagination.yaml#/PageMeta"
+    MoneyBRL:
+      $ref: "./components/common/money.yaml#/MoneyBRL"
+    IsoDate:
+      $ref: "./components/common/datetime.yaml#/IsoDate"
+    IsoDateTime:
+      $ref: "./components/common/datetime.yaml#/IsoDateTime"
+    # --- auth ---
+    User:
+      $ref: "./components/auth/schemas.yaml#/User"
+    RegisterRequest:
+      $ref: "./components/auth/schemas.yaml#/RegisterRequest"
+    LoginRequest:
+      $ref: "./components/auth/schemas.yaml#/LoginRequest"
+    RefreshTokenRequest:
+      $ref: "./components/auth/schemas.yaml#/RefreshTokenRequest"
+    TokenPair:
+      $ref: "./components/auth/schemas.yaml#/TokenPair"
+    AuthResponse:
+      $ref: "./components/auth/schemas.yaml#/AuthResponse"
+    SessionResponse:
+      $ref: "./components/auth/schemas.yaml#/SessionResponse"
+    # --- lead ---
+    WhatsAppBR:
+      $ref: "./components/lead/schemas.yaml#/WhatsAppBR"
+    LeadCreateRequest:
+      $ref: "./components/lead/schemas.yaml#/LeadCreateRequest"
+    Lead:
+      $ref: "./components/lead/schemas.yaml#/Lead"
+
+  parameters:
+    PageParam:
+      $ref: "./components/common/pagination.yaml#/PageParam"
+    PageSizeParam:
+      $ref: "./components/common/pagination.yaml#/PageSizeParam"
+
+  responses:
+    BadRequest:
+      $ref: "./components/common/responses.yaml#/BadRequest"
+    Unauthorized:
+      $ref: "./components/common/responses.yaml#/Unauthorized"
+    NotFound:
+      $ref: "./components/common/responses.yaml#/NotFound"
+    Conflict:
+      $ref: "./components/common/responses.yaml#/Conflict"
+    InternalServerError:
+      $ref: "./components/common/responses.yaml#/InternalServerError"

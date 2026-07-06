@@ -1,0 +1,77 @@
+# Schemas do domínio lead: captura da lista de espera da landing page
+# (nome, WhatsApp brasileiro e e-mail).
+WhatsAppBR:
+  type: string
+  pattern: '^\+55[1-9][1-9]9[0-9]{8}$'
+  minLength: 14
+  maxLength: 14
+  description: >-
+    Número de WhatsApp brasileiro (celular) normalizado em E.164:
+    `+55` + DDD com 2 dígitos (nenhum DDD brasileiro contém 0) + `9` +
+    8 dígitos. Ex.: `+5511990000000`. A máscara de UI `(XX) XXXXX-XXXX`
+    é apenas apresentação: o cliente remove a máscara e prefixa `+55`
+    antes de enviar. Este é o formato canônico de armazenamento e
+    integração (lembretes/cobranças via WhatsApp).
+  examples:
+    - "+5511990000000"
+
+LeadCreateRequest:
+  type: object
+  description: >-
+    Payload de entrada na lista de espera, capturado pelo formulário da
+    landing page (âncora #lista).
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+      description: Nome informado no formulário.
+      examples:
+        - "Ana Beatriz Souza"
+    whatsapp:
+      $ref: "#/WhatsAppBR"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+      description: E-mail de contato (único na lista de espera).
+      examples:
+        - "ana@exemplo.com.br"
+  required:
+    - name
+    - whatsapp
+    - email
+
+Lead:
+  type: object
+  description: Lead registrado na lista de espera.
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Identificador único do lead.
+      examples:
+        - "0b8f4a2d-6c1e-4d3b-8a5f-9e7c6d5b4a3f"
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+      examples:
+        - "Ana Beatriz Souza"
+    whatsapp:
+      $ref: "#/WhatsAppBR"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+      examples:
+        - "ana@exemplo.com.br"
+    createdAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+      description: Instante de entrada na lista de espera (ISO 8601, UTC).
+  required:
+    - id
+    - name
+    - whatsapp
+    - email
+    - createdAt

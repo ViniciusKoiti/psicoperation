@@ -1,0 +1,33 @@
+# Path item: /auth/login
+post:
+  tags:
+    - auth
+  operationId: loginUser
+  summary: Autentica com e-mail e senha
+  description: >-
+    Valida as credenciais e retorna a conta autenticada com um novo par de
+    tokens (access JWT + refresh). Endpoint público.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/auth/schemas.yaml#/LoginRequest"
+  responses:
+    "200":
+      description: Autenticação bem-sucedida.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/auth/schemas.yaml#/AuthResponse"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      description: Credenciais inválidas.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

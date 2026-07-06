@@ -1,0 +1,41 @@
+# Responses de erro reutilizáveis, todas no formato Problem Details
+# (RFC 9457) com media type application/problem+json.
+BadRequest:
+  description: >-
+    Requisição inválida: payload malformado ou regras de validação violadas.
+    Inclui a lista de violações por campo.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "./problem.yaml#/ValidationProblem"
+
+Unauthorized:
+  description: >-
+    Não autenticado: credenciais inválidas, token ausente, expirado ou
+    revogado.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "./problem.yaml#/Problem"
+
+NotFound:
+  description: Recurso não encontrado.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "./problem.yaml#/Problem"
+
+Conflict:
+  description: >-
+    Conflito com o estado atual do recurso (ex.: e-mail já cadastrado).
+  content:
+    application/problem+json:
+      schema:
+        $ref: "./problem.yaml#/Problem"
+
+InternalServerError:
+  description: Erro interno inesperado do servidor.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "./problem.yaml#/Problem"
