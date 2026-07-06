@@ -1,0 +1,59 @@
+# Infraestrutura local do PsiOps (PSI-003).
+#
+# Serviços:
+#   - postgres: banco único do sistema (tabelas JPA + event store embutido do Axon).
+#   - mailpit:  captura de e-mails transacionais em desenvolvimento (SMTP + UI web).
+#
+# Sem Redis, fila ou broker: a assincronicidade vive dentro do backend via Axon
+# (ADR 0007/0009). Credenciais e portas são parametrizadas por variáveis de
+# ambiente com defaults — copie .env.example para .env para customizar.
+#
+# Uso: docker compose up -d | docs completos em docs/infra/README.md
+
+name: psiops
+
+services:
+  postgres:
+    image: postgres:16.9-alpine
+    container_name: psiops-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-psiops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-psiops}
+      POSTGRES_DB: ${POSTGRES_DB:-psiops}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # $$ escapa a interpolação do Compose: as variáveis são resolvidas
+      # dentro do container, onde a imagem oficial as define.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mailpit:
+    image: axllent/mailpit:v1.24
+    container_name: psiops-mailpit
+    restart: unless-stopped
+    environment:
+      # Persiste as mensagens capturadas no volume nomeado.
+      MP_DATABASE: /data/mailpit.db
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    volumes:
+      - mailpit-data:/data
+    healthcheck:
+      # "mailpit readyz" faz uma requisição HTTP ao endpoint /readyz da UI.
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  pgdata:
+  mailpit-data:
