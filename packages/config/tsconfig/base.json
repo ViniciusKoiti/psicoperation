@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment": "Base TS para pacotes/apps sem DOM (bibliotecas, Node). Consumir via \"extends\": \"@psiops/config/tsconfig/base.json\". Estende o tsconfig.base.json da raiz do monorepo (caminho relativo: este pacote é privado e nunca é publicado).",
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}
