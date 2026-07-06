@@ -1,0 +1,7 @@
+# Workspaces do lado JavaScript/TypeScript do monorepo.
+# Os globs cobrem apps/* e packages/*, mas apenas diretórios com package.json
+# aderem de fato ao pnpm: apps/api (Maven) e apps/mobile (Flutter) vivem em
+# apps/ sem participar do workspace JS.
+packages:
+  - "apps/*"
+  - "packages/*"
