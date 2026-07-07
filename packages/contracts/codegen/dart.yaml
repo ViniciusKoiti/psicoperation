@@ -1,0 +1,10 @@
+# Config do openapi-generator (generator: dart) para os modelos Dart.
+# Saída comitada em gen/dart como package local (path dependency do apps/mobile).
+generatorName: dart
+inputSpec: openapi/openapi.yaml
+outputDir: gen/dart
+additionalProperties:
+  pubName: psiops_contracts
+  pubVersion: 0.1.0
+  pubDescription: "Modelos Dart gerados da especificação OpenAPI do PsiOps (não editar à mão)"
+  hideGenerationTimestamp: true

@@ -1,0 +1,30 @@
+# ARQUIVO DE TEMPLATE — copiado verbatim para gen/dart/pubspec.yaml pelo
+# scripts/generate.mjs a cada regeneração. Edite AQUI (nunca em gen/dart).
+#
+# Substitui o pubspec emitido pelo openapi-generator (ignorado via
+# .openapi-generator-ignore): o gerado declara dev_dependency `test` antiga,
+# incompatível com o Dart SDK do Flutter estável corrente.
+#
+# Consumo pelo apps/mobile (path dependency no pubspec.yaml do app):
+#   dependencies:
+#     psiops_contracts:
+#       path: ../../packages/contracts/gen/dart
+name: psiops_contracts
+description: >-
+  Modelos Dart gerados de packages/contracts/openapi/openapi.yaml (fonte
+  única de contratos do PsiOps, ADR 0008). NÃO EDITAR À MÃO — regenerar com
+  `pnpm --filter @psiops/contracts generate:dart`.
+version: 0.1.0
+publish_to: none
+
+environment:
+  # Compatível com o Dart SDK do Flutter 3.32.x (Dart 3.8).
+  sdk: ">=3.0.0 <4.0.0"
+
+# Dependências exigidas pelo código emitido pelo generator `dart`
+# (lib/api_client.dart, lib/api_helper.dart e modelos).
+dependencies:
+  collection: ">=1.17.0 <2.0.0"
+  http: ">=0.13.0 <2.0.0"
+  intl: ">=0.18.0 <0.21.0"
+  meta: ">=1.1.8 <2.0.0"
