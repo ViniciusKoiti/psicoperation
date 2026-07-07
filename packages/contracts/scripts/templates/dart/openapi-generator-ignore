@@ -1,0 +1,15 @@
+# ARQUIVO DE TEMPLATE — copiado para gen/dart/.openapi-generator-ignore pelo
+# scripts/generate.mjs ANTES de invocar o openapi-generator, para suprimir
+# arquivos acessórios que não fazem parte do contrato:
+#
+# - pubspec.yaml: substituído por template próprio (o gerado declara
+#   dev_dependency `test` antiga, incompatível com o Dart 3 do Flutter atual);
+# - README.md: documentaria um client HTTP completo que não é gerado aqui
+#   (apenas modelos — clientes chegam nas integrações, ver manifesto PSI-006);
+# - git_push.sh / .travis.yml / analysis_options.yaml: acessórios de projeto
+#   standalone do generator, sem função dentro do monorepo.
+pubspec.yaml
+README.md
+git_push.sh
+.travis.yml
+analysis_options.yaml
