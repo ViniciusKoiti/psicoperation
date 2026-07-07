@@ -1,0 +1,146 @@
+/**
+ * PsiOps — estilos dos componentes primitivos (Button, Card, Pill).
+ *
+ * Reproduz os utilitários .btn/.card/.pill do protótipo
+ * (docs/design/landing-page-spec.md, Apêndice) sob o prefixo psi-.
+ * Depende das custom properties de tokens.css (importe @psiops/ui/styles.css
+ * ou os dois arquivos).
+ *
+ * Adições deliberadas fora da spec (o protótipo não define esses estados):
+ * - :focus-visible nos botões (anel primary-100, coerente com .field:focus);
+ * - :disabled nos botões (opacidade reduzida e sem animação de hover).
+ */
+
+/* Button (.btn / .btn-primary / .btn-ghost / .btn-white) ------------------ */
+
+.psi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 15px 26px;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.psi-btn:focus-visible {
+  outline: none;
+  border-color: var(--psi-primary-400);
+  box-shadow: 0 0 0 4px var(--psi-primary-100);
+}
+
+.psi-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.psi-btn--primary {
+  background: var(--psi-accent-600);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(188, 92, 69, 0.28);
+}
+
+.psi-btn--primary:hover:not(:disabled) {
+  background: var(--psi-accent-700);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(188, 92, 69, 0.34);
+}
+
+.psi-btn--ghost {
+  background: transparent;
+  color: var(--psi-primary-700);
+  border-color: var(--psi-primary-200);
+}
+
+.psi-btn--ghost:hover:not(:disabled) {
+  background: var(--psi-primary-50);
+  border-color: var(--psi-primary-300);
+  transform: translateY(-2px);
+}
+
+.psi-btn--white {
+  background: #fff;
+  color: var(--psi-primary-700);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.psi-btn--white:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+}
+
+/* Tamanhos: compact (CTA da nav) e lg (submit do lead form). */
+
+.psi-btn--compact {
+  padding: 11px 20px;
+  font-size: 15px;
+}
+
+.psi-btn--lg {
+  padding: 17px 26px;
+  font-size: 17px;
+}
+
+/* Card (.card / .lift) ----------------------------------------------------- */
+
+.psi-card {
+  background: var(--psi-neutral-0);
+  border: 1px solid var(--psi-neutral-200);
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.psi-card--shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.psi-card--shadow-lift {
+  box-shadow: var(--shadow-lift);
+}
+
+.psi-card--lift {
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.3s ease;
+}
+
+.psi-card--lift:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Pill (.pill / .status-dot) ----------------------------------------------- */
+
+.psi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 13.5px;
+  color: var(--psi-primary-700);
+  background: var(--psi-primary-100);
+  border: 1px solid var(--psi-primary-200);
+  padding: 7px 14px 7px 11px;
+  border-radius: 999px;
+}
+
+.psi-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--psi-accent-500);
+  flex-shrink: 0;
+}

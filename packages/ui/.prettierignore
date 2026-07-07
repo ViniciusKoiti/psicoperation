@@ -1,0 +1,7 @@
+# Artefatos gerados a partir de src/tokens (scripts/generate-artifacts.mjs):
+# a formatação é do gerador, não do Prettier — reformatar quebraria o teste
+# de drift (tests/artifacts-drift.test.ts).
+tokens.json
+css/tokens.css
+dist/
+coverage/

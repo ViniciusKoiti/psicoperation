@@ -1,0 +1,7 @@
+/**
+ * PsiOps — bundle de estilos do @psiops/ui.
+ * Importa tokens (custom properties em :root) + componentes primitivos.
+ */
+
+@import "./tokens.css";
+@import "./components.css";

@@ -1,0 +1,62 @@
+/**
+ * PsiOps — design tokens como CSS custom properties.
+ *
+ * ARQUIVO GERADO a partir de src/tokens — NÃO EDITE À MÃO.
+ * Regenere com: pnpm --filter @psiops/ui generate
+ */
+
+:root {
+  --psi-primary-50: #F5F3FA;
+  --psi-primary-100: #EBE7F4;
+  --psi-primary-200: #D9D2EA;
+  --psi-primary-300: #C0B5DC;
+  --psi-primary-400: #A294C9;
+  --psi-primary-500: #8676B5;
+  --psi-primary-600: #6E5E9E;
+  --psi-primary-700: #594C81;
+  --psi-primary-800: #443A61;
+  --psi-primary-900: #2F2842;
+  --psi-accent-50: #FCF3F0;
+  --psi-accent-100: #FAE6DF;
+  --psi-accent-200: #F4CCBF;
+  --psi-accent-300: #ECAE9B;
+  --psi-accent-400: #E08E75;
+  --psi-accent-500: #D2725A;
+  --psi-accent-600: #BC5C45;
+  --psi-accent-700: #9C4A37;
+  --psi-accent-800: #7A3A2C;
+  --psi-accent-900: #532823;
+  --psi-neutral-0: #FFFFFF;
+  --psi-neutral-50: #FAF9F7;
+  --psi-neutral-100: #F4F2EE;
+  --psi-neutral-200: #E9E5DF;
+  --psi-neutral-300: #D8D2C9;
+  --psi-neutral-400: #BAB2A6;
+  --psi-neutral-500: #968D7F;
+  --psi-neutral-600: #756D61;
+  --psi-neutral-700: #595348;
+  --psi-neutral-800: #3D3833;
+  --psi-neutral-900: #262320;
+  --psi-neutral-950: #181614;
+  --psi-success-light: #E7F1EA;
+  --psi-success-medium: #7FB08D;
+  --psi-success-dark: #3D6B4E;
+  --psi-warning-light: #FBF1DE;
+  --psi-warning-medium: #E0B057;
+  --psi-warning-dark: #8A6321;
+  --psi-error-light: #F9E9E6;
+  --psi-error-medium: #D38478;
+  --psi-error-dark: #9B4035;
+  --psi-info-light: #E7EEF4;
+  --psi-info-medium: #7CA0C4;
+  --psi-info-dark: #3C5F84;
+  --psi-calm-soft: #DCEBE8;
+  --psi-calm-base: #88BAB2;
+  --psi-calm-deep: #436E68;
+  --shadow-soft: 0 2px 8px rgba(110,94,158,.06), 0 12px 32px rgba(110,94,158,.07);
+  --shadow-lift: 0 4px 12px rgba(110,94,158,.08), 0 24px 56px rgba(110,94,158,.12);
+  --shadow-card: 0 1px 2px rgba(47,40,66,.05), 0 6px 20px rgba(47,40,66,.06);
+  --font-display: "DM Sans", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+}
