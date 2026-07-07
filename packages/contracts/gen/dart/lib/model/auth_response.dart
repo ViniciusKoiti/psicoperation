@@ -17,9 +17,9 @@ class AuthResponse {
     required this.tokens,
   });
 
-  RegisterUser201ResponseUser user;
+  User user;
 
-  RegisterUser201ResponseTokens tokens;
+  TokenPair tokens;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is AuthResponse &&
@@ -61,8 +61,8 @@ class AuthResponse {
       }());
 
       return AuthResponse(
-        user: RegisterUser201ResponseUser.fromJson(json[r'user'])!,
-        tokens: RegisterUser201ResponseTokens.fromJson(json[r'tokens'])!,
+        user: User.fromJson(json[r'user'])!,
+        tokens: TokenPair.fromJson(json[r'tokens'])!,
       );
     }
     return null;

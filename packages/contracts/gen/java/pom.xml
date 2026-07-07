@@ -1,71 +1,84 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>com.psiops</groupId>
-    <artifactId>psiops-contracts</artifactId>
-    <packaging>jar</packaging>
-    <name>psiops-contracts</name>
-    <version>0.1.0</version>
-    <properties>
-        <java.version>17</java.version>
-        <maven.compiler.release>${java.version}</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.13</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ARQUIVO DE TEMPLATE — copiado verbatim para gen/java/pom.xml pelo
+  scripts/generate.mjs a cada regeneração. Edite AQUI (nunca em gen/java).
 
-    <build>
-        <sourceDirectory>src/main/java</sourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-commons</artifactId>
-        </dependency>
-        <!-- @Nullable annotation -->
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-        <!-- Bean Validation API support -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+  Projeto Maven mínimo dos DTOs Java gerados da spec OpenAPI (PSI-006).
+  Mecanismo de consumo documentado no README do pacote: o apps/api instala
+  este artefato no repositório Maven local antes do próprio build:
+
+    ./mvnw -f ../../packages/contracts/gen/java/pom.xml install
+
+  e declara a dependência com.psiops:psiops-contracts:${project.version}.
+
+  As versões abaixo seguem a linha do Spring Boot 3.5.x (Java 21) que o
+  apps/api (PSI-010) utiliza; são necessárias apenas para compilar este jar
+  isoladamente — no apps/api o BOM do Spring Boot governa o classpath.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.psiops</groupId>
+  <artifactId>psiops-contracts</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <name>psiops-contracts</name>
+  <description>
+    DTOs Java gerados de packages/contracts/openapi/openapi.yaml (fonte única
+    de contratos, ADR 0008). NÃO EDITAR À MÃO — regenerar com
+    `pnpm --filter @psiops/contracts generate:java`.
+  </description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jackson.version>2.19.1</jackson.version>
+    <spring-framework.version>6.2.8</spring-framework.version>
+  </properties>
+
+  <dependencies>
+    <!-- Anotações de serialização (@JsonProperty, @JsonCreator, ...) -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <!-- @Generated -->
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <version>2.1.1</version>
+    </dependency>
+    <!-- Bean Validation (@Valid, @NotNull, @Pattern, @Size, ...) -->
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+      <version>3.1.1</version>
+    </dependency>
+    <!-- org.springframework.lang.Nullable -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring-framework.version}</version>
+    </dependency>
+    <!-- org.springframework.format.annotation.DateTimeFormat -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring-framework.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.0</version>
+      </plugin>
+    </plugins>
+  </build>
 </project>

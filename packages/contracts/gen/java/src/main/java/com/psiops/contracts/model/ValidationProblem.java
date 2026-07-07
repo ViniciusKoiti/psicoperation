@@ -4,13 +4,12 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.psiops.contracts.model.RegisterUser400ResponseAllOfViolationsInner;
+import com.psiops.contracts.model.FieldViolation;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.lang.Nullable;
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -24,9 +23,7 @@ import jakarta.annotation.Generated;
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.23.0")
-public class ValidationProblem implements Serializable {
-
-  private static final long serialVersionUID = 1L;
+public class ValidationProblem {
 
   private URI type = URI.create("about:blank");
 
@@ -38,7 +35,7 @@ public class ValidationProblem implements Serializable {
 
   private @Nullable String instance;
 
-  private List<@Valid RegisterUser400ResponseAllOfViolationsInner> violations = new ArrayList<>();
+  private List<@Valid FieldViolation> violations = new ArrayList<>();
 
   public ValidationProblem() {
     super();
@@ -47,7 +44,7 @@ public class ValidationProblem implements Serializable {
   /**
    * Constructor with only required parameters
    */
-  public ValidationProblem(String title, Integer status, List<@Valid RegisterUser400ResponseAllOfViolationsInner> violations) {
+  public ValidationProblem(String title, Integer status, List<@Valid FieldViolation> violations) {
     this.title = title;
     this.status = status;
     this.violations = violations;
@@ -155,12 +152,12 @@ public class ValidationProblem implements Serializable {
     this.instance = instance;
   }
 
-  public ValidationProblem violations(List<@Valid RegisterUser400ResponseAllOfViolationsInner> violations) {
+  public ValidationProblem violations(List<@Valid FieldViolation> violations) {
     this.violations = violations;
     return this;
   }
 
-  public ValidationProblem addViolationsItem(RegisterUser400ResponseAllOfViolationsInner violationsItem) {
+  public ValidationProblem addViolationsItem(FieldViolation violationsItem) {
     if (this.violations == null) {
       this.violations = new ArrayList<>();
     }
@@ -174,12 +171,12 @@ public class ValidationProblem implements Serializable {
    */
   @NotNull @Valid @Size(min = 1) 
   @JsonProperty("violations")
-  public List<@Valid RegisterUser400ResponseAllOfViolationsInner> getViolations() {
+  public List<@Valid FieldViolation> getViolations() {
     return violations;
   }
 
   @JsonProperty("violations")
-  public void setViolations(List<@Valid RegisterUser400ResponseAllOfViolationsInner> violations) {
+  public void setViolations(List<@Valid FieldViolation> violations) {
     this.violations = violations;
   }
 

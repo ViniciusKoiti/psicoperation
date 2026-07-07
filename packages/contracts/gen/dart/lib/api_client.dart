@@ -185,22 +185,14 @@ class ApiClient {
           return value is DateTime ? value : DateTime.tryParse(value);
         case 'AuthResponse':
           return AuthResponse.fromJson(value);
-        case 'CreateLead201Response':
-          return CreateLead201Response.fromJson(value);
-        case 'CreateLeadRequest':
-          return CreateLeadRequest.fromJson(value);
         case 'FieldViolation':
           return FieldViolation.fromJson(value);
-        case 'GetCurrentSession200Response':
-          return GetCurrentSession200Response.fromJson(value);
         case 'Lead':
           return Lead.fromJson(value);
         case 'LeadCreateRequest':
           return LeadCreateRequest.fromJson(value);
         case 'LoginRequest':
           return LoginRequest.fromJson(value);
-        case 'LoginUserRequest':
-          return LoginUserRequest.fromJson(value);
         case 'PageMeta':
           return PageMeta.fromJson(value);
         case 'Problem':
@@ -209,20 +201,6 @@ class ApiClient {
           return RefreshTokenRequest.fromJson(value);
         case 'RegisterRequest':
           return RegisterRequest.fromJson(value);
-        case 'RegisterUser201Response':
-          return RegisterUser201Response.fromJson(value);
-        case 'RegisterUser201ResponseTokens':
-          return RegisterUser201ResponseTokens.fromJson(value);
-        case 'RegisterUser201ResponseUser':
-          return RegisterUser201ResponseUser.fromJson(value);
-        case 'RegisterUser400Response':
-          return RegisterUser400Response.fromJson(value);
-        case 'RegisterUser400ResponseAllOfViolationsInner':
-          return RegisterUser400ResponseAllOfViolationsInner.fromJson(value);
-        case 'RegisterUser409Response':
-          return RegisterUser409Response.fromJson(value);
-        case 'RegisterUserRequest':
-          return RegisterUserRequest.fromJson(value);
         case 'SessionResponse':
           return SessionResponse.fromJson(value);
         case 'TokenPair':

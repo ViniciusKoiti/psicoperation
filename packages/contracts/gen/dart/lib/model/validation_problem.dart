@@ -52,7 +52,7 @@ class ValidationProblem {
   String? instance;
 
   /// Lista de violações por campo (ao menos uma).
-  List<RegisterUser400ResponseAllOfViolationsInner> violations;
+  List<FieldViolation> violations;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is ValidationProblem &&
@@ -121,7 +121,7 @@ class ValidationProblem {
         status: mapValueOfType<int>(json, r'status')!,
         detail: mapValueOfType<String>(json, r'detail'),
         instance: mapValueOfType<String>(json, r'instance'),
-        violations: RegisterUser400ResponseAllOfViolationsInner.listFromJson(json[r'violations']),
+        violations: FieldViolation.listFromJson(json[r'violations']),
       );
     }
     return null;

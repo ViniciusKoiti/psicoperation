@@ -8,7 +8,6 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -22,9 +21,7 @@ import jakarta.annotation.Generated;
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.23.0")
-public class Lead implements Serializable {
-
-  private static final long serialVersionUID = 1L;
+public class Lead {
 
   private UUID id;
 
