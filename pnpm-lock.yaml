@@ -82,6 +82,31 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
+  packages/testing:
+    dependencies:
+      '@psiops/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      '@psiops/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.0
+      eslint:
+        specifier: ^9.30.0
+        version: 9.39.4
+      prettier:
+        specifier: ^3.6.0
+        version: 3.9.4
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.7(@types/node@22.20.0)(jsdom@26.1.0)(yaml@2.9.0)
+
   packages/ui:
     devDependencies:
       '@mantine/core':

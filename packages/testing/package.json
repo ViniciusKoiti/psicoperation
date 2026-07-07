@@ -1,0 +1,48 @@
+{
+  "name": "@psiops/testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Caixa de ferramentas de teste do lado JS/TS do PsiOps: builders determinísticos de fixtures tipados por @psiops/contracts, infraestrutura de mock adapters em memória (ADR 0006) e helpers Vitest. devDependency dos consumidores — nunca entra em bundle de produção.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vitest": {
+      "types": "./dist/vitest/index.d.ts",
+      "default": "./dist/vitest/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@psiops/config/prettier",
+  "dependencies": {
+    "@psiops/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "vitest": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@psiops/config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.30.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
