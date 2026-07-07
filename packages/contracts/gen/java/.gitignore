@@ -1,0 +1,3 @@
+# Copiado para gen/java/.gitignore pelo scripts/generate.mjs.
+# Saída de build do Maven (mvn install) — nunca comitar.
+target/

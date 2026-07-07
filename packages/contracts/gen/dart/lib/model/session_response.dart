@@ -17,7 +17,7 @@ class SessionResponse {
     required this.expiresAt,
   });
 
-  RegisterUser201ResponseUser user;
+  User user;
 
   /// Instante de expiração do access token corrente (ISO 8601, UTC).
   DateTime expiresAt;
@@ -62,7 +62,7 @@ class SessionResponse {
       }());
 
       return SessionResponse(
-        user: RegisterUser201ResponseUser.fromJson(json[r'user'])!,
+        user: User.fromJson(json[r'user'])!,
         expiresAt: mapDateTime(json, r'expiresAt', r'')!,
       );
     }

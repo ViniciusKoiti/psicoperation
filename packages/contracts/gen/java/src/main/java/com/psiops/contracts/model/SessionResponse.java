@@ -4,11 +4,10 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.psiops.contracts.model.RegisterUser201ResponseUser;
+import com.psiops.contracts.model.User;
 import java.time.OffsetDateTime;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.lang.Nullable;
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -22,11 +21,9 @@ import jakarta.annotation.Generated;
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.23.0")
-public class SessionResponse implements Serializable {
+public class SessionResponse {
 
-  private static final long serialVersionUID = 1L;
-
-  private RegisterUser201ResponseUser user;
+  private User user;
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime expiresAt;
@@ -38,12 +35,12 @@ public class SessionResponse implements Serializable {
   /**
    * Constructor with only required parameters
    */
-  public SessionResponse(RegisterUser201ResponseUser user, OffsetDateTime expiresAt) {
+  public SessionResponse(User user, OffsetDateTime expiresAt) {
     this.user = user;
     this.expiresAt = expiresAt;
   }
 
-  public SessionResponse user(RegisterUser201ResponseUser user) {
+  public SessionResponse user(User user) {
     this.user = user;
     return this;
   }
@@ -54,12 +51,12 @@ public class SessionResponse implements Serializable {
    */
   @NotNull @Valid 
   @JsonProperty("user")
-  public RegisterUser201ResponseUser getUser() {
+  public User getUser() {
     return user;
   }
 
   @JsonProperty("user")
-  public void setUser(RegisterUser201ResponseUser user) {
+  public void setUser(User user) {
     this.user = user;
   }
 

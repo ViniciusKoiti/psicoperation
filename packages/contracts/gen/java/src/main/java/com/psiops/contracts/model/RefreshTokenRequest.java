@@ -4,9 +4,7 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.springframework.lang.Nullable;
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -19,11 +17,8 @@ import jakarta.annotation.Generated;
  * Payload de renovação do par de tokens.
  */
 
-@JsonTypeName("refreshToken_request")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.23.0")
-public class RefreshTokenRequest implements Serializable {
-
-  private static final long serialVersionUID = 1L;
+public class RefreshTokenRequest {
 
   private String refreshToken;
 

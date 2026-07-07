@@ -4,10 +4,9 @@ import java.net.URI;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.psiops.contracts.model.RegisterUser201ResponseTokens;
-import com.psiops.contracts.model.RegisterUser201ResponseUser;
+import com.psiops.contracts.model.TokenPair;
+import com.psiops.contracts.model.User;
 import org.springframework.lang.Nullable;
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -21,13 +20,11 @@ import jakarta.annotation.Generated;
  */
 
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.23.0")
-public class AuthResponse implements Serializable {
+public class AuthResponse {
 
-  private static final long serialVersionUID = 1L;
+  private User user;
 
-  private RegisterUser201ResponseUser user;
-
-  private RegisterUser201ResponseTokens tokens;
+  private TokenPair tokens;
 
   public AuthResponse() {
     super();
@@ -36,12 +33,12 @@ public class AuthResponse implements Serializable {
   /**
    * Constructor with only required parameters
    */
-  public AuthResponse(RegisterUser201ResponseUser user, RegisterUser201ResponseTokens tokens) {
+  public AuthResponse(User user, TokenPair tokens) {
     this.user = user;
     this.tokens = tokens;
   }
 
-  public AuthResponse user(RegisterUser201ResponseUser user) {
+  public AuthResponse user(User user) {
     this.user = user;
     return this;
   }
@@ -52,16 +49,16 @@ public class AuthResponse implements Serializable {
    */
   @NotNull @Valid 
   @JsonProperty("user")
-  public RegisterUser201ResponseUser getUser() {
+  public User getUser() {
     return user;
   }
 
   @JsonProperty("user")
-  public void setUser(RegisterUser201ResponseUser user) {
+  public void setUser(User user) {
     this.user = user;
   }
 
-  public AuthResponse tokens(RegisterUser201ResponseTokens tokens) {
+  public AuthResponse tokens(TokenPair tokens) {
     this.tokens = tokens;
     return this;
   }
@@ -72,12 +69,12 @@ public class AuthResponse implements Serializable {
    */
   @NotNull @Valid 
   @JsonProperty("tokens")
-  public RegisterUser201ResponseTokens getTokens() {
+  public TokenPair getTokens() {
     return tokens;
   }
 
   @JsonProperty("tokens")
-  public void setTokens(RegisterUser201ResponseTokens tokens) {
+  public void setTokens(TokenPair tokens) {
     this.tokens = tokens;
   }
 
