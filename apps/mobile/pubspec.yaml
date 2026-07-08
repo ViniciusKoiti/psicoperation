@@ -1,0 +1,83 @@
+name: psiops_mobile
+description: >-
+  App companion mobile do PsiOps (PSI-013): acesso rápido em movimento para a
+  psicóloga, complementando o web da clínica. Este scaffold entrega fundação
+  técnica (tema de tokens, go_router, estrutura por features) sem features de
+  domínio.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  # Fixado na série do Flutter 3.32.x (Dart 3.8) para manter análise/testes
+  # consistentes entre ambiente local (3.32.4) e CI (3.32.5) — risco do
+  # manifesto PSI-013 sobre divergência de versão.
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # Navegação declarativa (rotas nomeadas, guarda de rotas protegidas,
+  # tratamento de rota desconhecida). Exigido pelo manifesto PSI-013.
+  go_router: ^16.0.0
+  # Modelos Dart gerados de packages/contracts/openapi/openapi.yaml
+  # (fonte única de contratos — ADR 0008, regra 8 do CLAUDE.md).
+  # Path dependency relativa à raiz do monorepo; NUNCA redefinir DTOs aqui.
+  psiops_contracts:
+    path: ../../packages/contracts/gen/dart
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Tipografia do design system (packages/ui/tokens.json → typography.*).
+  # Decisão registrada (PSI-013): fontes EMBARCADAS como assets em vez do
+  # package google_fonts — evita fetch em runtime para servidores do Google
+  # (previsibilidade offline + LGPD), evita dependência extra não prevista no
+  # manifesto e mantém flutter test determinístico sem rede.
+  # Arquivos baixados do Google Fonts (licença OFL em assets/fonts/OFL-*.txt,
+  # registrada no LicenseRegistry em lib/main.dart).
+  fonts:
+    # tokens.typography.display — títulos/headings (pesos 400/500/600/700)
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-Bold.ttf
+          weight: 700
+    # tokens.typography.body — corpo de texto (pesos 400/500/600)
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+    # tokens.typography.serif — acentos serifados (defaultStyle: italic;
+    # normal 500/600 e itálico 400/500, como em tokens.json)
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/Fraunces-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Fraunces-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Fraunces-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/Fraunces-MediumItalic.ttf
+          weight: 500
+          style: italic
+
+  assets:
+    - assets/fonts/OFL-DMSans.txt
+    - assets/fonts/OFL-Inter.txt
+    - assets/fonts/OFL-Fraunces.txt
