@@ -1,0 +1,82 @@
+# Path item: /appointments/{appointmentId}
+parameters:
+  - name: appointmentId
+    in: path
+    required: true
+    description: Identificador da consulta.
+    schema:
+      type: string
+      format: uuid
+get:
+  tags:
+    - appointment
+  operationId: getAppointment
+  summary: Obtém uma consulta
+  security:
+    - bearerAuth: []
+  responses:
+    "200":
+      description: Consulta.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/appointment/schemas.yaml#/Appointment"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+put:
+  tags:
+    - appointment
+  operationId: updateAppointment
+  summary: Remarca/edita uma consulta
+  description: >-
+    Atualiza horário, duração, recorrência ou status. Um novo horário que
+    conflite com outra consulta responde 409 com Problem Details.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/appointment/schemas.yaml#/AppointmentUpdateRequest"
+  responses:
+    "200":
+      description: Consulta atualizada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/appointment/schemas.yaml#/Appointment"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "409":
+      description: Conflito de horário com outra consulta.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+delete:
+  tags:
+    - appointment
+  operationId: cancelAppointment
+  summary: Cancela uma consulta
+  security:
+    - bearerAuth: []
+  responses:
+    "204":
+      description: Consulta cancelada.
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

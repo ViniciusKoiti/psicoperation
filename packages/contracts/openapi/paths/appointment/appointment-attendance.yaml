@@ -1,0 +1,41 @@
+# Path item: /appointments/{appointmentId}/attendance
+parameters:
+  - name: appointmentId
+    in: path
+    required: true
+    description: Identificador da consulta.
+    schema:
+      type: string
+      format: uuid
+put:
+  tags:
+    - appointment
+  operationId: recordAttendance
+  summary: Registra a presença (administrativa) de uma consulta
+  description: >-
+    Registra se o paciente compareceu, faltou ou remarcou, com anotação
+    administrativa. NÃO aceita nem armazena qualquer dado clínico — apenas
+    controle de presença e faturamento.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/appointment/schemas.yaml#/AttendanceRecord"
+  responses:
+    "200":
+      description: Presença registrada; consulta atualizada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/appointment/schemas.yaml#/Appointment"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

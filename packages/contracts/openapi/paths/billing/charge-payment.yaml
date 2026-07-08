@@ -1,0 +1,46 @@
+# Path item: /charges/{chargeId}/payment
+parameters:
+  - name: chargeId
+    in: path
+    required: true
+    description: Identificador da cobrança.
+    schema:
+      type: string
+      format: uuid
+post:
+  tags:
+    - billing
+  operationId: registerPayment
+  summary: Registra o pagamento de uma cobrança
+  description: >-
+    Registra o pagamento (administrativo) de uma cobrança e atualiza seu
+    status. Valores em centavos.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/billing/schemas.yaml#/RegisterPaymentRequest"
+  responses:
+    "200":
+      description: Pagamento registrado; cobrança atualizada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/billing/schemas.yaml#/Charge"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "409":
+      description: Cobrança já paga.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

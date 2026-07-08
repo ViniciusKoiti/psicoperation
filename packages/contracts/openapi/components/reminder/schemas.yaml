@@ -1,0 +1,119 @@
+# Schemas do domínio reminder (lembretes enviados ao paciente).
+#
+# No MVP o único canal é EMAIL (WhatsApp fica para pós-MVP — fora de escopo).
+# Um lembrete pode se vincular opcionalmente a um paciente, uma consulta ou
+# uma cobrança. Multi-tenant por token.
+
+Reminder:
+  type: object
+  description: Lembrete agendado/enviado pela psicóloga a um paciente.
+  properties:
+    id:
+      type: string
+      format: uuid
+    channel:
+      $ref: "#/ReminderChannel"
+    subject:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: Assunto/título do lembrete.
+    body:
+      type: string
+      minLength: 1
+      maxLength: 2000
+      description: Corpo do lembrete (texto administrativo).
+    scheduledFor:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    sentAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    status:
+      $ref: "#/ReminderStatus"
+    patientId:
+      type: string
+      format: uuid
+      description: Paciente vinculado (opcional).
+    appointmentId:
+      type: string
+      format: uuid
+      description: Consulta vinculada (opcional).
+    chargeId:
+      type: string
+      format: uuid
+      description: Cobrança vinculada (opcional).
+    createdAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+  required:
+    - id
+    - channel
+    - subject
+    - body
+    - scheduledFor
+    - status
+    - createdAt
+
+ReminderChannel:
+  type: string
+  description: Canal de envio do lembrete. No MVP, apenas `email`.
+  enum:
+    - email
+  examples:
+    - "email"
+
+ReminderStatus:
+  type: string
+  description: Situação do lembrete no ciclo de envio.
+  enum:
+    - agendado
+    - enviado
+    - falhou
+    - cancelado
+  examples:
+    - "agendado"
+
+ReminderCreateRequest:
+  type: object
+  description: >-
+    Payload de criação de lembrete. Os vínculos (patientId/appointmentId/
+    chargeId) são todos opcionais e independentes.
+  properties:
+    channel:
+      $ref: "#/ReminderChannel"
+    subject:
+      type: string
+      minLength: 1
+      maxLength: 200
+    body:
+      type: string
+      minLength: 1
+      maxLength: 2000
+    scheduledFor:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    patientId:
+      type: string
+      format: uuid
+    appointmentId:
+      type: string
+      format: uuid
+    chargeId:
+      type: string
+      format: uuid
+  required:
+    - channel
+    - subject
+    - body
+    - scheduledFor
+
+ReminderPage:
+  type: object
+  description: Página de lembretes.
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Reminder"
+    meta:
+      $ref: "../common/pagination.yaml#/PageMeta"
+  required:
+    - items
+    - meta

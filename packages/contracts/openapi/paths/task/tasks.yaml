@@ -1,0 +1,54 @@
+# Path item: /tasks
+get:
+  tags:
+    - task
+  operationId: listTasks
+  summary: Lista tarefas
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../../components/common/pagination.yaml#/PageParam"
+    - $ref: "../../components/common/pagination.yaml#/PageSizeParam"
+    - name: pending
+      in: query
+      required: false
+      description: Se `true`, retorna apenas tarefas não concluídas.
+      schema:
+        type: boolean
+  responses:
+    "200":
+      description: Página de tarefas.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/task/schemas.yaml#/TaskPage"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+post:
+  tags:
+    - task
+  operationId: createTask
+  summary: Cria uma tarefa
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/task/schemas.yaml#/TaskCreateRequest"
+  responses:
+    "201":
+      description: Tarefa criada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/task/schemas.yaml#/Task"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

@@ -1,0 +1,77 @@
+# Path item: /patients/{patientId}
+parameters:
+  - name: patientId
+    in: path
+    required: true
+    description: Identificador do paciente.
+    schema:
+      type: string
+      format: uuid
+get:
+  tags:
+    - patient
+  operationId: getPatient
+  summary: Obtém um paciente
+  security:
+    - bearerAuth: []
+  responses:
+    "200":
+      description: Paciente.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/patient/schemas.yaml#/Patient"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+put:
+  tags:
+    - patient
+  operationId: updatePatient
+  summary: Atualiza um paciente
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/patient/schemas.yaml#/PatientUpdateRequest"
+  responses:
+    "200":
+      description: Paciente atualizado.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/patient/schemas.yaml#/Patient"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+delete:
+  tags:
+    - patient
+  operationId: deletePatient
+  summary: Remove (arquiva) um paciente
+  description: >-
+    Remove o paciente da carteira. A política de arquivamento vs. exclusão
+    definitiva (LGPD) é decidida na implementação; o contrato expõe apenas a
+    operação de remoção.
+  security:
+    - bearerAuth: []
+  responses:
+    "204":
+      description: Paciente removido.
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
