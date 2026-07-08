@@ -34,3 +34,30 @@ management:
     health:
       probes:
         enabled: true
+
+# Fundação Axon (PSI-011, ver com.psiops.api.axon.config). Sem Axon Server:
+# o connector já é excluído no pom.xml, e a flag abaixo reforça que a
+# autoconfiguração do Axon não deve tentar abrir uma conexão de rede — com
+# JPA no classpath e sem o connector, o event store, o token store e o saga
+# store passam a ser os embutidos em JPA sobre o PostgreSQL da aplicação.
+axon:
+  # Serializador Jackson (em vez do XStream padrão): comandos, eventos e
+  # mensagens do domínio são records Java, que o XStream não consegue
+  # serializar no JDK 21 ("can't get field offset on a record class").
+  # Jackson lida com records nativamente e produz payloads JSON legíveis no
+  # event store.
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+  axonserver:
+    enabled: false
+  eventhandling:
+    processors:
+      # Grupo de processamento do fluxo exemplo (com.psiops.api.axonsample).
+      # "subscribing" mantém a projeção síncrona com a publicação do evento,
+      # o que torna o exemplo determinístico em teste sem depender de
+      # polling do token store. Projeções de domínio reais devem avaliar
+      # "tracking" (default do framework) caso precisem de replay/paralelismo.
+      axonsample:
+        mode: subscribing

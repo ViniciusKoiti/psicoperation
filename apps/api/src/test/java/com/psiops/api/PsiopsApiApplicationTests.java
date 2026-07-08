@@ -6,6 +6,7 @@ import com.psiops.api.auth.persistence.UserRepository;
 import com.psiops.api.lead.persistence.LeadRepository;
 import com.psiops.api.settings.persistence.SettingsRepository;
 import com.psiops.api.support.ContainersConfig;
+import com.psiops.api.support.EphemeralAxonSchema;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Import;
  */
 @SpringBootTest
 @Import(ContainersConfig.class)
+@EphemeralAxonSchema
 class PsiopsApiApplicationTests {
 
   @Autowired private UserRepository userRepository;
