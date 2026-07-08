@@ -76,9 +76,18 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # apps/api consome os DTOs Java gerados (com.psiops:psiops-contracts)
+      # como dependência Maven. O jar não é publicado num registry; é instalado
+      # no repositório local a partir do codegen comitado em packages/contracts
+      # (mecanismo documentado na PSI-006). Guardado junto do build da API.
+      - name: Instalar contratos Java no repositório Maven local
+        if: steps.guard.outputs.exists == 'true'
+        run: mvn -B -q -f packages/contracts/gen/java/pom.xml install
+
       - name: Build e testes da API
         if: steps.guard.outputs.exists == 'true'
-        run: ./mvnw -f apps/api verify
+        working-directory: apps/api
+        run: ./mvnw -B verify
 
   mobile:
     name: Mobile (Flutter)
