@@ -1,0 +1,45 @@
+{
+  "name": "@psiops/clinic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aplicação web da clínica (psicóloga solo): Vite + React + TypeScript com Mantine, tematizado a partir dos design tokens de @psiops/ui. Scaffold da PSI-012 — espinha dorsal de navegação (React Router, layout shell, estrutura por feature) sobre a qual as features de domínio (carteira de pacientes, mensalidades, cobranças) serão construídas.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@psiops/config/prettier",
+  "dependencies": {
+    "@mantine/core": "^8.3.0",
+    "@mantine/hooks": "^8.3.0",
+    "@psiops/contracts": "workspace:*",
+    "@psiops/ui": "workspace:*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.0"
+  },
+  "devDependencies": {
+    "@psiops/config": "workspace:*",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^9.30.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

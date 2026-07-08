@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment": "Estende o tsconfig React compartilhado (@psiops/config). Inclui o próprio vite.config.ts (config em TS) além do código-fonte e testes.",
+  "extends": "@psiops/config/tsconfig/react.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*", "tests/**/*", "vite.config.ts"]
+}

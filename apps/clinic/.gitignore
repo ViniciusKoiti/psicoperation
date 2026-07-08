@@ -1,0 +1,5 @@
+# Artefatos de build/ferramentas locais do @psiops/clinic
+*.tsbuildinfo
+dist/
+node_modules/
+coverage/
