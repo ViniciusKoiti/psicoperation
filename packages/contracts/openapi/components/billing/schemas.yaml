@@ -1,0 +1,155 @@
+# Schemas do domínio billing (financeiro): mensalidades/cobranças.
+#
+# Todo valor monetário é inteiro em centavos (MoneyBRL) — restrição inviolável.
+# Competência é a string AAAA-MM (mês de referência da mensalidade). Juros são
+# SIMPLES (linear sobre o valor, por dia de atraso). Multi-tenant por token.
+
+Charge:
+  type: object
+  description: >-
+    Cobrança de mensalidade de um paciente, referente a uma competência
+    (mês). O valor é fixado na emissão a partir da mensalidade combinada.
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Identificador único da cobrança.
+    patientId:
+      type: string
+      format: uuid
+      description: Paciente cobrado.
+    competence:
+      $ref: "#/Competence"
+    amount:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    dueDate:
+      $ref: "../common/datetime.yaml#/IsoDate"
+    status:
+      $ref: "#/ChargeStatus"
+    interest:
+      $ref: "#/SimpleInterestParams"
+    payment:
+      $ref: "#/Payment"
+    createdAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+  required:
+    - id
+    - patientId
+    - competence
+    - amount
+    - dueDate
+    - status
+    - createdAt
+
+Competence:
+  type: string
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$"
+  description: >-
+    Competência (mês de referência) da mensalidade no formato `AAAA-MM`.
+    Ex.: `2026-07`. Distinta de IsoDate por não ter dia.
+  examples:
+    - "2026-07"
+
+ChargeStatus:
+  type: string
+  description: >-
+    Situação de pagamento da cobrança. `em_dia` = paga ou dentro do prazo;
+    `pendente` = aguardando pagamento, ainda não vencida; `atrasada` = vencida
+    e não paga.
+  enum:
+    - em_dia
+    - pendente
+    - atrasada
+  examples:
+    - "pendente"
+
+SimpleInterestParams:
+  type: object
+  description: >-
+    Parâmetros de juros SIMPLES aplicados sobre cobrança atrasada. O cálculo do
+    montante devido é responsabilidade da API; aqui vão apenas os parâmetros.
+  properties:
+    monthlyRatePercent:
+      type: number
+      format: double
+      minimum: 0
+      maximum: 100
+      description: >-
+        Percentual de juros ao mês (ex.: 1.0 = 1% a.m.), aplicado de forma
+        linear (simples) por período de atraso.
+      examples:
+        - 1.0
+    finePercent:
+      type: number
+      format: double
+      minimum: 0
+      maximum: 100
+      description: "Percentual de multa única aplicada no vencimento (ex.: 2.0 = 2%)."
+      examples:
+        - 2.0
+  required:
+    - monthlyRatePercent
+    - finePercent
+
+Payment:
+  type: object
+  description: Registro de pagamento de uma cobrança.
+  properties:
+    paidAmount:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    paidAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    method:
+      $ref: "#/PaymentMethod"
+    note:
+      type: string
+      maxLength: 500
+      description: Observação administrativa do pagamento (opcional).
+  required:
+    - paidAmount
+    - paidAt
+    - method
+
+PaymentMethod:
+  type: string
+  description: Meio de pagamento informado no registro (administrativo).
+  enum:
+    - pix
+    - dinheiro
+    - transferencia
+    - cartao
+    - outro
+  examples:
+    - "pix"
+
+RegisterPaymentRequest:
+  type: object
+  description: Payload para registrar o pagamento de uma cobrança.
+  properties:
+    paidAmount:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    paidAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    method:
+      $ref: "#/PaymentMethod"
+    note:
+      type: string
+      maxLength: 500
+  required:
+    - paidAmount
+    - paidAt
+    - method
+
+ChargePage:
+  type: object
+  description: Página de cobranças.
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Charge"
+    meta:
+      $ref: "../common/pagination.yaml#/PageMeta"
+  required:
+    - items
+    - meta

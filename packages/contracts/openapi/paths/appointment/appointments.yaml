@@ -1,0 +1,81 @@
+# Path item: /appointments
+get:
+  tags:
+    - appointment
+  operationId: listAppointments
+  summary: Lista consultas
+  description: >-
+    Lista paginada de consultas da psicóloga autenticada, com filtro opcional
+    por intervalo de datas e por paciente.
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../../components/common/pagination.yaml#/PageParam"
+    - $ref: "../../components/common/pagination.yaml#/PageSizeParam"
+    - name: patientId
+      in: query
+      required: false
+      description: Filtra consultas de um paciente.
+      schema:
+        type: string
+        format: uuid
+    - name: from
+      in: query
+      required: false
+      description: Início do intervalo (inclusive).
+      schema:
+        $ref: "../../components/common/datetime.yaml#/IsoDate"
+    - name: to
+      in: query
+      required: false
+      description: Fim do intervalo (inclusive).
+      schema:
+        $ref: "../../components/common/datetime.yaml#/IsoDate"
+  responses:
+    "200":
+      description: Página de consultas.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/appointment/schemas.yaml#/AppointmentPage"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+post:
+  tags:
+    - appointment
+  operationId: createAppointment
+  summary: Agenda uma consulta
+  description: >-
+    Agenda uma consulta. Se o horário conflitar com outra consulta existente,
+    responde 409 com Problem Details.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/appointment/schemas.yaml#/AppointmentCreateRequest"
+  responses:
+    "201":
+      description: Consulta agendada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/appointment/schemas.yaml#/Appointment"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "409":
+      description: >-
+        Conflito de horário: já existe uma consulta que se sobrepõe ao intervalo
+        solicitado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

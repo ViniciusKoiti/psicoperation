@@ -55,6 +55,27 @@ String parameterToString(dynamic value) {
   if (value is DateTime) {
     return value.toUtc().toIso8601String();
   }
+  if (value is AppointmentStatus) {
+    return AppointmentStatusTypeTransformer().encode(value).toString();
+  }
+  if (value is AttendanceStatus) {
+    return AttendanceStatusTypeTransformer().encode(value).toString();
+  }
+  if (value is ChargeStatus) {
+    return ChargeStatusTypeTransformer().encode(value).toString();
+  }
+  if (value is PatientStatus) {
+    return PatientStatusTypeTransformer().encode(value).toString();
+  }
+  if (value is PaymentMethod) {
+    return PaymentMethodTypeTransformer().encode(value).toString();
+  }
+  if (value is ReminderChannel) {
+    return ReminderChannelTypeTransformer().encode(value).toString();
+  }
+  if (value is ReminderStatus) {
+    return ReminderStatusTypeTransformer().encode(value).toString();
+  }
   return value.toString();
 }
 

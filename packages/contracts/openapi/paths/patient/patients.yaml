@@ -1,0 +1,57 @@
+# Path item: /patients
+get:
+  tags:
+    - patient
+  operationId: listPatients
+  summary: Lista pacientes
+  description: >-
+    Lista paginada dos pacientes da psicóloga autenticada. Filtro opcional por
+    status.
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../../components/common/pagination.yaml#/PageParam"
+    - $ref: "../../components/common/pagination.yaml#/PageSizeParam"
+    - name: status
+      in: query
+      required: false
+      description: Filtra por situação cadastral.
+      schema:
+        $ref: "../../components/patient/schemas.yaml#/PatientStatus"
+  responses:
+    "200":
+      description: Página de pacientes.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/patient/schemas.yaml#/PatientPage"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+post:
+  tags:
+    - patient
+  operationId: createPatient
+  summary: Cadastra paciente
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/patient/schemas.yaml#/PatientCreateRequest"
+  responses:
+    "201":
+      description: Paciente cadastrado.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/patient/schemas.yaml#/Patient"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

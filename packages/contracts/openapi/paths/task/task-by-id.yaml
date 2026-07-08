@@ -1,0 +1,56 @@
+# Path item: /tasks/{taskId}
+parameters:
+  - name: taskId
+    in: path
+    required: true
+    description: Identificador da tarefa.
+    schema:
+      type: string
+      format: uuid
+put:
+  tags:
+    - task
+  operationId: updateTask
+  summary: Atualiza uma tarefa
+  description: >-
+    Edita título/vencimento ou marca conclusão. `completedAt` presente conclui;
+    ausente reabre.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/task/schemas.yaml#/TaskUpdateRequest"
+  responses:
+    "200":
+      description: Tarefa atualizada.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/task/schemas.yaml#/Task"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+delete:
+  tags:
+    - task
+  operationId: deleteTask
+  summary: Remove uma tarefa
+  security:
+    - bearerAuth: []
+  responses:
+    "204":
+      description: Tarefa removida.
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

@@ -1,0 +1,119 @@
+# Schemas de EVENTOS de domínio do PsiOps.
+#
+# Eventos representam fatos ocorridos no domínio, publicados pelo backend
+# (Axon) e consumíveis por processos assíncronos (ex.: disparo de lembretes).
+# Todos compartilham um ENVELOPE comum (DomainEvent): identificação, tipo,
+# instante, tenant (userId) e payload específico. Multi-tenant: `userId`
+# identifica a psicóloga dona do fato.
+#
+# Convenção de `type`: `<recurso>.<fato>` em minúsculas (ex.: cobranca.atrasada).
+
+DomainEvent:
+  type: object
+  description: >-
+    Envelope comum de um evento de domínio. O `payload` é o dado específico do
+    tipo; os schemas concretos (ChargeOverdueEvent, ReminderDueEvent) restringem
+    `type` e `payload`.
+  properties:
+    eventId:
+      type: string
+      format: uuid
+      description: Identificador único do evento (idempotência).
+    type:
+      type: string
+      description: Tipo do evento no formato `<recurso>.<fato>`.
+      examples:
+        - "cobranca.atrasada"
+    occurredAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    userId:
+      type: string
+      format: uuid
+      description: Tenant (psicóloga) dona do fato.
+    payload:
+      type: object
+      description: Dado específico do tipo de evento.
+      additionalProperties: true
+  required:
+    - eventId
+    - type
+    - occurredAt
+    - userId
+    - payload
+
+ChargeOverduePayload:
+  type: object
+  description: Payload do evento `cobranca.atrasada`.
+  properties:
+    chargeId:
+      type: string
+      format: uuid
+    patientId:
+      type: string
+      format: uuid
+    competence:
+      $ref: "../billing/schemas.yaml#/Competence"
+    amount:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    dueDate:
+      $ref: "../common/datetime.yaml#/IsoDate"
+  required:
+    - chargeId
+    - patientId
+    - competence
+    - amount
+    - dueDate
+
+ChargeOverdueEvent:
+  allOf:
+    - $ref: "#/DomainEvent"
+    - type: object
+      description: >-
+        Evento `cobranca.atrasada`: uma cobrança venceu sem pagamento. Dispara,
+        por exemplo, a geração de um lembrete de cobrança.
+      properties:
+        type:
+          type: string
+          const: "cobranca.atrasada"
+        payload:
+          $ref: "#/ChargeOverduePayload"
+      required:
+        - type
+        - payload
+
+ReminderDuePayload:
+  type: object
+  description: Payload do evento `lembrete.devido`.
+  properties:
+    reminderId:
+      type: string
+      format: uuid
+    channel:
+      $ref: "../reminder/schemas.yaml#/ReminderChannel"
+    scheduledFor:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    patientId:
+      type: string
+      format: uuid
+      description: Paciente vinculado (opcional).
+  required:
+    - reminderId
+    - channel
+    - scheduledFor
+
+ReminderDueEvent:
+  allOf:
+    - $ref: "#/DomainEvent"
+    - type: object
+      description: >-
+        Evento `lembrete.devido`: um lembrete atingiu seu horário agendado e
+        deve ser despachado pelo canal (email no MVP).
+      properties:
+        type:
+          type: string
+          const: "lembrete.devido"
+        payload:
+          $ref: "#/ReminderDuePayload"
+      required:
+        - type
+        - payload

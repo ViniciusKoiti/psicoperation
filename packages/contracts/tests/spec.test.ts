@@ -28,14 +28,27 @@ describe("arquivo raiz (openapi.yaml)", () => {
     expect(root.openapi).toMatch(/^3\.1\./);
   });
 
-  it("mapeia os endpoints de auth e lead para arquivos modulares via $ref", () => {
+  it("mapeia todos os endpoints para arquivos modulares via $ref", () => {
     const paths = root.paths as Record<string, { $ref?: string }>;
     expect(Object.keys(paths).sort()).toEqual([
+      "/appointments",
+      "/appointments/{appointmentId}",
+      "/appointments/{appointmentId}/attendance",
       "/auth/login",
       "/auth/refresh",
       "/auth/register",
       "/auth/session",
+      "/charges",
+      "/charges/{chargeId}",
+      "/charges/{chargeId}/payment",
       "/leads",
+      "/patients",
+      "/patients/{patientId}",
+      "/reminders",
+      "/settings",
+      "/settings/onboarding",
+      "/tasks",
+      "/tasks/{taskId}",
     ]);
     for (const item of Object.values(paths)) {
       expect(item.$ref).toMatch(/^\.\/paths\//);

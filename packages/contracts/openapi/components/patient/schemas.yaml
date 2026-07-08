@@ -1,0 +1,146 @@
+# Schemas do domínio patient (paciente): cadastro e dados de COBRANÇA apenas.
+#
+# RESTRIÇÃO DE PRODUTO (inviolável): nenhum dado clínico é modelado. Não há —
+# e não deve haver — campos de diagnóstico, queixa, evolução, prontuário ou
+# qualquer informação de saúde. O paciente aqui é uma entidade administrativa
+# e financeira (quem paga a mensalidade), não um registro clínico.
+#
+# Multi-tenant: todo paciente pertence à psicóloga autenticada (userId derivado
+# do bearer token); não há campo de userId no corpo — o escopo é do token.
+
+Patient:
+  type: object
+  description: Paciente (contato administrativo e de cobrança da psicóloga).
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Identificador único do paciente.
+      examples:
+        - "3f2b9a1c-7d4e-4a6b-8c9d-0e1f2a3b4c5d"
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+      description: Nome do paciente.
+      examples:
+        - "Marina Alves"
+    whatsapp:
+      $ref: "../lead/schemas.yaml#/WhatsAppBR"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+      description: E-mail de contato (opcional).
+    monthlyFee:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    billingDay:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 28
+      description: >-
+        Dia do mês (1–28) de vencimento da mensalidade. Limitado a 28 para
+        existir em todos os meses.
+      examples:
+        - 10
+    status:
+      $ref: "#/PatientStatus"
+    notes:
+      type: string
+      maxLength: 2000
+      description: >-
+        Anotações ADMINISTRATIVAS livres (ex.: preferências de contato,
+        combinados de pagamento). NÃO se destinam a conteúdo clínico.
+    createdAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+  required:
+    - id
+    - name
+    - monthlyFee
+    - billingDay
+    - status
+    - createdAt
+
+PatientStatus:
+  type: string
+  description: >-
+    Situação cadastral do paciente na carteira da psicóloga. `ativo` recebe
+    cobranças; `inativo` foi arquivado e não gera novas mensalidades.
+  enum:
+    - ativo
+    - inativo
+  examples:
+    - "ativo"
+
+PatientCreateRequest:
+  type: object
+  description: Payload de cadastro de paciente.
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+    whatsapp:
+      $ref: "../lead/schemas.yaml#/WhatsAppBR"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+    monthlyFee:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    billingDay:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 28
+    notes:
+      type: string
+      maxLength: 2000
+  required:
+    - name
+    - monthlyFee
+    - billingDay
+
+PatientUpdateRequest:
+  type: object
+  description: >-
+    Payload de atualização de paciente. Todos os campos são opcionais; apenas
+    os presentes são alterados.
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 120
+    whatsapp:
+      $ref: "../lead/schemas.yaml#/WhatsAppBR"
+    email:
+      type: string
+      format: email
+      maxLength: 254
+    monthlyFee:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    billingDay:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 28
+    status:
+      $ref: "#/PatientStatus"
+    notes:
+      type: string
+      maxLength: 2000
+
+PatientPage:
+  type: object
+  description: Página de pacientes.
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Patient"
+    meta:
+      $ref: "../common/pagination.yaml#/PageMeta"
+  required:
+    - items
+    - meta

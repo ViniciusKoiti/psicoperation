@@ -183,8 +183,36 @@ class ApiClient {
           return valueString == 'true' || valueString == '1';
         case 'DateTime':
           return value is DateTime ? value : DateTime.tryParse(value);
+        case 'Appointment':
+          return Appointment.fromJson(value);
+        case 'AppointmentCreateRequest':
+          return AppointmentCreateRequest.fromJson(value);
+        case 'AppointmentPage':
+          return AppointmentPage.fromJson(value);
+        case 'AppointmentStatus':
+          return AppointmentStatusTypeTransformer().decode(value);
+        case 'AppointmentUpdateRequest':
+          return AppointmentUpdateRequest.fromJson(value);
+        case 'AttendanceRecord':
+          return AttendanceRecord.fromJson(value);
+        case 'AttendanceStatus':
+          return AttendanceStatusTypeTransformer().decode(value);
         case 'AuthResponse':
           return AuthResponse.fromJson(value);
+        case 'Charge':
+          return Charge.fromJson(value);
+        case 'ChargeOverdueEvent':
+          return ChargeOverdueEvent.fromJson(value);
+        case 'ChargeOverduePayload':
+          return ChargeOverduePayload.fromJson(value);
+        case 'ChargePage':
+          return ChargePage.fromJson(value);
+        case 'ChargeStatus':
+          return ChargeStatusTypeTransformer().decode(value);
+        case 'CreateChargeRequest':
+          return CreateChargeRequest.fromJson(value);
+        case 'DomainEvent':
+          return DomainEvent.fromJson(value);
         case 'FieldViolation':
           return FieldViolation.fromJson(value);
         case 'Lead':
@@ -193,22 +221,74 @@ class ApiClient {
           return LeadCreateRequest.fromJson(value);
         case 'LoginRequest':
           return LoginRequest.fromJson(value);
+        case 'OnboardingCompleteRequest':
+          return OnboardingCompleteRequest.fromJson(value);
+        case 'OnboardingStatus':
+          return OnboardingStatus.fromJson(value);
+        case 'OnboardingStep':
+          return OnboardingStep.fromJson(value);
         case 'PageMeta':
           return PageMeta.fromJson(value);
+        case 'Patient':
+          return Patient.fromJson(value);
+        case 'PatientCreateRequest':
+          return PatientCreateRequest.fromJson(value);
+        case 'PatientPage':
+          return PatientPage.fromJson(value);
+        case 'PatientStatus':
+          return PatientStatusTypeTransformer().decode(value);
+        case 'PatientUpdateRequest':
+          return PatientUpdateRequest.fromJson(value);
+        case 'Payment':
+          return Payment.fromJson(value);
+        case 'PaymentMethod':
+          return PaymentMethodTypeTransformer().decode(value);
         case 'Problem':
           return Problem.fromJson(value);
         case 'RefreshTokenRequest':
           return RefreshTokenRequest.fromJson(value);
+        case 'RegisterPaymentRequest':
+          return RegisterPaymentRequest.fromJson(value);
         case 'RegisterRequest':
           return RegisterRequest.fromJson(value);
+        case 'Reminder':
+          return Reminder.fromJson(value);
+        case 'ReminderChannel':
+          return ReminderChannelTypeTransformer().decode(value);
+        case 'ReminderCreateRequest':
+          return ReminderCreateRequest.fromJson(value);
+        case 'ReminderDueEvent':
+          return ReminderDueEvent.fromJson(value);
+        case 'ReminderDuePayload':
+          return ReminderDuePayload.fromJson(value);
+        case 'ReminderPage':
+          return ReminderPage.fromJson(value);
+        case 'ReminderStatus':
+          return ReminderStatusTypeTransformer().decode(value);
         case 'SessionResponse':
           return SessionResponse.fromJson(value);
+        case 'Settings':
+          return Settings.fromJson(value);
+        case 'SettingsUpdateRequest':
+          return SettingsUpdateRequest.fromJson(value);
+        case 'SimpleInterestParams':
+          return SimpleInterestParams.fromJson(value);
+        case 'Task':
+          return Task.fromJson(value);
+        case 'TaskCreateRequest':
+          return TaskCreateRequest.fromJson(value);
+        case 'TaskPage':
+          return TaskPage.fromJson(value);
+        case 'TaskUpdateRequest':
+          return TaskUpdateRequest.fromJson(value);
         case 'TokenPair':
           return TokenPair.fromJson(value);
         case 'User':
           return User.fromJson(value);
         case 'ValidationProblem':
           return ValidationProblem.fromJson(value);
+        case 'WeeklyRecurrence':
+          return WeeklyRecurrence.fromJson(value);
         default:
           dynamic match;
           if (value is List && (match = _regList.firstMatch(targetType)?.group(1)) != null) {
