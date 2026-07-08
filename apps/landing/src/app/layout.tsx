@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DM_Sans, Fraunces, Inter } from "next/font/google";
 
+import { Footer } from "@/components/Footer";
+import { Nav } from "@/components/Nav";
+
 import "./globals.css";
 
 // Fontes self-hosted via next/font (sem requisições a serviços externos em
@@ -36,7 +39,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className={`${dmSans.variable} ${inter.variable} ${fraunces.variable}`}>
       <body className="bg-psi-neutral-50 font-body text-psi-neutral-900 antialiased">
+        <Nav />
+        {/* Alvo da âncora "#top" (logo da nav), spec §1.1. */}
+        <div id="top" />
         {children}
+        <Footer />
       </body>
     </html>
   );

@@ -1,6 +1,155 @@
-/* Variáveis --psi-* do design system em :root (fonte: @psiops/ui). */
-@import "@psiops/ui/tokens.css";
+/* Variáveis --psi-* + primitivas (.psi-btn/.psi-card/.psi-pill) do design
+   system (fonte: @psiops/ui). */
+@import "@psiops/ui/styles.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Primitivas de layout do apps/landing (PSI-014): Wrap, Section, Eyebrow,
+ * Nav e Footer. Reproduzem `.wrap`/`.eyebrow`/nav/footer do protótipo
+ * (docs/design/landing-page-spec.md §1.1, §1.10, §2, §4, §8.2) sob o mesmo
+ * padrão de nomenclatura `psi-*` usado por @psiops/ui/components.css — mas
+ * vivem aqui porque são específicas da landing, não do design system
+ * compartilhado.
+ */
+
+/* Wrap (`.wrap`, spec §4) ---------------------------------------------- */
+
+.psi-wrap {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (max-width: 860px) {
+  .psi-wrap {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .psi-wrap {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+/* Section (paddings verticais, spec §4) --------------------------------- */
+
+@media (max-width: 600px) {
+  .psi-section {
+    padding-top: 60px !important;
+    padding-bottom: 60px !important;
+  }
+}
+
+/* Eyebrow (`.eyebrow`, spec §2/apêndice) -------------------------------- */
+
+.psi-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--psi-accent-700);
+  margin: 0;
+}
+
+/* Nav sticky (spec §1.1/§8.2) -------------------------------------------- */
+
+.psi-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  background: rgba(250, 249, 247, 0.82);
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease;
+}
+
+.psi-nav--scrolled {
+  border-bottom-color: var(--psi-neutral-200);
+  background: rgba(250, 249, 247, 0.92);
+}
+
+.psi-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 74px;
+}
+
+.psi-nav__logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.psi-nav__links {
+  display: none;
+  align-items: center;
+  gap: 38px;
+}
+
+@media (min-width: 768px) {
+  .psi-nav__links {
+    display: flex;
+  }
+}
+
+.psi-nav__link {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--psi-neutral-700);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.psi-nav__link:hover {
+  color: var(--psi-primary-700);
+}
+
+/* Footer (spec §1.10) ---------------------------------------------------- */
+
+.psi-footer {
+  border-top: 1px solid var(--psi-neutral-200);
+  padding: 54px 0 60px;
+}
+
+.psi-footer__grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 40px;
+}
+
+@media (max-width: 600px) {
+  .psi-footer__grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.psi-footer__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--psi-neutral-500);
+  margin: 0 0 16px;
+}
+
+.psi-footer__list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
