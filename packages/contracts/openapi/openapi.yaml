@@ -48,6 +48,24 @@ tags:
     description: >-
       Captura de leads da lista de espera da landing page (nome, WhatsApp
       brasileiro e e-mail).
+  - name: patient
+    description: >-
+      Pacientes: cadastro e dados de cobrança da psicóloga. Sem qualquer dado
+      clínico (restrição de produto).
+  - name: appointment
+    description: >-
+      Agenda/consultas: horário, duração, recorrência semanal e presença
+      administrativa (compareceu/faltou/remarcada). Sem dados clínicos.
+  - name: billing
+    description: >-
+      Financeiro: mensalidades/cobranças (valores em centavos), pagamentos e
+      juros simples.
+  - name: task
+    description: Tarefas administrativas da psicóloga.
+  - name: reminder
+    description: Lembretes ao paciente (canal email no MVP).
+  - name: settings
+    description: Configurações e onboarding da conta da psicóloga.
 
 paths:
   /auth/register:
@@ -60,6 +78,32 @@ paths:
     $ref: "./paths/auth/session.yaml"
   /leads:
     $ref: "./paths/lead/leads.yaml"
+  /patients:
+    $ref: "./paths/patient/patients.yaml"
+  /patients/{patientId}:
+    $ref: "./paths/patient/patient-by-id.yaml"
+  /appointments:
+    $ref: "./paths/appointment/appointments.yaml"
+  /appointments/{appointmentId}:
+    $ref: "./paths/appointment/appointment-by-id.yaml"
+  /appointments/{appointmentId}/attendance:
+    $ref: "./paths/appointment/appointment-attendance.yaml"
+  /charges:
+    $ref: "./paths/billing/charges.yaml"
+  /charges/{chargeId}:
+    $ref: "./paths/billing/charge-by-id.yaml"
+  /charges/{chargeId}/payment:
+    $ref: "./paths/billing/charge-payment.yaml"
+  /tasks:
+    $ref: "./paths/task/tasks.yaml"
+  /tasks/{taskId}:
+    $ref: "./paths/task/task-by-id.yaml"
+  /reminders:
+    $ref: "./paths/reminder/reminders.yaml"
+  /settings:
+    $ref: "./paths/settings/settings.yaml"
+  /settings/onboarding:
+    $ref: "./paths/settings/onboarding.yaml"
 
 components:
   securitySchemes:
@@ -111,6 +155,93 @@ components:
       $ref: "./components/lead/schemas.yaml#/LeadCreateRequest"
     Lead:
       $ref: "./components/lead/schemas.yaml#/Lead"
+    # --- patient ---
+    Patient:
+      $ref: "./components/patient/schemas.yaml#/Patient"
+    PatientStatus:
+      $ref: "./components/patient/schemas.yaml#/PatientStatus"
+    PatientCreateRequest:
+      $ref: "./components/patient/schemas.yaml#/PatientCreateRequest"
+    PatientUpdateRequest:
+      $ref: "./components/patient/schemas.yaml#/PatientUpdateRequest"
+    PatientPage:
+      $ref: "./components/patient/schemas.yaml#/PatientPage"
+    # --- appointment ---
+    Appointment:
+      $ref: "./components/appointment/schemas.yaml#/Appointment"
+    AppointmentStatus:
+      $ref: "./components/appointment/schemas.yaml#/AppointmentStatus"
+    WeeklyRecurrence:
+      $ref: "./components/appointment/schemas.yaml#/WeeklyRecurrence"
+    AppointmentCreateRequest:
+      $ref: "./components/appointment/schemas.yaml#/AppointmentCreateRequest"
+    AppointmentUpdateRequest:
+      $ref: "./components/appointment/schemas.yaml#/AppointmentUpdateRequest"
+    AttendanceRecord:
+      $ref: "./components/appointment/schemas.yaml#/AttendanceRecord"
+    AttendanceStatus:
+      $ref: "./components/appointment/schemas.yaml#/AttendanceStatus"
+    AppointmentPage:
+      $ref: "./components/appointment/schemas.yaml#/AppointmentPage"
+    # --- billing ---
+    Charge:
+      $ref: "./components/billing/schemas.yaml#/Charge"
+    Competence:
+      $ref: "./components/billing/schemas.yaml#/Competence"
+    ChargeStatus:
+      $ref: "./components/billing/schemas.yaml#/ChargeStatus"
+    SimpleInterestParams:
+      $ref: "./components/billing/schemas.yaml#/SimpleInterestParams"
+    Payment:
+      $ref: "./components/billing/schemas.yaml#/Payment"
+    PaymentMethod:
+      $ref: "./components/billing/schemas.yaml#/PaymentMethod"
+    RegisterPaymentRequest:
+      $ref: "./components/billing/schemas.yaml#/RegisterPaymentRequest"
+    ChargePage:
+      $ref: "./components/billing/schemas.yaml#/ChargePage"
+    # --- task ---
+    Task:
+      $ref: "./components/task/schemas.yaml#/Task"
+    TaskCreateRequest:
+      $ref: "./components/task/schemas.yaml#/TaskCreateRequest"
+    TaskUpdateRequest:
+      $ref: "./components/task/schemas.yaml#/TaskUpdateRequest"
+    TaskPage:
+      $ref: "./components/task/schemas.yaml#/TaskPage"
+    # --- reminder ---
+    Reminder:
+      $ref: "./components/reminder/schemas.yaml#/Reminder"
+    ReminderChannel:
+      $ref: "./components/reminder/schemas.yaml#/ReminderChannel"
+    ReminderStatus:
+      $ref: "./components/reminder/schemas.yaml#/ReminderStatus"
+    ReminderCreateRequest:
+      $ref: "./components/reminder/schemas.yaml#/ReminderCreateRequest"
+    ReminderPage:
+      $ref: "./components/reminder/schemas.yaml#/ReminderPage"
+    # --- settings ---
+    Settings:
+      $ref: "./components/settings/schemas.yaml#/Settings"
+    SettingsUpdateRequest:
+      $ref: "./components/settings/schemas.yaml#/SettingsUpdateRequest"
+    OnboardingStatus:
+      $ref: "./components/settings/schemas.yaml#/OnboardingStatus"
+    OnboardingStep:
+      $ref: "./components/settings/schemas.yaml#/OnboardingStep"
+    OnboardingCompleteRequest:
+      $ref: "./components/settings/schemas.yaml#/OnboardingCompleteRequest"
+    # --- event ---
+    DomainEvent:
+      $ref: "./components/event/schemas.yaml#/DomainEvent"
+    ChargeOverduePayload:
+      $ref: "./components/event/schemas.yaml#/ChargeOverduePayload"
+    ChargeOverdueEvent:
+      $ref: "./components/event/schemas.yaml#/ChargeOverdueEvent"
+    ReminderDuePayload:
+      $ref: "./components/event/schemas.yaml#/ReminderDuePayload"
+    ReminderDueEvent:
+      $ref: "./components/event/schemas.yaml#/ReminderDueEvent"
 
   parameters:
     PageParam:

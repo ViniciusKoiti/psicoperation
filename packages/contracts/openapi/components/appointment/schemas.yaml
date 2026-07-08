@@ -1,0 +1,173 @@
+# Schemas do domínio appointment (agenda/consultas).
+#
+# Modela SÓ a logística da agenda: horário, duração, recorrência semanal
+# simples e status. O registro de comparecimento é ADMINISTRATIVO
+# (compareceu/faltou/remarcada + anotação administrativa) — ver
+# AttendanceRecord. NÃO há, por decisão de produto, nenhum campo clínico
+# (diagnóstico, evolução, prontuário).
+#
+# Multi-tenant: toda consulta pertence à psicóloga autenticada (userId do token).
+
+Appointment:
+  type: object
+  description: Consulta agendada na agenda da psicóloga.
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Identificador único da consulta.
+    patientId:
+      type: string
+      format: uuid
+      description: Paciente da consulta.
+    startsAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    durationMinutes:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 480
+      description: Duração da consulta em minutos.
+      examples:
+        - 50
+    recurrence:
+      $ref: "#/WeeklyRecurrence"
+    status:
+      $ref: "#/AppointmentStatus"
+    createdAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+  required:
+    - id
+    - patientId
+    - startsAt
+    - durationMinutes
+    - status
+    - createdAt
+
+AppointmentStatus:
+  type: string
+  description: Situação da consulta na agenda.
+  enum:
+    - agendada
+    - realizada
+    - cancelada
+    - remarcada
+  examples:
+    - "agendada"
+
+WeeklyRecurrence:
+  type: object
+  description: >-
+    Recorrência semanal simples de uma consulta. Ausente/None indica consulta
+    avulsa. A materialização das ocorrências (expandir em instâncias vs. manter
+    como regra) é decisão da API (PSI-024), não deste contrato.
+  properties:
+    weekday:
+      type: string
+      description: Dia da semana da recorrência.
+      enum:
+        - segunda
+        - terca
+        - quarta
+        - quinta
+        - sexta
+        - sabado
+        - domingo
+    interval:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 8
+      default: 1
+      description: >-
+        Intervalo em semanas entre ocorrências (1 = toda semana, 2 = quinzenal).
+    until:
+      $ref: "../common/datetime.yaml#/IsoDate"
+  required:
+    - weekday
+
+AppointmentCreateRequest:
+  type: object
+  description: Payload de agendamento de consulta.
+  properties:
+    patientId:
+      type: string
+      format: uuid
+    startsAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    durationMinutes:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 480
+    recurrence:
+      $ref: "#/WeeklyRecurrence"
+  required:
+    - patientId
+    - startsAt
+    - durationMinutes
+
+AppointmentUpdateRequest:
+  type: object
+  description: >-
+    Remarcação/edição de consulta. Campos opcionais; apenas os presentes mudam.
+  properties:
+    startsAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    durationMinutes:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 480
+    recurrence:
+      $ref: "#/WeeklyRecurrence"
+    status:
+      $ref: "#/AppointmentStatus"
+
+AttendanceRecord:
+  type: object
+  description: >-
+    Registro ADMINISTRATIVO de uma consulta: se o paciente compareceu, faltou
+    ou remarcou, mais uma anotação administrativa livre.
+
+    AUSÊNCIA PROPOSITAL DE DADOS CLÍNICOS: este schema NÃO contém — e não deve
+    receber — campos de diagnóstico, evolução, queixa, conduta ou qualquer
+    informação clínica/de saúde. Ele existe apenas para controle de presença e
+    faturamento. A restrição é uma decisão de produto inviolável.
+  properties:
+    attendance:
+      $ref: "#/AttendanceStatus"
+    administrativeNotes:
+      type: string
+      maxLength: 2000
+      description: >-
+        Anotação ADMINISTRATIVA (ex.: "remarcou por viagem", "faltou sem
+        aviso"). Nunca conteúdo clínico.
+    recordedAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+  required:
+    - attendance
+
+AttendanceStatus:
+  type: string
+  description: Presença administrativa do paciente na consulta.
+  enum:
+    - compareceu
+    - faltou
+    - remarcada
+  examples:
+    - "compareceu"
+
+AppointmentPage:
+  type: object
+  description: Página de consultas.
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/Appointment"
+    meta:
+      $ref: "../common/pagination.yaml#/PageMeta"
+  required:
+    - items
+    - meta

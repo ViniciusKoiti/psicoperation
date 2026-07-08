@@ -1,0 +1,91 @@
+# Schemas do domínio settings (configurações e onboarding da psicóloga).
+#
+# Configurações da conta autenticada: valor padrão de mensalidade, dia de
+# vencimento padrão, parâmetros de juros padrão e fuso horário de exibição.
+# Nenhum dado clínico. Multi-tenant por token.
+
+Settings:
+  type: object
+  description: Configurações da conta da psicóloga.
+  properties:
+    defaultMonthlyFee:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    defaultBillingDay:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 28
+      description: Dia de vencimento padrão para novas mensalidades.
+    defaultInterest:
+      $ref: "../billing/schemas.yaml#/SimpleInterestParams"
+    timezone:
+      type: string
+      description: >-
+        Fuso IANA para exibição (ex.: `America/Sao_Paulo`). O backend sempre
+        armazena/emite em UTC; este campo orienta apenas a apresentação.
+      examples:
+        - "America/Sao_Paulo"
+    onboardingCompletedAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+    updatedAt:
+      $ref: "../common/datetime.yaml#/IsoDateTime"
+  required:
+    - timezone
+
+SettingsUpdateRequest:
+  type: object
+  description: Atualização das configurações. Campos opcionais.
+  properties:
+    defaultMonthlyFee:
+      $ref: "../common/money.yaml#/MoneyBRL"
+    defaultBillingDay:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 28
+    defaultInterest:
+      $ref: "../billing/schemas.yaml#/SimpleInterestParams"
+    timezone:
+      type: string
+
+OnboardingStatus:
+  type: object
+  description: >-
+    Estado do onboarding da psicóloga: os passos concluídos e se o fluxo
+    terminou. Orienta a UI a retomar de onde parou.
+  properties:
+    completed:
+      type: boolean
+      description: Se o onboarding foi concluído.
+    steps:
+      type: array
+      description: Passos do onboarding e sua conclusão.
+      items:
+        $ref: "#/OnboardingStep"
+  required:
+    - completed
+    - steps
+
+OnboardingStep:
+  type: object
+  properties:
+    key:
+      type: string
+      description: "Identificador do passo (ex.: `perfil`, `primeiro-paciente`)."
+      examples:
+        - "perfil"
+    done:
+      type: boolean
+  required:
+    - key
+    - done
+
+OnboardingCompleteRequest:
+  type: object
+  description: Marca um passo do onboarding como concluído.
+  properties:
+    stepKey:
+      type: string
+      description: Passo a marcar como concluído.
+  required:
+    - stepKey

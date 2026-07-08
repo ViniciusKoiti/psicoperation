@@ -1,0 +1,60 @@
+# Path item: /reminders
+get:
+  tags:
+    - reminder
+  operationId: listReminders
+  summary: Lista lembretes
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../../components/common/pagination.yaml#/PageParam"
+    - $ref: "../../components/common/pagination.yaml#/PageSizeParam"
+    - name: patientId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    - name: status
+      in: query
+      required: false
+      schema:
+        $ref: "../../components/reminder/schemas.yaml#/ReminderStatus"
+  responses:
+    "200":
+      description: Página de lembretes.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/reminder/schemas.yaml#/ReminderPage"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+post:
+  tags:
+    - reminder
+  operationId: createReminder
+  summary: Cria um lembrete
+  description: Cria um lembrete (canal email no MVP), opcionalmente vinculado.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/reminder/schemas.yaml#/ReminderCreateRequest"
+  responses:
+    "201":
+      description: Lembrete criado.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/reminder/schemas.yaml#/Reminder"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

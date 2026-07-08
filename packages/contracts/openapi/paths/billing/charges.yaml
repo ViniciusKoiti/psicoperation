@@ -1,0 +1,92 @@
+# Path item: /charges
+get:
+  tags:
+    - billing
+  operationId: listCharges
+  summary: Lista cobranças
+  description: >-
+    Lista paginada de cobranças, com filtros opcionais por paciente,
+    competência e status.
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../../components/common/pagination.yaml#/PageParam"
+    - $ref: "../../components/common/pagination.yaml#/PageSizeParam"
+    - name: patientId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    - name: competence
+      in: query
+      required: false
+      description: Filtra por competência (AAAA-MM).
+      schema:
+        $ref: "../../components/billing/schemas.yaml#/Competence"
+    - name: status
+      in: query
+      required: false
+      schema:
+        $ref: "../../components/billing/schemas.yaml#/ChargeStatus"
+  responses:
+    "200":
+      description: Página de cobranças.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/billing/schemas.yaml#/ChargePage"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+post:
+  tags:
+    - billing
+  operationId: createCharge
+  summary: Emite uma cobrança de mensalidade
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          description: Payload de emissão de cobrança para um paciente/competência.
+          properties:
+            patientId:
+              type: string
+              format: uuid
+            competence:
+              $ref: "../../components/billing/schemas.yaml#/Competence"
+            amount:
+              $ref: "../../components/common/money.yaml#/MoneyBRL"
+            dueDate:
+              $ref: "../../components/common/datetime.yaml#/IsoDate"
+            interest:
+              $ref: "../../components/billing/schemas.yaml#/SimpleInterestParams"
+          required:
+            - patientId
+            - competence
+            - amount
+            - dueDate
+  responses:
+    "201":
+      description: Cobrança emitida.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/billing/schemas.yaml#/Charge"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "409":
+      description: Já existe cobrança para o paciente nessa competência.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../components/common/problem.yaml#/Problem"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

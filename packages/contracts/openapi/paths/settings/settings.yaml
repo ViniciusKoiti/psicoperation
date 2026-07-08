@@ -1,0 +1,45 @@
+# Path item: /settings
+get:
+  tags:
+    - settings
+  operationId: getSettings
+  summary: Obtém as configurações da conta
+  security:
+    - bearerAuth: []
+  responses:
+    "200":
+      description: Configurações.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/settings/schemas.yaml#/Settings"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
+put:
+  tags:
+    - settings
+  operationId: updateSettings
+  summary: Atualiza as configurações da conta
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../../components/settings/schemas.yaml#/SettingsUpdateRequest"
+  responses:
+    "200":
+      description: Configurações atualizadas.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/settings/schemas.yaml#/Settings"
+    "400":
+      $ref: "../../components/common/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"

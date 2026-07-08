@@ -1,0 +1,29 @@
+# Path item: /charges/{chargeId}
+parameters:
+  - name: chargeId
+    in: path
+    required: true
+    description: Identificador da cobrança.
+    schema:
+      type: string
+      format: uuid
+get:
+  tags:
+    - billing
+  operationId: getCharge
+  summary: Obtém uma cobrança
+  security:
+    - bearerAuth: []
+  responses:
+    "200":
+      description: Cobrança.
+      content:
+        application/json:
+          schema:
+            $ref: "../../components/billing/schemas.yaml#/Charge"
+    "401":
+      $ref: "../../components/common/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../../components/common/responses.yaml#/NotFound"
+    "500":
+      $ref: "../../components/common/responses.yaml#/InternalServerError"
