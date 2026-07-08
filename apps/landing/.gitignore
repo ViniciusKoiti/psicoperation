@@ -1,0 +1,8 @@
+# Artefatos de build/ferramentas locais do @psiops/landing
+*.tsbuildinfo
+.next/
+out/
+
+# Playwright
+playwright-report/
+test-results/
