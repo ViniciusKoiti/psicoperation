@@ -57,15 +57,14 @@
  *
  * <h2>Schema das tabelas do Axon</h2>
  *
- * <p>As tabelas acima ainda não têm migration Flyway — {@code
- * apps/api/src/main/resources/db/migration/**} é caminho proibido nesta
- * tarefa (ver {@code tasks/PSI-011.yaml}). A migration definitiva (V2) fica
- * a cargo da PSI-021, que deve rodar antes de qualquer feature de domínio
- * real. Nos testes desta tarefa, o schema é gerado pelo próprio
- * Hibernate/Axon ({@code spring.jpa.hibernate.ddl-auto=update}, sobrescrito
- * localmente via {@code @TestPropertySource} apenas nos testes que precisam
- * das tabelas do Axon — a aplicação continua com {@code ddl-auto: validate}
- * por padrão).
+ * <p>As tabelas acima têm migration Flyway própria desde a PSI-021 ({@code
+ * V2__mvp_domain.sql}), obtida de forma determinística a partir do schema
+ * exportado das próprias entidades JPA do Axon (Hibernate {@code
+ * jakarta.persistence.schema-generation.scripts.action=create}) e transcrita
+ * ajustada às convenções do projeto. Com isso, {@code
+ * spring.jpa.hibernate.ddl-auto: validate} vale tanto em produção quanto em
+ * teste — não há mais nenhum override de teste (a antiga anotação {@code
+ * EphemeralAxonSchema}, que usava {@code ddl-auto=update}, foi removida).
  *
  * <h2>DeadlineManager</h2>
  *

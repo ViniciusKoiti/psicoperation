@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.psiops.api.lead.application.LeadMapper;
 import com.psiops.api.support.ContainersConfig;
-import com.psiops.api.support.EphemeralAxonSchema;
 import com.psiops.contracts.model.Lead;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -21,7 +20,6 @@ import org.springframework.context.annotation.Import;
  */
 @SpringBootTest
 @Import(ContainersConfig.class)
-@EphemeralAxonSchema
 class LeadRepositoryTest {
 
   @Autowired private LeadRepository leadRepository;
