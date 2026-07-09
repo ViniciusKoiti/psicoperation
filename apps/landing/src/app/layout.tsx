@@ -4,6 +4,7 @@ import { DM_Sans, Fraunces, Inter } from "next/font/google";
 
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 import "./globals.css";
 
@@ -43,6 +44,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className={`${dmSans.variable} ${inter.variable} ${fraunces.variable}`}>
       <body className="bg-psi-neutral-50 font-body text-psi-neutral-900 antialiased">
+        {/* Motor de scroll reveal (spec §8.1, PSI-019): não renderiza nada,
+            só arma/observa os elementos `.psi-reveal` de todas as seções. */}
+        <ScrollReveal />
         <Nav />
         {/* Alvo da âncora "#top" (logo da nav), spec §1.1. */}
         <div id="top" />

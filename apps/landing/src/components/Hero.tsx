@@ -41,7 +41,7 @@ const HERO_WASH = [
 /** Coluna esquerda: pill, headline, subheadline, CTAs e prova social. */
 function HeroContent() {
   return (
-    <div>
+    <div className="psi-reveal">
       <Pill dot className="mb-[26px]">
         Feito para psicólogos que trabalham com mensalidade
       </Pill>
@@ -82,7 +82,11 @@ function HeroContent() {
 /** Coluna direita: mockup de dashboard com chips flutuantes (spec §1.2). */
 function HeroMockup() {
   return (
-    <div className="relative" data-testid="hero-mockup">
+    <div
+      className="relative psi-reveal"
+      data-testid="hero-mockup"
+      style={{ transitionDelay: "0.12s" }}
+    >
       <FloatingChip position="top-[-26px] right-[6px]" className="px-[20px] py-[16px]">
         <p className="mb-1 font-display text-[12px] uppercase tracking-[.06em] text-psi-neutral-500">
           Receita do mês

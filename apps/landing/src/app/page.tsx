@@ -1,29 +1,34 @@
+import { ComoFunciona } from "../components/ComoFunciona";
+import { Faq } from "../components/Faq";
+import { FinalCta } from "../components/FinalCta";
+import { Hero } from "../components/Hero";
+import { LeadForm } from "../components/LeadForm";
+import { Problema } from "../components/Problema";
+import { Quote } from "../components/Quote";
+import { Solucao } from "../components/Solucao";
+
 /**
- * Página inicial placeholder (PSI-009): comprova o pipeline Tailwind + tokens
- * do design system e as três famílias tipográficas. As seções reais da
- * landing chegam na PSI-019, a partir de docs/design/landing-page-spec.md.
+ * Composição final da landing (PSI-019): monta as seções intermediárias na
+ * ordem exata da referência (docs/design/landing-page-spec.md §1) — hero,
+ * problema, solução, como funciona, quote, lead form (#lista), FAQ e CTA
+ * final. Nav e footer já envolvem a página via `layout.tsx` (PSI-014).
+ *
+ * Cada seção é um componente autossuficiente entregue por uma tarefa
+ * anterior (Hero: PSI-015; Problema/Solução: PSI-016; Como
+ * funciona/Quote/FAQ: PSI-017; Lead form: PSI-018) — esta página apenas as
+ * compõe, sem alterar sua estrutura interna.
  */
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-6 py-16">
-      <section className="max-w-xl rounded-3xl bg-psi-neutral-0 p-10 shadow-card">
-        <p className="text-sm font-semibold uppercase tracking-widest text-psi-accent-700">
-          Em construção
-        </p>
-        <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-psi-neutral-950">
-          PsiOps
-        </h1>
-        <p className="mt-4 text-lg leading-relaxed text-psi-neutral-700">
-          O financeiro da sua clínica,{" "}
-          <em className="font-serif italic text-psi-primary-700">finalmente em ordem</em>.
-        </p>
-        <p
-          className="mt-8 inline-block rounded-full bg-psi-primary-50 px-4 py-2 text-sm font-medium text-psi-primary-700"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          Landing page completa chega na PSI-019
-        </p>
-      </section>
+    <main>
+      <Hero />
+      <Problema />
+      <Solucao />
+      <ComoFunciona />
+      <Quote />
+      <LeadForm />
+      <Faq />
+      <FinalCta />
     </main>
   );
 }

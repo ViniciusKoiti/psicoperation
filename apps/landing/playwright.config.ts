@@ -6,8 +6,15 @@ const baseURL = `http://localhost:${PORT}`;
 /**
  * Playwright do @psiops/landing. O webServer sobe o app automaticamente
  * (`next dev`); em execução local com o servidor já de pé, ele é reutilizado.
- * Nesta fase (PSI-009) há apenas um smoke spec; os e2e reais chegam na
- * PSI-019. Browsers: `pnpm exec playwright install chromium` (ver README).
+ * A suíte completa (PSI-019, `e2e/landing.spec.ts`) cobre a composição
+ * inteira da página, além do smoke spec da PSI-009. Browsers:
+ * `pnpm exec playwright install chromium` (ver README).
+ *
+ * `reducedMotion: "reduce"` (risco documentado no manifesto PSI-019):
+ * o motor de scroll reveal (`<ScrollReveal>`) respeita
+ * `prefers-reduced-motion` e, quando ativo, nunca arma o estado oculto dos
+ * elementos `.psi-reveal` — evita flakiness de asserções que rodam antes do
+ * IntersectionObserver ou do fallback de ~2600ms revelarem o conteúdo.
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -18,6 +25,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    contextOptions: { reducedMotion: "reduce" },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

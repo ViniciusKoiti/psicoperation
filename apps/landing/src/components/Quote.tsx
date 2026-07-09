@@ -16,7 +16,7 @@ export function Quote() {
       background="var(--psi-primary-50)"
       wrapMaxWidth={860}
     >
-      <div className="psi-quote">
+      <div className="psi-quote psi-reveal">
         <span className="psi-quote__divider" aria-hidden="true" />
         <p className="psi-quote__text">
           “Você cuida das pessoas. A gente cuida do que vem depois da sessão.”
