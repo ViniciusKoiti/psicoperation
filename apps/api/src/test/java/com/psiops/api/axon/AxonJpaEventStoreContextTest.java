@@ -3,7 +3,6 @@ package com.psiops.api.axon;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.psiops.api.support.ContainersConfig;
-import com.psiops.api.support.EphemeralAxonSchema;
 import java.util.UUID;
 import org.axonframework.eventhandling.GenericDomainEventMessage;
 import org.axonframework.eventhandling.tokenstore.TokenStore;
@@ -22,14 +21,12 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Axon Server (não há dependência dele no classpath — connector excluído no
  * pom.xml, {@code axon.axonserver.enabled=false}), e a autoconfiguração
  * registra o event store e o token store JPA embutidos, apontando para o
- * PostgreSQL de teste (Testcontainers). O schema das tabelas do Axon ainda
- * não tem migration Flyway (V2 fica para a PSI-021) — aqui o Hibernate cria o
- * schema em teste (ver {@link EphemeralAxonSchema} e o package-info de
- * {@code com.psiops.api.axon.config}).
+ * PostgreSQL de teste (Testcontainers). O schema das tabelas do Axon é criado
+ * pela migration V2 (PSI-021); o Hibernate roda em {@code ddl-auto: validate}
+ * (mesmo valor de produção, ver package-info de {@code com.psiops.api.axon.config}).
  */
 @SpringBootTest
 @Import(ContainersConfig.class)
-@EphemeralAxonSchema
 class AxonJpaEventStoreContextTest {
 
   @Autowired private EventStorageEngine eventStorageEngine;

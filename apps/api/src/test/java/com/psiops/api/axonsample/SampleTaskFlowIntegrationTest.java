@@ -8,7 +8,6 @@ import com.psiops.api.axonsample.domain.SampleTaskTitleBlankException;
 import com.psiops.api.axonsample.domain.command.CreateSampleTaskCommand;
 import com.psiops.api.axonsample.domain.command.ScheduleSampleTaskReminderCommand;
 import com.psiops.api.support.ContainersConfig;
-import com.psiops.api.support.EphemeralAxonSchema;
 import java.time.Duration;
 import java.util.UUID;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -24,12 +23,12 @@ import org.springframework.context.annotation.Import;
  * {@code QueryGateway}; e o {@code DeadlineManager} configurado agendando e
  * disparando um lembrete de verdade (não o stub do {@code AggregateTestFixture}).
  *
- * <p>Schema efêmero de teste (tabelas do Axon criadas pelo Hibernate) via
- * {@link EphemeralAxonSchema}.
+ * <p>As tabelas do Axon e do agregado exemplo ({@code sample_task_aggregate})
+ * são criadas pela migration V2 (PSI-021); o Hibernate roda em {@code
+ * ddl-auto: validate} (mesmo valor de produção), sem override em teste.
  */
 @SpringBootTest
 @Import(ContainersConfig.class)
-@EphemeralAxonSchema
 class SampleTaskFlowIntegrationTest {
 
   @Autowired private CommandGateway commandGateway;
