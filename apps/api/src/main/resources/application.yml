@@ -35,6 +35,27 @@ management:
       probes:
         enabled: true
 
+# Autenticação stateless JWT (PSI-022, ver com.psiops.api.auth).
+psiops:
+  security:
+    jwt:
+      # Segredo HS256 (mínimo 256 bits / 32 bytes) SEMPRE vem de fora via
+      # JWT_SECRET em produção. O valor abaixo do "${JWT_SECRET:...}" é
+      # default só para dev/test — NUNCA usar em produção (documentado
+      # também em JwtProperties). Trocar por um segredo aleatório real via
+      # variável de ambiente em qualquer ambiente implantado.
+      secret: ${JWT_SECRET:dev-only-insecure-default-secret-troque-em-producao-32-bytes-minimo}
+      # Access token de vida curta (minutos) — enviado a cada requisição.
+      access-token-ttl: 15m
+      # Refresh token de vida mais longa (dias) — trocado a cada uso
+      # (rotação, ver RefreshTokenService), nunca reaproveitado.
+      refresh-token-ttl: 7d
+    rate-limit:
+      login:
+        # Tentativas de login permitidas por janela, por chave (IP + e-mail).
+        capacity: 5
+        window: 1m
+
 # Fundação Axon (PSI-011, ver com.psiops.api.axon.config). Sem Axon Server:
 # o connector já é excluído no pom.xml, e a flag abaixo reforça que a
 # autoconfiguração do Axon não deve tentar abrir uma conexão de rede — com
