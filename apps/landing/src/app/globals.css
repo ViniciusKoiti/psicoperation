@@ -662,3 +662,159 @@
 }
 
 /* end PSI-017 */
+
+/* PSI-018 lead form ------------------------------------------------------
+ * Seção "Lead form" (spec §1.7, `#lista`): card do formulário de lista de
+ * espera + estado de sucesso. Bloco isolado no fim do arquivo para
+ * minimizar conflito de merge com outras seções em desenvolvimento
+ * paralelo (PSI-015/016/017/019). Breakpoint 600px (spec §7/apêndice
+ * responsivo): grid do WhatsApp/e-mail colapsa e o padding do card reduz.
+ */
+
+.psi-lead {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 54px 56px;
+  background: var(--psi-primary-50);
+  border-color: var(--psi-primary-200);
+  border-radius: 26px;
+}
+
+@media (max-width: 600px) {
+  .psi-lead {
+    padding: 36px 24px;
+  }
+}
+
+.psi-lead__header {
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.psi-lead__title {
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--psi-neutral-900);
+  margin: 14px 0 14px;
+}
+
+.psi-lead__subtitle {
+  font-family: var(--font-body);
+  font-size: 17px;
+  color: var(--psi-neutral-600);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.psi-lead__form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.psi-lead__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 600px) {
+  .psi-lead__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.psi-lead__label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 13.5px;
+  color: var(--psi-neutral-700);
+  display: block;
+  margin-bottom: 7px;
+}
+
+.psi-lead__input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--psi-neutral-900);
+  background: var(--psi-neutral-0);
+  border: 1px solid var(--psi-neutral-300);
+  border-radius: 13px;
+  padding: 14px 16px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.psi-lead__input::placeholder {
+  color: var(--psi-neutral-500);
+}
+
+.psi-lead__input:focus {
+  outline: none;
+  border-color: var(--psi-primary-400);
+  box-shadow: 0 0 0 4px var(--psi-primary-100);
+}
+
+/* Estado de erro (adição deliberada fora do protótipo, que só alterava a
+ * borda via JS inline: aqui vira classe + texto de erro associado por
+ * `aria-describedby`, para leitores de tela — acceptance criteria PSI-018
+ * "erros exibidos inline por campo" + "aria-invalid nos erros"). */
+.psi-lead__input--error {
+  border-color: var(--psi-error-medium);
+}
+
+.psi-lead__input--error:focus {
+  border-color: var(--psi-error-medium);
+  box-shadow: 0 0 0 4px var(--psi-error-light);
+}
+
+.psi-lead__error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--psi-error-dark);
+  margin: 6px 0 0;
+}
+
+.psi-lead__note {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--psi-neutral-600);
+  margin: 4px 0 0;
+}
+
+.psi-lead__success {
+  text-align: center;
+  padding: 18px 0;
+}
+
+.psi-lead__success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--psi-success-light);
+  color: var(--psi-success-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.psi-lead__success-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--psi-neutral-900);
+  margin: 0 0 8px;
+}
+
+.psi-lead__success-text {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--psi-neutral-600);
+  margin: 0;
+}
+
+/* end PSI-018 */
