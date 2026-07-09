@@ -125,4 +125,37 @@ public class PatientEntity {
   public OffsetDateTime getCreatedAt() {
     return createdAt;
   }
+
+  // Mutadores usados pelo caso de uso de atualização/arquivamento (PSI-023).
+  // A entidade permanece carregada dentro de uma transação (ver
+  // com.psiops.api.patient.application.PatientService); o dirty-checking do
+  // Hibernate persiste as alterações no commit.
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public void setWhatsapp(String whatsapp) {
+    this.whatsapp = whatsapp;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  public void setMonthlyFeeCents(long monthlyFeeCents) {
+    this.monthlyFeeCents = monthlyFeeCents;
+  }
+
+  public void setBillingDay(int billingDay) {
+    this.billingDay = billingDay;
+  }
+
+  public void setStatus(PatientStatus status) {
+    this.status = status;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
+  }
 }
