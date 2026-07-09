@@ -11,8 +11,8 @@ const EMPTY_VALUES: RegisterRequest = { name: "", email: "", password: "" };
 
 /**
  * Rota pública `/registrar`: cria a conta da psicóloga. Conforme o contrato,
- * `/auth/register` já inicia a sessão — sucesso aqui leva direto ao app
- * (sem tela intermediária de confirmação).
+ * `/auth/register` já inicia a sessão — sucesso aqui leva ao onboarding
+ * (PSI-031), que por sua vez leva ao dashboard ao ser concluído ou pulado.
  */
 export function RegisterPage() {
   const { register } = useSession();
@@ -34,7 +34,7 @@ export function RegisterPage() {
     setSubmitting(true);
     try {
       await register(values);
-      navigate("/", { replace: true });
+      navigate("/onboarding", { replace: true });
     } catch (error) {
       setFormError(
         error instanceof AuthError && error.status === 409

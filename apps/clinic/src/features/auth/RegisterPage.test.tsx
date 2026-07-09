@@ -17,7 +17,7 @@ function renderRegister(sessionOverrides?: Partial<SessionContextValue>) {
         <MemoryRouter initialEntries={["/registrar"]}>
           <Routes>
             <Route path="/registrar" element={<RegisterPage />} />
-            <Route path="/" element={<div>Home protegida</div>} />
+            <Route path="/onboarding" element={<div>Onboarding</div>} />
           </Routes>
         </MemoryRouter>
       </SessionContext.Provider>
@@ -63,12 +63,12 @@ describe("RegisterPage", () => {
     expect(sessionValue.register).not.toHaveBeenCalled();
   });
 
-  it("registro com sucesso já inicia a sessão e navega para a home", async () => {
+  it("registro com sucesso já inicia a sessão e navega para o onboarding", async () => {
     renderRegister();
 
     fillAndSubmit("Ana Beatriz Souza", "nova@exemplo.com.br", "SenhaForte123");
 
-    expect(await screen.findByText("Home protegida")).toBeInTheDocument();
+    expect(await screen.findByText("Onboarding")).toBeInTheDocument();
   });
 
   it("e-mail já cadastrado mostra mensagem de erro e não navega", async () => {
