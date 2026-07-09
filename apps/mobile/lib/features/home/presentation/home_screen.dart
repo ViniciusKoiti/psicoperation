@@ -11,9 +11,13 @@ import '../state/home_controller.dart';
 /// perfil vindo do adapter (no dev, o mock em memória) usando o modelo de
 /// contrato `User`. As features de domínio reais chegam depois deste scaffold.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.repository});
+  const HomeScreen({super.key, required this.repository, required this.onLogout});
 
   final ProfileRepository repository;
+
+  /// Encerra a sessão (shell de autenticação, PSI-040). O redirect do
+  /// `go_router` leva a usuária de volta ao login automaticamente.
+  final Future<void> Function() onLogout;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -40,7 +44,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('PsiOps')),
+      appBar: AppBar(
+        title: const Text('PsiOps'),
+        actions: [
+          IconButton(
+            key: const Key('home-logout-button'),
+            tooltip: 'Sair',
+            icon: const Icon(Icons.logout),
+            onPressed: () => widget.onLogout(),
+          ),
+        ],
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
