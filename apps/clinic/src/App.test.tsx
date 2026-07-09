@@ -1,19 +1,28 @@
 import { MantineProvider } from "@mantine/core";
 import { psiopsTheme } from "@psiops/ui/mantine";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { SEED_USER_CREDENTIALS } from "./adapters/auth";
 import { App } from "./App";
 
 describe("App", () => {
-  it("renderiza o shell da rota protegida por padrão (sem crashar)", async () => {
+  it("exige login antes do shell protegido e retoma a rota após autenticar (composição real: SessionProvider + MockAuthAdapter)", async () => {
     render(
       <MantineProvider theme={psiopsTheme}>
         <App />
       </MantineProvider>,
     );
 
-    expect(screen.getByTestId("app-topbar")).toBeInTheDocument();
+    // Sem sessão: a rota "/" (protegida) redireciona para /login.
+    expect(await screen.findByRole("heading", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.queryByTestId("app-sidebar")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("E-mail", { exact: false }), { target: { value: SEED_USER_CREDENTIALS.email } });
+    fireEvent.change(screen.getByLabelText("Senha", { exact: false }), { target: { value: SEED_USER_CREDENTIALS.password } });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByTestId("app-topbar")).toBeInTheDocument();
     expect(screen.getByTestId("app-sidebar")).toBeInTheDocument();
 
     // Aguarda o carregamento assíncrono do dashboard (MockPatientsAdapter)
