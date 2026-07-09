@@ -4,20 +4,34 @@ import '../../../app/theme.dart';
 import '../data/profile_repository.dart';
 import '../state/home_controller.dart';
 
-/// Tela inicial placeholder do app companion (PSI-013).
+/// Tela inicial do app companion (PSI-013), ponto de entrada para as duas
+/// telas centrais do dia a dia entregues em PSI-041: o dashboard do dia e a
+/// agenda de consultas.
 ///
 /// Demonstra o padrão por camadas da feature: apresentação ([HomeScreen]),
 /// estado ([HomeController]) e dados ([ProfileRepository]) separados. Exibe o
 /// perfil vindo do adapter (no dev, o mock em memória) usando o modelo de
-/// contrato `User`. As features de domínio reais chegam depois deste scaffold.
+/// contrato `User`.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.repository, required this.onLogout});
+  const HomeScreen({
+    super.key,
+    required this.repository,
+    required this.onLogout,
+    this.onOpenDashboard,
+    this.onOpenAgenda,
+  });
 
   final ProfileRepository repository;
 
   /// Encerra a sessão (shell de autenticação, PSI-040). O redirect do
   /// `go_router` leva a usuária de volta ao login automaticamente.
   final Future<void> Function() onLogout;
+
+  /// Abre o dashboard do dia (PSI-041). `null` esconde o atalho.
+  final VoidCallback? onOpenDashboard;
+
+  /// Abre a agenda de consultas (PSI-041). `null` esconde o atalho.
+  final VoidCallback? onOpenAgenda;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -86,6 +100,25 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: colors.primary,
                       ),
                     ),
+                    if (widget.onOpenDashboard != null || widget.onOpenAgenda != null) ...[
+                      const SizedBox(height: 32),
+                      if (widget.onOpenDashboard != null)
+                        FilledButton.icon(
+                          key: const Key('home-nav-dashboard-button'),
+                          onPressed: widget.onOpenDashboard,
+                          icon: const Icon(Icons.today_outlined),
+                          label: const Text('Dashboard do dia'),
+                        ),
+                      if (widget.onOpenAgenda != null) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          key: const Key('home-nav-agenda-button'),
+                          onPressed: widget.onOpenAgenda,
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          label: const Text('Agenda'),
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               };

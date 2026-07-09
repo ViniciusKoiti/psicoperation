@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/agenda/data/appointment_adapter.dart';
+import '../features/agenda/data/patient_lookup_adapter.dart';
+import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/state/session_controller.dart';
+import '../features/dashboard/data/charge_adapter.dart';
+import '../features/dashboard/data/task_adapter.dart';
+import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/home/data/profile_repository.dart';
 import '../features/home/presentation/home_screen.dart';
 
@@ -22,6 +28,15 @@ abstract final class Routes {
 
   static const String home = 'home';
   static const String homePath = '/';
+
+  /// Dashboard do dia (PSI-041) — próximas consultas, pendências financeiras
+  /// e tarefas do dia.
+  static const String dashboard = 'dashboard';
+  static const String dashboardPath = '/hoje';
+
+  /// Agenda (PSI-041) — visões diária/semanal e gestão de consultas.
+  static const String agenda = 'agenda';
+  static const String agendaPath = '/agenda';
 }
 
 /// Configuração de navegação com go_router: shell de autenticação (splash,
@@ -37,10 +52,16 @@ abstract final class Routes {
 /// - `authenticated`: tira a usuária da splash/login/registro, indo para a
 ///   rota de destino preservada (ou para a home).
 ///
-/// O [ProfileRepository] é injetado (o entrypoint escolhe mock ou real),
+/// Os adapters ([ProfileRepository], [AppointmentAdapter],
+/// [PatientLookupAdapter], [ChargeAdapter], [TaskAdapter]) são injetados (o
+/// entrypoint escolhe mock ou real por ambiente — PSI-040/PSI-041),
 /// mantendo o router agnóstico ao ambiente.
 GoRouter buildRouter({
   required ProfileRepository profileRepository,
+  required AppointmentAdapter appointmentAdapter,
+  required PatientLookupAdapter patientLookupAdapter,
+  required ChargeAdapter chargeAdapter,
+  required TaskAdapter taskAdapter,
   required SessionController session,
 }) {
   return GoRouter(
@@ -69,6 +90,27 @@ GoRouter buildRouter({
         builder: (context, state) => HomeScreen(
           repository: profileRepository,
           onLogout: session.logout,
+          onOpenDashboard: () => context.goNamed(Routes.dashboard),
+          onOpenAgenda: () => context.goNamed(Routes.agenda),
+        ),
+      ),
+      GoRoute(
+        path: Routes.dashboardPath,
+        name: Routes.dashboard,
+        builder: (context, state) => DashboardScreen(
+          appointmentAdapter: appointmentAdapter,
+          chargeAdapter: chargeAdapter,
+          taskAdapter: taskAdapter,
+          patientLookupAdapter: patientLookupAdapter,
+          onOpenAgenda: () => context.goNamed(Routes.agenda),
+        ),
+      ),
+      GoRoute(
+        path: Routes.agendaPath,
+        name: Routes.agenda,
+        builder: (context, state) => AgendaScreen(
+          appointmentAdapter: appointmentAdapter,
+          patientLookupAdapter: patientLookupAdapter,
         ),
       ),
     ],

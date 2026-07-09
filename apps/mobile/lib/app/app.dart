@@ -3,10 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/agenda/data/appointment_adapter.dart';
+import '../features/agenda/data/http_appointment_adapter.dart';
+import '../features/agenda/data/http_patient_lookup_adapter.dart';
+import '../features/agenda/data/in_memory_appointment_adapter.dart';
+import '../features/agenda/data/patient_lookup_adapter.dart';
 import '../features/auth/data/auth_adapter.dart';
 import '../features/auth/data/http_auth_adapter.dart';
 import '../features/auth/data/in_memory_auth_adapter.dart';
 import '../features/auth/state/session_controller.dart';
+import '../features/dashboard/data/charge_adapter.dart';
+import '../features/dashboard/data/http_charge_adapter.dart';
+import '../features/dashboard/data/http_task_adapter.dart';
+import '../features/dashboard/data/task_adapter.dart';
 import '../features/home/data/profile_repository.dart';
 import 'env.dart';
 import 'router.dart';
@@ -36,6 +45,10 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
   );
   late final GoRouter _router = buildRouter(
     profileRepository: _profileRepositoryFor(widget.environment),
+    appointmentAdapter: _appointmentAdapterFor(widget.environment),
+    patientLookupAdapter: _patientLookupAdapterFor(widget.environment),
+    chargeAdapter: _chargeAdapterFor(widget.environment),
+    taskAdapter: _taskAdapterFor(widget.environment),
     session: _session,
   );
 
@@ -76,6 +89,38 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
       'Adapter real de perfil ainda não implementado (ver PSI-045). '
       'Ambiente ${environment.name} não é suportado neste scaffold.',
     );
+  }
+
+  /// Seleciona o `AppointmentAdapter` por ambiente (PSI-041, mesmo padrão de
+  /// [_authAdapterFor]): mock em memória por padrão em dev/test; client HTTP
+  /// real (implementado e compilável, mas não exercitado contra a API nesta
+  /// tarefa — PSI-045) em produção.
+  static AppointmentAdapter _appointmentAdapterFor(AppEnvironment environment) {
+    if (environment.usesMocks) {
+      return InMemoryAppointmentAdapter();
+    }
+    return HttpAppointmentAdapter();
+  }
+
+  static PatientLookupAdapter _patientLookupAdapterFor(AppEnvironment environment) {
+    if (environment.usesMocks) {
+      return InMemoryPatientLookupAdapter();
+    }
+    return HttpPatientLookupAdapter();
+  }
+
+  static ChargeAdapter _chargeAdapterFor(AppEnvironment environment) {
+    if (environment.usesMocks) {
+      return InMemoryChargeAdapter();
+    }
+    return HttpChargeAdapter();
+  }
+
+  static TaskAdapter _taskAdapterFor(AppEnvironment environment) {
+    if (environment.usesMocks) {
+      return InMemoryTaskAdapter();
+    }
+    return HttpTaskAdapter();
   }
 
   @override
