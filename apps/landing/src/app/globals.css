@@ -486,3 +486,179 @@
 }
 
 /* end PSI-016 */
+
+/* PSI-017 como funciona / quote / faq --------------------------------------
+ * Seções "Como funciona" (spec §1.5), "Quote" (spec §1.6) e "FAQ" (spec
+ * §1.8). Bloco isolado no fim do arquivo para minimizar conflito de merge
+ * com outras seções em desenvolvimento paralelo (PSI-018/019). Breakpoint
+ * principal 920px (grid) e 600px (tipografia/padding), spec §7.
+ */
+
+/* Como funciona (#como, spec §1.5) --------------------------------------- */
+
+.psi-como__header {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 60px;
+}
+
+.psi-como__h2 {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--psi-neutral-900);
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .psi-como__h2 {
+    font-size: 32px;
+  }
+}
+
+.psi-como__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+@media (max-width: 920px) {
+  .psi-como__grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+.psi-como__step {
+  padding: 8px 12px;
+}
+
+.psi-como__number {
+  display: block;
+  font-family: var(--font-serif);
+  font-style: normal;
+  font-weight: 500;
+  font-size: 60px;
+  line-height: 1;
+  color: var(--psi-primary-300);
+  margin-bottom: 18px;
+}
+
+.psi-como__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  color: var(--psi-neutral-900);
+  margin: 0 0 10px;
+}
+
+.psi-como__text {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--psi-neutral-600);
+  margin: 0;
+}
+
+/* Quote (spec §1.6) ------------------------------------------------------ */
+
+.psi-quote {
+  text-align: center;
+}
+
+.psi-quote__divider {
+  display: block;
+  width: 64px;
+  height: 1px;
+  background: var(--psi-accent-300);
+  margin: 0 auto 40px;
+}
+
+.psi-quote__divider--bottom {
+  margin: 40px auto 0;
+}
+
+.psi-quote__text {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-size: 42px;
+  line-height: 1.32;
+  color: var(--psi-primary-800);
+  margin: 0;
+  text-wrap: balance;
+}
+
+@media (max-width: 600px) {
+  .psi-quote__text {
+    font-size: 26px;
+    line-height: 1.4;
+  }
+}
+
+/* FAQ (#faq, spec §1.8/§8.3) ---------------------------------------------- */
+
+.psi-faq__header {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.psi-faq__h2 {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--psi-neutral-900);
+  margin-top: 16px;
+}
+
+.psi-faq__item {
+  border-bottom: 1px solid var(--psi-neutral-200);
+}
+
+.psi-faq__q {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 26px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--psi-neutral-900);
+}
+
+@media (max-width: 600px) {
+  .psi-faq__q {
+    font-size: 16px;
+    padding: 20px 4px;
+  }
+}
+
+.psi-faq__chev {
+  flex: none;
+  color: var(--psi-primary-500);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.psi-faq__chev--open {
+  transform: rotate(45deg);
+}
+
+.psi-faq__a {
+  overflow: hidden;
+  color: var(--psi-neutral-600);
+  font-size: 16.5px;
+  transition:
+    max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease;
+}
+
+.psi-faq__a-inner {
+  padding: 0 4px 26px;
+  max-width: 760px;
+}
+
+/* end PSI-017 */
