@@ -16,10 +16,12 @@
  *   <li>{@code persistence} — entidades JPA e repositórios Spring Data.</li>
  * </ul>
  *
- * <p>Neste scaffold só existem as camadas efetivamente exercitadas
- * ({@code persistence} nos três módulos e {@code application} no módulo
- * {@code lead}); as demais surgem à medida que as features chegam. Não há
- * endpoints de negócio ainda — apenas {@code /actuator/health}.
+ * <p>Neste scaffold só existem as camadas efetivamente exercitadas em cada
+ * módulo; as demais surgem à medida que as features chegam. O módulo
+ * {@code auth} (PSI-022) é o primeiro a expor as quatro camadas, incluindo os
+ * primeiros endpoints de negócio ({@code /auth/register}, {@code /auth/login},
+ * {@code /auth/refresh}, {@code /auth/session}), além de
+ * {@code /actuator/health}.
  *
  * <p>Contratos: os DTOs de API vêm de {@code com.psiops.contracts.model}
  * (codegen de {@code packages/contracts}); nunca redefinidos aqui.

@@ -28,6 +28,13 @@
          Server (ver exclusão de axon-server-connector abaixo e
          axon.axonserver.enabled=false em application.yml). -->
     <axon.version>4.13.3</axon.version>
+    <!-- Autenticação JWT (PSI-022). jjwt é a lib convencional do ecossistema
+         Spring para emitir/validar JWT sem puxar o resource-server OAuth2
+         inteiro (overkill para um único emissor/validador simétrico). -->
+    <jjwt.version>0.12.6</jjwt.version>
+    <!-- Rate-limit em memória do login (PSI-022). Módulo "-core" puro, sem
+         backend de cache distribuído — adequado ao MVP single-instance. -->
+    <bucket4j.version>8.14.0</bucket4j.version>
   </properties>
 
   <dependencyManagement>
@@ -78,6 +85,40 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- Segurança stateless + JWT (PSI-022). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <!-- Habilita @Valid nos DTOs de contrato (RegisterRequest/LoginRequest/
+         RefreshTokenRequest já trazem as anotações jakarta.validation). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+      <version>${jjwt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+      <version>${jjwt.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-jackson</artifactId>
+      <version>${jjwt.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- Rate-limit em memória do login (ver com.psiops.api.auth.application.LoginRateLimiter). -->
+    <dependency>
+      <groupId>com.bucket4j</groupId>
+      <artifactId>bucket4j_jdk11-core</artifactId>
+      <version>${bucket4j.version}</version>
+    </dependency>
 
     <!-- Migrations sequenciais e imutáveis (ADR 0009). Flyway 10 exige o
          módulo específico do PostgreSQL. -->
@@ -100,6 +141,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
