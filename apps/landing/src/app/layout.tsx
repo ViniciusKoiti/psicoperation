@@ -22,9 +22,13 @@ const inter = Inter({
   display: "swap",
 });
 
+// Estilo "italic" (citação, spec §1.6) e "normal" (números do "Como
+// funciona", spec §1.5 — `.serif` com `font-style: normal; font-weight:
+// 500`, PSI-017) sob a mesma variável: o CSS escolhe a face correta via
+// `font-style`, sem precisar de uma segunda variável.
 const fraunces = Fraunces({
   subsets: ["latin"],
-  style: "italic",
+  style: ["italic", "normal"],
   variable: "--font-serif",
   display: "swap",
 });
