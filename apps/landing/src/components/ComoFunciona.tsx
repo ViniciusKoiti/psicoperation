@@ -42,7 +42,7 @@ export function ComoFunciona() {
         {STEPS.map((step, index) => (
           <div
             key={step.number}
-            className="psi-como__step"
+            className="psi-como__step psi-reveal"
             style={{ transitionDelay: index === 0 ? undefined : `${index * 0.08}s` }}
           >
             <span className="psi-como__number">{step.number}</span>

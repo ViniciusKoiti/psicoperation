@@ -73,7 +73,7 @@ export function FaqAccordion({ items }: FaqAccordionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="psi-faq__list">
+    <div className="psi-faq__list psi-reveal">
       {items.map((item, index) => (
         <FaqItem
           key={item.question}

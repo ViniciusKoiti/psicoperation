@@ -83,7 +83,7 @@ export function LeadForm() {
 
   return (
     <Section id="lista" data-testid="lead-form-section">
-      <Card shadow="soft" className="psi-lead">
+      <Card shadow="soft" className="psi-lead psi-reveal">
         {status === "success" ? (
           <LeadSuccess />
         ) : (

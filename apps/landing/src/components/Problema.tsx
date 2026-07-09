@@ -109,7 +109,7 @@ const CARDS: ProblemaCardData[] = [
 export function Problema() {
   return (
     <Section id="problema">
-      <div className="psi-problema__header">
+      <div className="psi-problema__header psi-reveal">
         <Eyebrow>A realidade de quem atende sozinho</Eyebrow>
         <h2 className="psi-problema__h2">Você já passou por isso?</h2>
       </div>
@@ -118,7 +118,7 @@ export function Problema() {
           <Card
             key={card.title}
             lift
-            className="psi-problema__card"
+            className="psi-problema__card psi-reveal"
             style={{ transitionDelay: index === 0 ? undefined : `${index * 0.08}s` }}
           >
             <span

@@ -66,5 +66,9 @@ export function FeatureRow({
     </div>
   );
 
-  return <div className="psi-feature">{reverse ? [content, visualEl] : [visualEl, content]}</div>;
+  return (
+    <div className="psi-feature psi-reveal">
+      {reverse ? [content, visualEl] : [visualEl, content]}
+    </div>
+  );
 }
