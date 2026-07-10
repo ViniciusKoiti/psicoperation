@@ -10,12 +10,15 @@ import '../features/auth/state/session_controller.dart';
 import '../features/dashboard/data/charge_adapter.dart';
 import '../features/dashboard/data/task_adapter.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
+import '../features/finance/presentation/finance_screen.dart';
 import '../features/home/data/profile_repository.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/patients/data/patients_adapter.dart';
 import '../features/patients/presentation/patient_detail_screen.dart';
 import '../features/patients/presentation/patient_form_screen.dart';
 import '../features/patients/presentation/patients_list_screen.dart';
+import '../features/settings/data/settings_adapter.dart';
+import '../features/settings/presentation/settings_screen.dart';
 
 /// Nomes e caminhos de rota do app (evita strings mágicas espalhadas na
 /// navegação).
@@ -55,6 +58,16 @@ abstract final class Routes {
   /// separada — ver `PatientDetailScreen._openEdit`).
   static const String patientDetail = 'paciente-detalhe';
   static const String patientDetailPath = '/pacientes/:patientId';
+
+  /// Financeiro (PSI-043) — mensalidades do mês por status, marcar como
+  /// paga e gerar mensalidades do mês.
+  static const String finance = 'financeiro';
+  static const String financePath = '/financeiro';
+
+  /// Configurações (PSI-043) — perfil, valor padrão de sessão, preferências
+  /// de lembrete e logout.
+  static const String settings = 'configuracoes';
+  static const String settingsPath = '/configuracoes';
 }
 
 /// Configuração de navegação com go_router: shell de autenticação (splash,
@@ -71,15 +84,17 @@ abstract final class Routes {
 ///   rota de destino preservada (ou para a home).
 ///
 /// Os adapters ([ProfileRepository], [AppointmentAdapter],
-/// [PatientsAdapter], [ChargeAdapter], [TaskAdapter]) são injetados (o
-/// entrypoint escolhe mock ou real por ambiente — PSI-040/PSI-041/PSI-042),
-/// mantendo o router agnóstico ao ambiente.
+/// [PatientsAdapter], [ChargeAdapter], [TaskAdapter], [SettingsAdapter]) são
+/// injetados (o entrypoint escolhe mock ou real por ambiente —
+/// PSI-040/PSI-041/PSI-042/PSI-043), mantendo o router agnóstico ao
+/// ambiente.
 GoRouter buildRouter({
   required ProfileRepository profileRepository,
   required AppointmentAdapter appointmentAdapter,
   required PatientsAdapter patientsAdapter,
   required ChargeAdapter chargeAdapter,
   required TaskAdapter taskAdapter,
+  required SettingsAdapter settingsAdapter,
   required SessionController session,
 }) {
   return GoRouter(
@@ -111,6 +126,8 @@ GoRouter buildRouter({
           onOpenDashboard: () => context.goNamed(Routes.dashboard),
           onOpenAgenda: () => context.goNamed(Routes.agenda),
           onOpenPatients: () => context.goNamed(Routes.patients),
+          onOpenFinance: () => context.goNamed(Routes.finance),
+          onOpenSettings: () => context.goNamed(Routes.settings),
         ),
       ),
       GoRoute(
@@ -150,6 +167,23 @@ GoRouter buildRouter({
           appointmentAdapter: appointmentAdapter,
           chargeAdapter: chargeAdapter,
           patientId: state.pathParameters['patientId']!,
+        ),
+      ),
+      GoRoute(
+        path: Routes.financePath,
+        name: Routes.finance,
+        builder: (context, state) => FinanceScreen(
+          chargeAdapter: chargeAdapter,
+          patientsAdapter: patientsAdapter,
+        ),
+      ),
+      GoRoute(
+        path: Routes.settingsPath,
+        name: Routes.settings,
+        builder: (context, state) => SettingsScreen(
+          profileRepository: profileRepository,
+          settingsAdapter: settingsAdapter,
+          onLogout: session.logout,
         ),
       ),
     ],

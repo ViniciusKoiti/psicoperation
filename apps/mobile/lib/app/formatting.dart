@@ -43,6 +43,45 @@ DateTime startOfWeek(DateTime date) {
   return day.subtract(Duration(days: day.weekday - DateTime.monday));
 }
 
+String _four(int n) => n.toString().padLeft(4, '0');
+
+/// Formata um mês/ano como a competência `AAAA-MM` usada pelo contrato de
+/// cobranças (`Charge.competence`, `CreateChargeRequest.competence`) — ver
+/// `packages/contracts/openapi/components/billing/schemas.yaml#/Competence`.
+/// Só os componentes de ano/mês de [month] importam (o dia é ignorado).
+String competenceOf(DateTime month) => '${_four(month.year)}-${_two(month.month)}';
+
+/// Mês civil imediatamente anterior ao de [month] (mesmo dia 1, sem
+/// depender do número de dias do mês anterior) — usado pela navegação entre
+/// meses da tela financeira.
+DateTime previousMonth(DateTime month) =>
+    month.month == 1 ? DateTime(month.year - 1, 12, 1) : DateTime(month.year, month.month - 1, 1);
+
+/// Mês civil imediatamente seguinte ao de [month] — contraparte de
+/// [previousMonth].
+DateTime nextMonth(DateTime month) =>
+    month.month == 12 ? DateTime(month.year + 1, 1, 1) : DateTime(month.year, month.month + 1, 1);
+
+const List<String> _monthLabelsPtBr = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
+
+/// Rótulo pt-BR de um mês/ano (ex.: `"julho de 2026"`) — usado no cabeçalho
+/// de navegação mensal da tela financeira. Tabela fixa (mesma justificativa
+/// de não usar `intl` documentada no topo deste arquivo).
+String monthLabelPtBr(DateTime month) => '${_monthLabelsPtBr[month.month - 1]} de ${month.year}';
+
 const List<String> _weekdayLabelsShort = [
   'Seg',
   'Ter',
@@ -106,6 +145,16 @@ String chargeStatusLabel(ChargeStatus status) {
   if (status == ChargeStatus.pendente) return 'Pendente';
   if (status == ChargeStatus.atrasada) return 'Atrasada';
   return status.value;
+}
+
+/// Rótulo pt-BR de [PaymentMethod] para exibição na UI.
+String paymentMethodLabel(PaymentMethod method) {
+  if (method == PaymentMethod.pix) return 'Pix';
+  if (method == PaymentMethod.dinheiro) return 'Dinheiro';
+  if (method == PaymentMethod.transferencia) return 'Transferência';
+  if (method == PaymentMethod.cartao) return 'Cartão';
+  if (method == PaymentMethod.outro) return 'Outro';
+  return method.value;
 }
 
 /// Rótulo pt-BR de [PatientStatus] para exibição na UI.

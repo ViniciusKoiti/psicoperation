@@ -17,6 +17,8 @@ import '../features/dashboard/data/task_adapter.dart';
 import '../features/home/data/profile_repository.dart';
 import '../features/patients/data/http_patients_adapter.dart';
 import '../features/patients/data/patients_adapter.dart';
+import '../features/settings/data/http_settings_adapter.dart';
+import '../features/settings/data/settings_adapter.dart';
 import 'env.dart';
 import 'router.dart';
 import 'theme.dart';
@@ -49,6 +51,7 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
     patientsAdapter: _patientsAdapterFor(widget.environment),
     chargeAdapter: _chargeAdapterFor(widget.environment),
     taskAdapter: _taskAdapterFor(widget.environment),
+    settingsAdapter: _settingsAdapterFor(widget.environment),
     session: _session,
   );
 
@@ -80,7 +83,7 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
 
   static ProfileRepository _profileRepositoryFor(AppEnvironment environment) {
     if (environment.usesMocks) {
-      return const InMemoryProfileRepository();
+      return InMemoryProfileRepository();
     }
     // Adapter real (HTTP contra a API) ainda não implementado neste scaffold
     // — chega na integração mobile (PSI-045). Falhar explícito impede que o
@@ -128,6 +131,17 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
       return InMemoryTaskAdapter();
     }
     return HttpTaskAdapter();
+  }
+
+  /// Seleciona o `SettingsAdapter` por ambiente (PSI-043, mesmo padrão de
+  /// [_authAdapterFor]): mock em memória por padrão em dev/test; client HTTP
+  /// real (implementado e compilável, mas não exercitado contra a API nesta
+  /// tarefa — PSI-045) em produção.
+  static SettingsAdapter _settingsAdapterFor(AppEnvironment environment) {
+    if (environment.usesMocks) {
+      return InMemorySettingsAdapter();
+    }
+    return HttpSettingsAdapter();
   }
 
   @override
