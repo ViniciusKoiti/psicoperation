@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import {
-  appointmentsReadAdapter as defaultAppointmentsAdapter,
+  agendaAdapter as defaultAppointmentsAdapter,
   type AppointmentHistoryEntry,
   type AppointmentsReadAdapter,
 } from "../../adapters/appointments";
@@ -50,7 +50,12 @@ interface LocationBackState {
  *   `PatientForm`/`PatientFormPage` da PSI-033 (`/pacientes/:id/editar`) —
  *   nenhum formulário é recriado aqui;
  * - Histórico de consultas: `AppointmentsReadAdapter.listAppointmentsByPatient`,
- *   ordenado da mais recente para a mais antiga (`sortAppointmentsDescending`);
+ *   ordenado da mais recente para a mais antiga (`sortAppointmentsDescending`).
+ *   Desde a PSI-035, quem implementa essa leitura em produção é o
+ *   `AgendaAdapter` (agenda completa) — a instância padrão injetada aqui é
+ *   `agendaAdapter`, mas o tipo do prop continua `AppointmentsReadAdapter`
+ *   (o subconjunto que esta tela realmente usa), sem nenhuma mudança nesta
+ *   página;
  * - Registros administrativos: mesma fonte de consultas, filtrada para as
  *   que já têm `attendance` lançado (`hasAttendanceRecord`) — SOMENTE
  *   LEITURA (criação/edição é PSI-036, fora de escopo aqui);

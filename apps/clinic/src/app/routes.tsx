@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { ProtectedLayout } from "../components/layout/ProtectedLayout";
+import { AgendaPage } from "../features/agenda/AgendaPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
@@ -27,6 +28,10 @@ import { AuthGuard } from "./AuthGuard";
  * da lista — a edição continua em `/pacientes/:patientId/editar`, reutilizada
  * pelo detalhe via link (não há conflito de rota: react-router prioriza o
  * segmento estático "editar" sobre `:patientId` sozinho).
+ *
+ * `/agenda` (PSI-035): visões semanal e diária de consultas (criar,
+ * remarcar, cancelar, série recorrente semanal simples), também dentro do
+ * shell padrão.
  */
 export function AppRoutes() {
   return (
@@ -37,6 +42,7 @@ export function AppRoutes() {
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route element={<ProtectedLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/pacientes" element={<PatientsListPage />} />
           <Route path="/pacientes/novo" element={<PatientFormPage />} />
           <Route path="/pacientes/:patientId/editar" element={<PatientFormPage />} />
