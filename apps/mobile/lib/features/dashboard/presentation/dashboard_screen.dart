@@ -3,7 +3,7 @@ import 'package:psiops_contracts/api.dart';
 
 import '../../../app/formatting.dart';
 import '../../agenda/data/appointment_adapter.dart';
-import '../../agenda/data/patient_lookup_adapter.dart';
+import '../../patients/data/patients_adapter.dart';
 import '../data/charge_adapter.dart';
 import '../data/task_adapter.dart';
 import '../state/dashboard_controller.dart';
@@ -21,7 +21,7 @@ class DashboardScreen extends StatefulWidget {
     required this.appointmentAdapter,
     required this.chargeAdapter,
     required this.taskAdapter,
-    required this.patientLookupAdapter,
+    required this.patientsAdapter,
     this.onOpenAgenda,
     this.now,
   });
@@ -29,7 +29,7 @@ class DashboardScreen extends StatefulWidget {
   final AppointmentAdapter appointmentAdapter;
   final ChargeAdapter chargeAdapter;
   final TaskAdapter taskAdapter;
-  final PatientLookupAdapter patientLookupAdapter;
+  final PatientsAdapter patientsAdapter;
 
   /// Acionado pelo botão "Ver agenda completa" — a navegação em si é
   /// responsabilidade de quem monta a tela (mantém este widget agnóstico ao
@@ -50,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     widget.appointmentAdapter,
     widget.chargeAdapter,
     widget.taskAdapter,
-    widget.patientLookupAdapter,
+    widget.patientsAdapter,
     now: widget.now,
   );
 

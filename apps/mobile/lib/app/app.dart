@@ -5,9 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/agenda/data/appointment_adapter.dart';
 import '../features/agenda/data/http_appointment_adapter.dart';
-import '../features/agenda/data/http_patient_lookup_adapter.dart';
 import '../features/agenda/data/in_memory_appointment_adapter.dart';
-import '../features/agenda/data/patient_lookup_adapter.dart';
 import '../features/auth/data/auth_adapter.dart';
 import '../features/auth/data/http_auth_adapter.dart';
 import '../features/auth/data/in_memory_auth_adapter.dart';
@@ -17,6 +15,8 @@ import '../features/dashboard/data/http_charge_adapter.dart';
 import '../features/dashboard/data/http_task_adapter.dart';
 import '../features/dashboard/data/task_adapter.dart';
 import '../features/home/data/profile_repository.dart';
+import '../features/patients/data/http_patients_adapter.dart';
+import '../features/patients/data/patients_adapter.dart';
 import 'env.dart';
 import 'router.dart';
 import 'theme.dart';
@@ -46,7 +46,7 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
   late final GoRouter _router = buildRouter(
     profileRepository: _profileRepositoryFor(widget.environment),
     appointmentAdapter: _appointmentAdapterFor(widget.environment),
-    patientLookupAdapter: _patientLookupAdapterFor(widget.environment),
+    patientsAdapter: _patientsAdapterFor(widget.environment),
     chargeAdapter: _chargeAdapterFor(widget.environment),
     taskAdapter: _taskAdapterFor(widget.environment),
     session: _session,
@@ -102,11 +102,18 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
     return HttpAppointmentAdapter();
   }
 
-  static PatientLookupAdapter _patientLookupAdapterFor(AppEnvironment environment) {
+  /// Seleciona o `PatientsAdapter` por ambiente (PSI-042, mesmo padrão de
+  /// [_authAdapterFor]): mock em memória por padrão em dev/test; client HTTP
+  /// real (implementado e compilável, mas não exercitado contra a API nesta
+  /// tarefa — PSI-045) em produção. Substitui o antigo
+  /// `PatientLookupAdapter` (PSI-041, removido nesta tarefa) — o mesmo
+  /// adapter agora serve tanto a resolução de nomes (agenda/dashboard)
+  /// quanto o CRUD completo de pacientes.
+  static PatientsAdapter _patientsAdapterFor(AppEnvironment environment) {
     if (environment.usesMocks) {
-      return InMemoryPatientLookupAdapter();
+      return InMemoryPatientsAdapter();
     }
-    return HttpPatientLookupAdapter();
+    return HttpPatientsAdapter();
   }
 
   static ChargeAdapter _chargeAdapterFor(AppEnvironment environment) {

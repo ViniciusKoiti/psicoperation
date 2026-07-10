@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:psiops_contracts/api.dart';
 import 'package:psiops_mobile/features/agenda/data/appointment_adapter.dart';
 import 'package:psiops_mobile/features/agenda/data/in_memory_appointment_adapter.dart';
-import 'package:psiops_mobile/features/agenda/data/patient_lookup_adapter.dart';
 import 'package:psiops_mobile/features/dashboard/data/charge_adapter.dart';
 import 'package:psiops_mobile/features/dashboard/data/task_adapter.dart';
 import 'package:psiops_mobile/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:psiops_mobile/features/patients/data/patients_adapter.dart';
 
 DateTime fixedNow() => DateTime(2026, 7, 6, 8);
 
@@ -58,7 +58,7 @@ void main() {
           appointmentAdapter: InMemoryAppointmentAdapter(now: fixedNow),
           chargeAdapter: InMemoryChargeAdapter(now: fixedNow),
           taskAdapter: InMemoryTaskAdapter(now: fixedNow),
-          patientLookupAdapter: InMemoryPatientLookupAdapter(now: fixedNow),
+          patientsAdapter: InMemoryPatientsAdapter(now: fixedNow),
           now: fixedNow,
         ),
       ),
@@ -76,7 +76,7 @@ void main() {
             appointmentAdapter: InMemoryAppointmentAdapter(now: fixedNow),
             chargeAdapter: InMemoryChargeAdapter(now: fixedNow),
             taskAdapter: InMemoryTaskAdapter(now: fixedNow),
-            patientLookupAdapter: InMemoryPatientLookupAdapter(now: fixedNow),
+            patientsAdapter: InMemoryPatientsAdapter(now: fixedNow),
             now: fixedNow,
           ),
         ),
@@ -84,7 +84,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Consultas de hoje (seed do InMemoryAppointmentAdapter): patient-1 e
-      // patient-2, resolvidos para nome via InMemoryPatientLookupAdapter.
+      // patient-2, resolvidos para nome via InMemoryPatientsAdapter.
       // "Carlos Eduardo Lima" aparece duas vezes: na consulta de hoje e na
       // pendência financeira (também dele) — daí findsWidgets.
       expect(find.text('Beatriz Andrade'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
           appointmentAdapter: _EmptyAppointmentAdapter(),
           chargeAdapter: _EmptyChargeAdapter(),
           taskAdapter: _EmptyTaskAdapter(),
-          patientLookupAdapter: InMemoryPatientLookupAdapter(now: fixedNow),
+          patientsAdapter: InMemoryPatientsAdapter(now: fixedNow),
           now: fixedNow,
         ),
       ),

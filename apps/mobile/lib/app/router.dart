@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/agenda/data/appointment_adapter.dart';
-import '../features/agenda/data/patient_lookup_adapter.dart';
 import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
@@ -13,6 +12,10 @@ import '../features/dashboard/data/task_adapter.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/home/data/profile_repository.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/patients/data/patients_adapter.dart';
+import '../features/patients/presentation/patient_detail_screen.dart';
+import '../features/patients/presentation/patient_form_screen.dart';
+import '../features/patients/presentation/patients_list_screen.dart';
 
 /// Nomes e caminhos de rota do app (evita strings mágicas espalhadas na
 /// navegação).
@@ -37,6 +40,21 @@ abstract final class Routes {
   /// Agenda (PSI-041) — visões diária/semanal e gestão de consultas.
   static const String agenda = 'agenda';
   static const String agendaPath = '/agenda';
+
+  /// Lista de pacientes (PSI-042) — busca por nome, filtro de arquivados.
+  static const String patients = 'pacientes';
+  static const String patientsPath = '/pacientes';
+
+  /// Cadastro de paciente (PSI-042).
+  static const String patientCreate = 'paciente-novo';
+  static const String patientCreatePath = '/pacientes/novo';
+
+  /// Detalhe de um paciente (PSI-042) — dados cadastrais, histórico de
+  /// consultas/registros administrativos e situação financeira. A edição é
+  /// aberta a partir daqui via `Navigator` local (não é uma rota nomeada
+  /// separada — ver `PatientDetailScreen._openEdit`).
+  static const String patientDetail = 'paciente-detalhe';
+  static const String patientDetailPath = '/pacientes/:patientId';
 }
 
 /// Configuração de navegação com go_router: shell de autenticação (splash,
@@ -53,13 +71,13 @@ abstract final class Routes {
 ///   rota de destino preservada (ou para a home).
 ///
 /// Os adapters ([ProfileRepository], [AppointmentAdapter],
-/// [PatientLookupAdapter], [ChargeAdapter], [TaskAdapter]) são injetados (o
-/// entrypoint escolhe mock ou real por ambiente — PSI-040/PSI-041),
+/// [PatientsAdapter], [ChargeAdapter], [TaskAdapter]) são injetados (o
+/// entrypoint escolhe mock ou real por ambiente — PSI-040/PSI-041/PSI-042),
 /// mantendo o router agnóstico ao ambiente.
 GoRouter buildRouter({
   required ProfileRepository profileRepository,
   required AppointmentAdapter appointmentAdapter,
-  required PatientLookupAdapter patientLookupAdapter,
+  required PatientsAdapter patientsAdapter,
   required ChargeAdapter chargeAdapter,
   required TaskAdapter taskAdapter,
   required SessionController session,
@@ -92,6 +110,7 @@ GoRouter buildRouter({
           onLogout: session.logout,
           onOpenDashboard: () => context.goNamed(Routes.dashboard),
           onOpenAgenda: () => context.goNamed(Routes.agenda),
+          onOpenPatients: () => context.goNamed(Routes.patients),
         ),
       ),
       GoRoute(
@@ -101,7 +120,7 @@ GoRouter buildRouter({
           appointmentAdapter: appointmentAdapter,
           chargeAdapter: chargeAdapter,
           taskAdapter: taskAdapter,
-          patientLookupAdapter: patientLookupAdapter,
+          patientsAdapter: patientsAdapter,
           onOpenAgenda: () => context.goNamed(Routes.agenda),
         ),
       ),
@@ -110,7 +129,27 @@ GoRouter buildRouter({
         name: Routes.agenda,
         builder: (context, state) => AgendaScreen(
           appointmentAdapter: appointmentAdapter,
-          patientLookupAdapter: patientLookupAdapter,
+          patientsAdapter: patientsAdapter,
+        ),
+      ),
+      GoRoute(
+        path: Routes.patientsPath,
+        name: Routes.patients,
+        builder: (context, state) => PatientsListScreen(adapter: patientsAdapter),
+      ),
+      GoRoute(
+        path: Routes.patientCreatePath,
+        name: Routes.patientCreate,
+        builder: (context, state) => PatientFormScreen.create(adapter: patientsAdapter),
+      ),
+      GoRoute(
+        path: Routes.patientDetailPath,
+        name: Routes.patientDetail,
+        builder: (context, state) => PatientDetailScreen(
+          adapter: patientsAdapter,
+          appointmentAdapter: appointmentAdapter,
+          chargeAdapter: chargeAdapter,
+          patientId: state.pathParameters['patientId']!,
         ),
       ),
     ],

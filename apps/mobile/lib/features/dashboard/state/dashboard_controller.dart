@@ -3,7 +3,7 @@ import 'package:psiops_contracts/api.dart';
 
 import '../../../app/formatting.dart';
 import '../../agenda/data/appointment_adapter.dart';
-import '../../agenda/data/patient_lookup_adapter.dart';
+import '../../patients/data/patients_adapter.dart';
 import '../data/charge_adapter.dart';
 import '../data/task_adapter.dart';
 
@@ -15,8 +15,9 @@ enum DashboardStatus { loading, ready, error }
 /// Agrega três fontes de dados independentes — próximas consultas do dia
 /// ([AppointmentAdapter]), pendências financeiras ([ChargeAdapter]) e
 /// tarefas do dia ([TaskAdapter]) — mais a resolução de nomes de paciente
-/// ([PatientLookupAdapter]). Todas injetadas: o ponto de composição
-/// (`app/app.dart`) decide mock vs. real, seguindo o padrão de PSI-040.
+/// ([PatientsAdapter.listPatients], que lista todos os pacientes, ativos e
+/// arquivados). Todas injetadas: o ponto de composição (`app/app.dart`)
+/// decide mock vs. real, seguindo o padrão de PSI-040.
 class DashboardController extends ChangeNotifier {
   DashboardController(
     this._appointments,
@@ -29,7 +30,7 @@ class DashboardController extends ChangeNotifier {
   final AppointmentAdapter _appointments;
   final ChargeAdapter _charges;
   final TaskAdapter _tasks;
-  final PatientLookupAdapter _patients;
+  final PatientsAdapter _patients;
   final DateTime Function() _now;
 
   DashboardStatus _status = DashboardStatus.loading;

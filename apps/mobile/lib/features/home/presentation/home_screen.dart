@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
     required this.onLogout,
     this.onOpenDashboard,
     this.onOpenAgenda,
+    this.onOpenPatients,
   });
 
   final ProfileRepository repository;
@@ -32,6 +33,9 @@ class HomeScreen extends StatefulWidget {
 
   /// Abre a agenda de consultas (PSI-041). `null` esconde o atalho.
   final VoidCallback? onOpenAgenda;
+
+  /// Abre a lista de pacientes (PSI-042). `null` esconde o atalho.
+  final VoidCallback? onOpenPatients;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -100,7 +104,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: colors.primary,
                       ),
                     ),
-                    if (widget.onOpenDashboard != null || widget.onOpenAgenda != null) ...[
+                    if (widget.onOpenDashboard != null ||
+                        widget.onOpenAgenda != null ||
+                        widget.onOpenPatients != null) ...[
                       const SizedBox(height: 32),
                       if (widget.onOpenDashboard != null)
                         FilledButton.icon(
@@ -116,6 +122,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           onPressed: widget.onOpenAgenda,
                           icon: const Icon(Icons.calendar_month_outlined),
                           label: const Text('Agenda'),
+                        ),
+                      ],
+                      if (widget.onOpenPatients != null) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          key: const Key('home-nav-patients-button'),
+                          onPressed: widget.onOpenPatients,
+                          icon: const Icon(Icons.people_outline),
+                          label: const Text('Pacientes'),
                         ),
                       ],
                     ],
