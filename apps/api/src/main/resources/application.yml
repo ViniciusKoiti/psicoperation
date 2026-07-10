@@ -56,6 +56,19 @@ psiops:
         capacity: 5
         window: 1m
 
+  # Módulo financeiro de mensalidades (PSI-026, ver com.psiops.api.billing).
+  billing:
+    default-interest:
+      # Aplicado a uma cobrança quando o payload de criação não informa
+      # "interest" explicitamente (com.psiops.api.billing.application.
+      # BillingProperties) — alinhado à calculadora de juros da landing
+      # ("1% ao mês, multa de 2%", ver project/PsiOps Landing.html). Apenas
+      # monthly-rate-percent entra no cálculo de juros simples desta tarefa;
+      # fine-percent é armazenado por cobrança para paridade com o contrato,
+      # mas sua aplicação ("multa fixa") é out_of_scope (manifesto PSI-026).
+      monthly-rate-percent: 1.0
+      fine-percent: 2.0
+
 # Fundação Axon (PSI-011, ver com.psiops.api.axon.config). Sem Axon Server:
 # o connector já é excluído no pom.xml, e a flag abaixo reforça que a
 # autoconfiguração do Axon não deve tentar abrir uma conexão de rede — com

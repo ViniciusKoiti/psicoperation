@@ -25,6 +25,14 @@ public interface PatientRepository extends JpaRepository<PatientEntity, UUID> {
 
   Page<PatientEntity> findByUserIdAndStatus(UUID userId, PatientStatus status, Pageable pageable);
 
+  /**
+   * Variante não paginada de {@link #findByUserIdAndStatus(UUID,
+   * PatientStatus, Pageable)}, usada pela geração mensal de cobranças
+   * (PSI-026, {@code ChargeService#generateMonthlyCharges}): precisa
+   * percorrer TODOS os pacientes ativos da usuária, não uma página.
+   */
+  List<PatientEntity> findByUserIdAndStatus(UUID userId, PatientStatus status);
+
   Page<PatientEntity> findByUserIdAndStatusAndNameContainingIgnoreCase(
       UUID userId, PatientStatus status, String name, Pageable pageable);
 }
