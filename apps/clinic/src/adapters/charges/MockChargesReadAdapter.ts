@@ -1,6 +1,6 @@
 import type { Charge } from "@psiops/contracts";
 
-import type { ChargesReadAdapter } from "./ChargesReadAdapter";
+import type { ChargesReadAdapter, ListChargesParams } from "./ChargesReadAdapter";
 
 // IDs compartilhados com o seed de `MockPatientsAdapter`
 // (src/adapters/patients/MockPatientsAdapter.ts) só para o mock de
@@ -89,5 +89,11 @@ export class MockChargesReadAdapter implements ChargesReadAdapter {
   async listChargesByPatient(patientId: string): Promise<Charge[]> {
     const charges = this.chargesByPatient[patientId] ?? [];
     return structuredClone(charges);
+  }
+
+  async listCharges(params: ListChargesParams = {}): Promise<Charge[]> {
+    const all = Object.values(this.chargesByPatient).flat();
+    const filtered = params.status ? all.filter((charge) => charge.status === params.status) : all;
+    return structuredClone(filtered);
   }
 }

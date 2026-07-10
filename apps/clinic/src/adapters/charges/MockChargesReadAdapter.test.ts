@@ -54,4 +54,44 @@ describe("MockChargesReadAdapter", () => {
     expect(charges.map((c) => c.status).sort()).toEqual(["atrasada", "em_dia", "em_dia", "pendente"]);
     expect(charges.every((c) => Number.isInteger(c.amount))).toBe(true);
   });
+
+  it("listCharges sem filtro retorna as cobranças de todos os pacientes", async () => {
+    const seed = {
+      "patient-1": [charge({ id: "c1", patientId: "patient-1", status: "em_dia" })],
+      "patient-2": [charge({ id: "c2", patientId: "patient-2", status: "atrasada" })],
+    };
+    const adapter = new MockChargesReadAdapter(seed);
+
+    const charges = await adapter.listCharges();
+
+    expect(charges.map((c) => c.id).sort()).toEqual(["c1", "c2"]);
+  });
+
+  it("listCharges filtra por status entre pacientes", async () => {
+    const seed = {
+      "patient-1": [
+        charge({ id: "c1", patientId: "patient-1", status: "pendente" }),
+        charge({ id: "c2", patientId: "patient-1", status: "em_dia" }),
+      ],
+      "patient-2": [charge({ id: "c3", patientId: "patient-2", status: "atrasada" })],
+    };
+    const adapter = new MockChargesReadAdapter(seed);
+
+    const pendentes = await adapter.listCharges({ status: "pendente" });
+    expect(pendentes.map((c) => c.id)).toEqual(["c1"]);
+
+    const atrasadas = await adapter.listCharges({ status: "atrasada" });
+    expect(atrasadas.map((c) => c.id)).toEqual(["c3"]);
+  });
+
+  it("listCharges não vaza mutações externas para o estado interno (clonagem estrutural)", async () => {
+    const seed = { "patient-1": [charge({ id: "c1", amount: 20000 })] };
+    const adapter = new MockChargesReadAdapter(seed);
+
+    const first = await adapter.listCharges();
+    first[0]!.amount = 999999;
+
+    const second = await adapter.listCharges();
+    expect(second[0]?.amount).toBe(20000);
+  });
 });

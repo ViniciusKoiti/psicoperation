@@ -25,8 +25,10 @@ describe("App", () => {
     expect(await screen.findByTestId("app-topbar")).toBeInTheDocument();
     expect(screen.getByTestId("app-sidebar")).toBeInTheDocument();
 
-    // Aguarda o carregamento assíncrono do dashboard (MockPatientsAdapter)
-    // terminar, para não deixar um update de estado pendente após o teste.
-    await screen.findByText("Marina Alves");
+    // Aguarda o dashboard (rota "/") montar — os atalhos são estáticos (sem
+    // carregamento assíncrono), landmark estável para não deixar um update
+    // de estado pendente após o teste sem depender de dados cujo conteúdo
+    // varia com a data atual real (ver PSI-032).
+    await screen.findByTestId("dashboard-shortcuts");
   });
 });

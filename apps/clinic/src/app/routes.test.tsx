@@ -32,8 +32,11 @@ describe("AppRoutes", () => {
     expect(screen.getByTestId("app-sidebar")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
 
-    // Aguarda o carregamento assíncrono do MockPatientsAdapter terminar.
-    await screen.findByText("Marina Alves");
+    // Atalhos são estáticos (sem carregamento assíncrono) — landmark estável
+    // para aguardar o dashboard montar, sem depender de dados de um adapter
+    // cujo conteúdo varia com a data atual real (ver PSI-032).
+    await screen.findByTestId("dashboard-shortcuts");
+    expect(screen.getByRole("link", { name: "Novo paciente" })).toHaveAttribute("href", "/pacientes/novo");
   });
 
   it("redireciona / para /login quando não autenticado", () => {
@@ -62,7 +65,7 @@ describe("AppRoutes", () => {
 
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
 
-    await screen.findByText("Marina Alves");
+    await screen.findByTestId("dashboard-shortcuts");
   });
 
   it("navega da lista de pacientes (PSI-033) para o detalhe (PSI-034) e volta preservando a busca", async () => {
@@ -93,5 +96,13 @@ describe("AppRoutes", () => {
 
     await screen.findByTestId("patient-detail-not-found");
     expect(screen.getByRole("heading", { name: "Paciente não encontrado" })).toBeInTheDocument();
+  });
+
+  it("mostra o placeholder de financeiro dentro do shell em /financeiro (PSI-032)", () => {
+    renderAt("/financeiro", "authenticated");
+
+    expect(screen.getByTestId("app-sidebar")).toBeInTheDocument();
+    expect(screen.getByTestId("finance-placeholder-page")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Financeiro" })).toBeInTheDocument();
   });
 });

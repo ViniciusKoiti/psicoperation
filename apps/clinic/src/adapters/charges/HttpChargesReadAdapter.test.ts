@@ -48,4 +48,35 @@ describe("HttpChargesReadAdapter", () => {
     await expect(rejection).rejects.toThrow("Falha ao listar cobranças.");
     await expect(rejection.catch((e) => e)).resolves.toBeInstanceOf(ChargesReadAdapterError);
   });
+
+  it("listCharges faz GET /charges com page/size na query string, sem patientId", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ items: [SAMPLE_CHARGE], meta: { page: 0, size: 200, totalElements: 1, totalPages: 1 } }),
+      );
+    const adapter = new HttpChargesReadAdapter({ baseUrl: "https://api.psiops.com.br", fetchFn });
+
+    const charges = await adapter.listCharges();
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      "https://api.psiops.com.br/charges?page=0&size=200",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(charges).toHaveLength(1);
+  });
+
+  it("listCharges inclui status na query string quando informado", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ items: [], meta: { page: 0, size: 200, totalElements: 0, totalPages: 0 } }));
+    const adapter = new HttpChargesReadAdapter({ baseUrl: "https://api.psiops.com.br", fetchFn });
+
+    await adapter.listCharges({ status: "atrasada" });
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      "https://api.psiops.com.br/charges?page=0&size=200&status=atrasada",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
 });

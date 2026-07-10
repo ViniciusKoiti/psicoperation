@@ -1,7 +1,7 @@
 import { HttpChargesReadAdapter } from "./HttpChargesReadAdapter";
 import { MockChargesReadAdapter } from "./MockChargesReadAdapter";
 
-export type { ChargesReadAdapter } from "./ChargesReadAdapter";
+export type { ChargesReadAdapter, ListChargesParams } from "./ChargesReadAdapter";
 export { ChargesReadAdapterError } from "./ChargesReadAdapterError";
 export { MockChargesReadAdapter } from "./MockChargesReadAdapter";
 export { HTTP_CHARGES_READ_PAGE_SIZE, HttpChargesReadAdapter } from "./HttpChargesReadAdapter";
