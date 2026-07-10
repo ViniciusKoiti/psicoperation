@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { agendaAdapter as defaultAgendaAdapter, type AgendaAdapter } from "../../adapters/appointments";
-import { chargesReadAdapter as defaultChargesReadAdapter, type ChargesReadAdapter } from "../../adapters/charges";
+import { chargesAdapter as defaultChargesReadAdapter, type ChargesReadAdapter } from "../../adapters/charges";
 import { patientsAdapter as defaultPatientsAdapter, type PatientsAdapter } from "../../adapters/patients";
 import { tasksReadAdapter as defaultTasksReadAdapter, type TasksReadAdapter } from "../../adapters/tasks";
 import { EmptyState } from "../../components/EmptyState";

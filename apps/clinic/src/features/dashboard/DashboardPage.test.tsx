@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { type AgendaAdapter, MockAgendaAdapter } from "../../adapters/appointments";
-import { type ChargesReadAdapter, MockChargesReadAdapter } from "../../adapters/charges";
+import { type ChargesReadAdapter, MockChargesAdapter } from "../../adapters/charges";
 import { MockPatientsAdapter, type PatientsAdapter } from "../../adapters/patients";
 import { type TasksReadAdapter, MockTasksReadAdapter } from "../../adapters/tasks";
 import { DashboardPage, type DashboardPageProps } from "./DashboardPage";
@@ -80,7 +80,7 @@ function renderDashboard(options: RenderOptions = {}) {
         <DashboardPage
           agendaAdapter={options.agendaAdapter ?? new MockAgendaAdapter([])}
           patientsAdapter={options.patientsAdapter ?? new MockPatientsAdapter(PATIENTS)}
-          chargesReadAdapter={options.chargesReadAdapter ?? new MockChargesReadAdapter({})}
+          chargesReadAdapter={options.chargesReadAdapter ?? new MockChargesAdapter({})}
           tasksReadAdapter={options.tasksReadAdapter ?? new MockTasksReadAdapter([])}
           today={options.today ?? TODAY}
         />
@@ -158,7 +158,7 @@ describe("DashboardPage — próximas consultas", () => {
 
 describe("DashboardPage — pendências financeiras", () => {
   it("lista mensalidades atrasadas e pendentes com o total em centavos formatado em R$", async () => {
-    const chargesReadAdapter = new MockChargesReadAdapter({
+    const chargesReadAdapter = new MockChargesAdapter({
       [PATIENT_A_ID]: [
         charge({ id: "atrasada", patientId: PATIENT_A_ID, status: "atrasada", amount: 25000, dueDate: "2026-06-10" }),
         charge({ id: "em-dia", patientId: PATIENT_A_ID, status: "em_dia", amount: 25000 }),

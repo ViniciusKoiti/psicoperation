@@ -98,11 +98,12 @@ describe("AppRoutes", () => {
     expect(screen.getByRole("heading", { name: "Paciente não encontrado" })).toBeInTheDocument();
   });
 
-  it("mostra o placeholder de financeiro dentro do shell em /financeiro (PSI-032)", () => {
+  it("mostra a tela de financeiro dentro do shell em /financeiro (PSI-037)", async () => {
     renderAt("/financeiro", "authenticated");
 
     expect(screen.getByTestId("app-sidebar")).toBeInTheDocument();
-    expect(screen.getByTestId("finance-placeholder-page")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Financeiro" })).toBeInTheDocument();
+
+    await screen.findByTestId("finance-page");
   });
 });
