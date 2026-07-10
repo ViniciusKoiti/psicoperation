@@ -26,35 +26,36 @@ export interface AppointmentHistoryEntry {
 }
 
 /**
- * Interface de LEITURA mínima de consultas, criada por esta tarefa
- * (PSI-034) porque a tela completa de agenda (PSI-035) ainda não existe.
- * Cobre exatamente o que o detalhe do paciente precisa: todo o histórico
- * (passado e futuro) de UM paciente, sem paginação. A ordenação "mais
- * recente primeiro" (critério de aceite da PSI-034) é responsabilidade da
- * camada de apresentação (ver `sortAppointmentsDescending` em
- * `src/features/patients/patientDetail.ts`), não deste adapter.
+ * Interface de LEITURA mínima de consultas, criada pela PSI-034 porque a
+ * tela completa de agenda (PSI-035) ainda não existia. Cobre exatamente o
+ * que o detalhe do paciente precisa: todo o histórico (passado e futuro) de
+ * UM paciente, sem paginação. A ordenação "mais recente primeiro" (critério
+ * de aceite da PSI-034) é responsabilidade da camada de apresentação (ver
+ * `sortAppointmentsDescending` em `src/features/patients/patientDetail.ts`),
+ * não deste adapter.
  *
- * PROJETADA PARA SER ESTENDIDA PELA PSI-035 — o que esta interface
- * deliberadamente NÃO cobre, e fica para a tela de agenda decidir como
- * adicionar (extensão desta interface, ou uma nova ao lado dela no mesmo
- * módulo `src/adapters/appointments/**`):
- * - listagem da agenda inteira (todos os pacientes, intervalo de datas,
- *   paginação) — o contrato já expõe `GET /appointments` com esses filtros
- *   (`operations["listAppointments"]`), mas esta interface só usa o filtro
- *   por `patientId`, sem paginar;
- * - criação, remarcação e cancelamento de consulta (`POST /appointments`,
- *   `PUT`/`DELETE /appointments/{id}`);
- * - registro de presença administrativa (`PUT /appointments/{id}/attendance`
- *   — escrita, PSI-036). Esta interface é só LEITURA: no mock, o "registro
- *   administrativo" já vem pronto no seed; no HTTP, hoje NÃO HÁ endpoint de
- *   leitura de presença no contrato (só `PUT`, sem `GET`) — ver a ressalva
- *   detalhada em `HttpAppointmentsReadAdapter` e o open_question do PR desta
- *   tarefa.
+ * ESTENDIDA PELA PSI-035 (ver `AgendaAdapter`, neste mesmo módulo): a agenda
+ * completa (listagem por intervalo de datas entre pacientes, criação,
+ * remarcação, cancelamento e série recorrente) virou uma interface própria
+ * que ESTENDE esta aqui, em vez de coexistir com ela — `MockAgendaAdapter` e
+ * `HttpAgendaAdapter` (PSI-035) substituíram
+ * `MockAppointmentsReadAdapter`/`HttpAppointmentsReadAdapter` (PSI-034) como
+ * única implementação de dados de consultas do app; esta interface
+ * (`AppointmentsReadAdapter`) continua existindo e sendo exportada porque é
+ * exatamente o subconjunto que `PatientDetailPage` (PSI-034) consome — só a
+ * instância por trás dela mudou (`agendaAdapter`, PSI-035, em vez de
+ * `appointmentsReadAdapter`, PSI-034).
  *
- * Implementações: `MockAppointmentsReadAdapter` (estado em memória, padrão
- * em desenvolvimento e testes) e `HttpAppointmentsReadAdapter` (tipada pelo
- * contrato). Ponto de composição único (seleção mock/http por variável de
- * ambiente) em `./index.ts`, mesmo padrão de `src/adapters/patients`.
+ * Presença administrativa (`PUT /appointments/{id}/attendance`, escrita,
+ * PSI-036) continua fora desta interface e da PSI-035: no mock, o "registro
+ * administrativo" já vem pronto no seed; no HTTP, hoje NÃO HÁ endpoint de
+ * leitura de presença no contrato (só `PUT`, sem `GET`) — ver a ressalva
+ * detalhada em `HttpAgendaAdapter` e o open_question do PR da PSI-034.
+ *
+ * Implementações: `MockAgendaAdapter` (estado em memória, padrão em
+ * desenvolvimento e testes) e `HttpAgendaAdapter` (tipada pelo contrato).
+ * Ponto de composição único (seleção mock/http por variável de ambiente) em
+ * `./index.ts`, mesmo padrão de `src/adapters/patients`.
  */
 export interface AppointmentsReadAdapter {
   /**

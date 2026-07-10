@@ -1,57 +1,57 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { HttpAppointmentsReadAdapter } from "./HttpAppointmentsReadAdapter";
-import { MockAppointmentsReadAdapter } from "./MockAppointmentsReadAdapter";
-import { resolveAppointmentsReadAdapterKind } from "./index";
+import { HttpAgendaAdapter } from "./HttpAgendaAdapter";
+import { MockAgendaAdapter } from "./MockAgendaAdapter";
+import { resolveAgendaAdapterKind } from "./index";
 
 /**
  * `./index.ts` é o único ponto de composição da escolha mock/http (mesmo
  * padrão de `src/adapters/patients/index.test.ts`, PSI-033).
  */
-describe("resolveAppointmentsReadAdapterKind", () => {
+describe("resolveAgendaAdapterKind", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
   it("usa mock quando não há override e o build não é de produção", () => {
     vi.stubEnv("PROD", false);
-    vi.stubEnv("VITE_APPOINTMENTS_READ_ADAPTER", "");
+    vi.stubEnv("VITE_AGENDA_ADAPTER", "");
 
-    expect(resolveAppointmentsReadAdapterKind()).toBe("mock");
+    expect(resolveAgendaAdapterKind()).toBe("mock");
   });
 
   it("usa http por padrão em build de produção, mesmo sem override", () => {
     vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_APPOINTMENTS_READ_ADAPTER", "");
+    vi.stubEnv("VITE_AGENDA_ADAPTER", "");
 
-    expect(resolveAppointmentsReadAdapterKind()).toBe("http");
+    expect(resolveAgendaAdapterKind()).toBe("http");
   });
 
-  it("respeita VITE_APPOINTMENTS_READ_ADAPTER=http mesmo fora de produção", () => {
+  it("respeita VITE_AGENDA_ADAPTER=http mesmo fora de produção", () => {
     vi.stubEnv("PROD", false);
-    vi.stubEnv("VITE_APPOINTMENTS_READ_ADAPTER", "http");
+    vi.stubEnv("VITE_AGENDA_ADAPTER", "http");
 
-    expect(resolveAppointmentsReadAdapterKind()).toBe("http");
+    expect(resolveAgendaAdapterKind()).toBe("http");
   });
 
-  it("respeita VITE_APPOINTMENTS_READ_ADAPTER=mock mesmo em produção", () => {
+  it("respeita VITE_AGENDA_ADAPTER=mock mesmo em produção", () => {
     vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_APPOINTMENTS_READ_ADAPTER", "mock");
+    vi.stubEnv("VITE_AGENDA_ADAPTER", "mock");
 
-    expect(resolveAppointmentsReadAdapterKind()).toBe("mock");
+    expect(resolveAgendaAdapterKind()).toBe("mock");
   });
 });
 
-describe("appointmentsReadAdapter (composição eager no import)", () => {
+describe("agendaAdapter (composição eager no import)", () => {
   it("expõe o adapter resolvido a partir do ambiente de teste (mock por padrão em test/dev)", async () => {
-    const { appointmentsReadAdapter } = await import("./index");
-    expect(appointmentsReadAdapter).toBeInstanceOf(MockAppointmentsReadAdapter);
+    const { agendaAdapter } = await import("./index");
+    expect(agendaAdapter).toBeInstanceOf(MockAgendaAdapter);
   });
 });
 
-describe("HttpAppointmentsReadAdapter vs MockAppointmentsReadAdapter", () => {
+describe("HttpAgendaAdapter vs MockAgendaAdapter", () => {
   it("são implementações distintas selecionáveis pelo mesmo ponto de composição", () => {
-    expect(new MockAppointmentsReadAdapter()).not.toBeInstanceOf(HttpAppointmentsReadAdapter);
-    expect(new HttpAppointmentsReadAdapter({ baseUrl: "https://x" })).not.toBeInstanceOf(MockAppointmentsReadAdapter);
+    expect(new MockAgendaAdapter()).not.toBeInstanceOf(HttpAgendaAdapter);
+    expect(new HttpAgendaAdapter({ baseUrl: "https://x" })).not.toBeInstanceOf(MockAgendaAdapter);
   });
 });

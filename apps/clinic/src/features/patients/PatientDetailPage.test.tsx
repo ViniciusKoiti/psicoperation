@@ -5,7 +5,7 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { type AppointmentsReadAdapter, MockAppointmentsReadAdapter } from "../../adapters/appointments";
+import { type AppointmentsReadAdapter, MockAgendaAdapter } from "../../adapters/appointments";
 import { MockChargesReadAdapter } from "../../adapters/charges";
 import { MockPatientsAdapter } from "../../adapters/patients";
 import { PatientDetailPage } from "./PatientDetailPage";
@@ -59,7 +59,7 @@ interface RenderOptions {
 
 function renderDetail({
   patientsAdapter,
-  appointmentsAdapter = new MockAppointmentsReadAdapter({}),
+  appointmentsAdapter = new MockAgendaAdapter([]),
   chargesAdapter = new MockChargesReadAdapter({}),
   path = "/pacientes/1",
 }: RenderOptions) {
@@ -88,18 +88,16 @@ function renderDetail({
 describe("PatientDetailPage", () => {
   it("agrega dados cadastrais, histórico de consultas, registros administrativos e situação financeira", async () => {
     const patientsAdapter = new MockPatientsAdapter([patient()]);
-    const appointmentsAdapter = new MockAppointmentsReadAdapter({
-      "1": [
-        {
-          appointment: appointment({ id: "apt-1", startsAt: "2026-06-01T14:00:00Z", status: "realizada" }),
-          attendance: { attendance: "compareceu", recordedAt: "2026-06-01T15:00:00Z" },
-        },
-        {
-          appointment: appointment({ id: "apt-2", startsAt: "2026-06-08T14:00:00Z", status: "realizada" }),
-          attendance: { attendance: "faltou", administrativeNotes: "Faltou sem aviso prévio." },
-        },
-      ],
-    });
+    const appointmentsAdapter = new MockAgendaAdapter([
+      {
+        appointment: appointment({ id: "apt-1", startsAt: "2026-06-01T14:00:00Z", status: "realizada" }),
+        attendance: { attendance: "compareceu", recordedAt: "2026-06-01T15:00:00Z" },
+      },
+      {
+        appointment: appointment({ id: "apt-2", startsAt: "2026-06-08T14:00:00Z", status: "realizada" }),
+        attendance: { attendance: "faltou", administrativeNotes: "Faltou sem aviso prévio." },
+      },
+    ]);
     const chargesAdapter = new MockChargesReadAdapter({ "1": [charge({ id: "c1", status: "em_dia" })] });
 
     renderDetail({ patientsAdapter, appointmentsAdapter, chargesAdapter });

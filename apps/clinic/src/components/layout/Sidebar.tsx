@@ -7,12 +7,13 @@ interface NavItem {
 }
 
 /**
- * Itens de navegação da sidebar. "Pacientes" chega na PSI-033; features de
- * domínio futuras (mensalidades, cobranças) acrescentam entradas aqui quando
- * forem implementadas.
+ * Itens de navegação da sidebar. "Pacientes" chega na PSI-033, "Agenda" na
+ * PSI-035; features de domínio futuras (mensalidades, cobranças) acrescentam
+ * entradas aqui quando forem implementadas.
  */
 const NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", to: "/" },
+  { label: "Agenda", to: "/agenda" },
   { label: "Pacientes", to: "/pacientes" },
 ];
 
