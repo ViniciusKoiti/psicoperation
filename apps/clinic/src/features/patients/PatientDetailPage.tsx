@@ -1,16 +1,20 @@
 import { Alert, Badge, Button, Center, Group, Loader, Skeleton, Stack, Table, Tabs, Text, Title } from "@mantine/core";
-import type { Charge, ChargeStatus, Patient } from "@psiops/contracts";
+import type { Appointment, Charge, ChargeStatus, Patient } from "@psiops/contracts";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import {
-  agendaAdapter as defaultAppointmentsAdapter,
+  agendaAdapter as defaultAgendaAdapter,
+  type AgendaAdapter,
   type AppointmentHistoryEntry,
   type AppointmentsReadAdapter,
+  isAgendaConflictError,
 } from "../../adapters/appointments";
 import { chargesAdapter as defaultChargesAdapter, type ChargesReadAdapter } from "../../adapters/charges";
 import { isPatientNotFoundError, patientsAdapter as defaultPatientsAdapter, type PatientsAdapter } from "../../adapters/patients";
 import { EmptyState } from "../../components/EmptyState";
+import { type AttendanceRecordSubmitValues, AttendanceRecordModal } from "../agenda/AttendanceRecordModal";
+import { RescheduleAppointmentModal, type RescheduleAppointmentValues } from "../agenda/RescheduleAppointmentModal";
 import { formatCentsAsBRL } from "./money";
 import {
   APPOINTMENT_STATUS_LABEL,
@@ -30,7 +34,21 @@ export interface PatientDetailPageProps {
   /** Injetáveis para testes; produção usa os adapters compostos em `src/adapters/**`. */
   patientsAdapter?: PatientsAdapter;
   appointmentsAdapter?: AppointmentsReadAdapter;
+  /**
+   * Adapter de ESCRITA de registros administrativos (PSI-036):
+   * `recordAttendance` (presença/falta/remarcação) e `rescheduleAppointment`
+   * (reaproveitando o mesmo fluxo de remarcação da PSI-035 quando o desfecho
+   * registrado é "remarcada"). Prop SEPARADA de `appointmentsAdapter` de
+   * propósito — não estreita o tipo já usado por essa leitura (mantém
+   * `AppointmentsReadAdapter`, compatível com testes/fakes só-leitura
+   * existentes da PSI-034) — mas em produção as duas resolvem para a MESMA
+   * instância (`agendaAdapter`, `src/adapters/appointments`), então
+   * escrita e leitura sempre veem o mesmo estado.
+   */
+  agendaAdapter?: AgendaAdapter;
   chargesAdapter?: ChargesReadAdapter;
+  /** Relógio injetável — determinismo ao decidir se uma consulta já ocorreu (presença/falta habilitadas) nos testes. */
+  today?: () => Date;
 }
 
 type PatientLoadState = "loading" | "loaded" | "not-found" | "error";
@@ -57,8 +75,17 @@ interface LocationBackState {
  *   (o subconjunto que esta tela realmente usa), sem nenhuma mudança nesta
  *   página;
  * - Registros administrativos: mesma fonte de consultas, filtrada para as
- *   que já têm `attendance` lançado (`hasAttendanceRecord`) — SOMENTE
- *   LEITURA (criação/edição é PSI-036, fora de escopo aqui);
+ *   que já têm `attendance` lançado (`hasAttendanceRecord`). Desde a
+ *   PSI-036, deixou de ser somente leitura: cada linha do "Histórico de
+ *   consultas" sem registro ganha "Registrar desfecho", e cada linha de
+ *   "Registros administrativos" ganha "Editar registro" — os dois abrem o
+ *   MESMO `AttendanceRecordModal` da agenda (PSI-035/036,
+ *   `src/features/agenda`), sem formulário duplicado. Presença/falta chama
+ *   `AgendaAdapter.recordAttendance`; remarcação encaminha ao MESMO
+ *   `RescheduleAppointmentModal`/fluxo da PSI-035, vinculando a anotação
+ *   depois de confirmado o novo horário (mesma orquestração de
+ *   `AgendaPage`). Qualquer registro criado/editado recarrega o histórico
+ *   (`reloadAppointments`) para refletir imediatamente na tela;
  * - Situação financeira: `ChargesReadAdapter.listChargesByPatient`, agrupada
  *   por `ChargeStatus` (`groupChargesByStatus`), valores sempre formatados
  *   a partir de centavos inteiros (`formatCentsAsBRL`).
@@ -76,8 +103,10 @@ interface LocationBackState {
  */
 export function PatientDetailPage({
   patientsAdapter = defaultPatientsAdapter,
-  appointmentsAdapter = defaultAppointmentsAdapter,
+  appointmentsAdapter = defaultAgendaAdapter,
+  agendaAdapter = defaultAgendaAdapter,
   chargesAdapter = defaultChargesAdapter,
+  today = () => new Date(),
 }: PatientDetailPageProps) {
   const { patientId } = useParams<{ patientId: string }>();
   const location = useLocation();
@@ -88,7 +117,25 @@ export function PatientDetailPage({
   const [appointmentsState, setAppointmentsState] = useState<SectionState<AppointmentHistoryEntry[]>>({
     status: "loading",
   });
+  const [appointmentsReloadToken, setAppointmentsReloadToken] = useState(0);
   const [chargesState, setChargesState] = useState<SectionState<Charge[]>>({ status: "loading" });
+
+  // Registro de desfecho (PSI-036): consulta-alvo do modal de registro
+  // (`AttendanceRecordModal`, compartilhado com a agenda) e da remarcação
+  // (`RescheduleAppointmentModal`, mesmo componente da PSI-035) — mesma
+  // orquestração de `AgendaPage.tsx`.
+  const [attendanceTarget, setAttendanceTarget] = useState<AppointmentHistoryEntry | null>(null);
+  const [attendanceSubmitting, setAttendanceSubmitting] = useState(false);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
+  const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  const [pendingAttendanceNote, setPendingAttendanceNote] = useState<string | undefined>(undefined);
+
+  function reloadAppointments() {
+    setAppointmentsReloadToken((token) => token + 1);
+  }
 
   useEffect(() => {
     if (!patientId) return;
@@ -127,7 +174,7 @@ export function PatientDetailPage({
     return () => {
       active = false;
     };
-  }, [appointmentsAdapter, patientId]);
+  }, [appointmentsAdapter, patientId, appointmentsReloadToken]);
 
   useEffect(() => {
     if (!patientId) return;
@@ -147,6 +194,72 @@ export function PatientDetailPage({
       active = false;
     };
   }, [chargesAdapter, patientId]);
+
+  function openAttendanceModal(entry: AppointmentHistoryEntry) {
+    setAttendanceError(null);
+    setAttendanceTarget(entry);
+  }
+
+  async function handleAttendanceSubmit(values: AttendanceRecordSubmitValues) {
+    if (!attendanceTarget) return;
+    const appointmentId = attendanceTarget.appointment.id;
+
+    if (values.kind === "reschedule") {
+      // "Registrar remarcação conduz ao fluxo de remarcação da PSI-035,
+      // mantendo o vínculo da anotação" (critério de aceite): fecha este
+      // modal e abre o MESMO `RescheduleAppointmentModal` da PSI-035,
+      // guardando a anotação para vincular depois que a remarcação for
+      // confirmada (ver `handleRescheduleSubmit`) — mesma orquestração de
+      // `AgendaPage.tsx`.
+      setAttendanceTarget(null);
+      setPendingAttendanceNote(values.administrativeNotes);
+      setRescheduleError(null);
+      setRescheduleTarget(attendanceTarget.appointment);
+      return;
+    }
+
+    setAttendanceError(null);
+    setAttendanceSubmitting(true);
+    try {
+      await agendaAdapter.recordAttendance(appointmentId, {
+        attendance: values.attendance,
+        ...(values.administrativeNotes ? { administrativeNotes: values.administrativeNotes } : {}),
+      });
+      setAttendanceTarget(null);
+      reloadAppointments();
+    } catch {
+      setAttendanceError("Não foi possível registrar o desfecho agora. Tente novamente.");
+    } finally {
+      setAttendanceSubmitting(false);
+    }
+  }
+
+  async function handleRescheduleSubmit(values: RescheduleAppointmentValues) {
+    if (!rescheduleTarget) return;
+    setRescheduleError(null);
+    setRescheduleSubmitting(true);
+    try {
+      await agendaAdapter.rescheduleAppointment(rescheduleTarget.id, values);
+      // Vincula a anotação administrativa ao registro de "remarcada" só
+      // DEPOIS que o novo horário é confirmado — nunca antes, para não
+      // gravar presença de uma remarcação que falhou (ex.: conflito).
+      await agendaAdapter.recordAttendance(rescheduleTarget.id, {
+        attendance: "remarcada",
+        ...(pendingAttendanceNote ? { administrativeNotes: pendingAttendanceNote } : {}),
+      });
+      setRescheduleTarget(null);
+      setPendingAttendanceNote(undefined);
+      reloadAppointments();
+    } catch (error) {
+      setRescheduleError(
+        isAgendaConflictError(error)
+          ? error.message
+          : "Não foi possível remarcar a consulta agora. Tente novamente.",
+      );
+    } finally {
+      setRescheduleSubmitting(false);
+    }
+  }
 
   if (!patientId || patientState === "not-found") {
     return (
@@ -209,15 +322,40 @@ export function PatientDetailPage({
           <RegistrationSection patient={patient} />
         </Tabs.Panel>
         <Tabs.Panel value="consultas" pt="md">
-          <AppointmentsHistorySection state={appointmentsState} />
+          <AppointmentsHistorySection state={appointmentsState} onRecordAttendance={openAttendanceModal} />
         </Tabs.Panel>
         <Tabs.Panel value="registros" pt="md">
-          <AdministrativeRecordsSection state={appointmentsState} />
+          <AdministrativeRecordsSection state={appointmentsState} onEditAttendance={openAttendanceModal} />
         </Tabs.Panel>
         <Tabs.Panel value="financeiro" pt="md">
           <FinancialSection state={chargesState} />
         </Tabs.Panel>
       </Tabs>
+
+      <AttendanceRecordModal
+        opened={attendanceTarget !== null}
+        appointment={attendanceTarget?.appointment ?? null}
+        patientName={patient.name}
+        existingRecord={attendanceTarget?.attendance}
+        allowPresence={attendanceTarget ? Date.parse(attendanceTarget.appointment.startsAt) <= today().getTime() : false}
+        onSubmit={handleAttendanceSubmit}
+        onClose={() => setAttendanceTarget(null)}
+        submitting={attendanceSubmitting}
+        formError={attendanceError}
+      />
+
+      <RescheduleAppointmentModal
+        opened={rescheduleTarget !== null}
+        appointment={rescheduleTarget}
+        patientName={patient.name}
+        onSubmit={handleRescheduleSubmit}
+        onClose={() => {
+          setRescheduleTarget(null);
+          setPendingAttendanceNote(undefined);
+        }}
+        submitting={rescheduleSubmitting}
+        formError={rescheduleError}
+      />
     </Stack>
   );
 }
@@ -263,7 +401,13 @@ function RegistrationSection({ patient }: { patient: Patient }) {
   );
 }
 
-function AppointmentsHistorySection({ state }: { state: SectionState<AppointmentHistoryEntry[]> }) {
+interface AppointmentsHistorySectionProps {
+  state: SectionState<AppointmentHistoryEntry[]>;
+  /** Abre `AttendanceRecordModal` para registrar o desfecho desta consulta (PSI-036). */
+  onRecordAttendance: (entry: AppointmentHistoryEntry) => void;
+}
+
+function AppointmentsHistorySection({ state, onRecordAttendance }: AppointmentsHistorySectionProps) {
   if (state.status === "loading") {
     return (
       <Stack gap="xs" data-testid="appointments-loading">
@@ -297,17 +441,30 @@ function AppointmentsHistorySection({ state }: { state: SectionState<Appointment
           <Table.Th>Data</Table.Th>
           <Table.Th>Horário</Table.Th>
           <Table.Th>Status</Table.Th>
+          <Table.Th />
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {state.data.map(({ appointment }) => {
+        {state.data.map((entry) => {
+          const { appointment } = entry;
           const { date, time } = formatAppointmentDateTime(appointment.startsAt);
+          // "Registrar desfecho" fica disponível para consultas ainda sem
+          // registro administrativo lançado e que não foram canceladas
+          // (uma consulta cancelada nunca ocorreu — nada a registrar).
+          const canRecordAttendance = !hasAttendanceRecord(entry) && appointment.status !== "cancelada";
           return (
             <Table.Tr key={appointment.id}>
               <Table.Td>{date}</Table.Td>
               <Table.Td>{time}</Table.Td>
               <Table.Td>
                 <Badge variant="light">{APPOINTMENT_STATUS_LABEL[appointment.status]}</Badge>
+              </Table.Td>
+              <Table.Td>
+                {canRecordAttendance && (
+                  <Button variant="subtle" size="compact-xs" onClick={() => onRecordAttendance(entry)}>
+                    Registrar desfecho
+                  </Button>
+                )}
               </Table.Td>
             </Table.Tr>
           );
@@ -317,15 +474,23 @@ function AppointmentsHistorySection({ state }: { state: SectionState<Appointment
   );
 }
 
+interface AdministrativeRecordsSectionProps {
+  state: SectionState<AppointmentHistoryEntry[]>;
+  /** Abre `AttendanceRecordModal` pré-preenchido para editar o registro desta consulta (PSI-036). */
+  onEditAttendance: (entry: AppointmentHistoryEntry) => void;
+}
+
 /**
  * Registros administrativos: mesma fonte de `AppointmentsHistorySection`
  * (`AppointmentsReadAdapter.listAppointmentsByPatient`), filtrada para as
  * consultas que já têm presença administrativa lançada
- * (`hasAttendanceRecord`). SOMENTE LEITURA — criação/edição é PSI-036.
- * NENHUM campo clínico: apenas presença (compareceu/faltou/remarcada) e a
- * anotação administrativa livre do contrato (`AttendanceRecord`).
+ * (`hasAttendanceRecord`). Desde a PSI-036, cada linha ganha "Editar
+ * registro", abrindo `AttendanceRecordModal` pré-preenchido — a criação
+ * acontece em `AppointmentsHistorySection`. NENHUM campo clínico: apenas
+ * presença (compareceu/faltou/remarcada) e a anotação administrativa livre
+ * do contrato (`AttendanceRecord`).
  */
-function AdministrativeRecordsSection({ state }: { state: SectionState<AppointmentHistoryEntry[]> }) {
+function AdministrativeRecordsSection({ state, onEditAttendance }: AdministrativeRecordsSectionProps) {
   if (state.status === "loading") {
     return (
       <Stack gap="xs" data-testid="administrative-records-loading">
@@ -361,10 +526,12 @@ function AdministrativeRecordsSection({ state }: { state: SectionState<Appointme
           <Table.Th>Consulta</Table.Th>
           <Table.Th>Presença</Table.Th>
           <Table.Th>Anotação administrativa</Table.Th>
+          <Table.Th />
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {records.map(({ appointment, attendance }) => {
+        {records.map((entry) => {
+          const { appointment, attendance } = entry;
           const { date, time } = formatAppointmentDateTime(appointment.startsAt);
           return (
             <Table.Tr key={appointment.id}>
@@ -375,6 +542,11 @@ function AdministrativeRecordsSection({ state }: { state: SectionState<Appointme
                 <Badge variant="light">{ATTENDANCE_STATUS_LABEL[attendance.attendance]}</Badge>
               </Table.Td>
               <Table.Td>{attendance.administrativeNotes ?? "—"}</Table.Td>
+              <Table.Td>
+                <Button variant="subtle" size="compact-xs" onClick={() => onEditAttendance(entry)}>
+                  Editar registro
+                </Button>
+              </Table.Td>
             </Table.Tr>
           );
         })}

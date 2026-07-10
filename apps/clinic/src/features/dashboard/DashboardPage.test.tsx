@@ -256,6 +256,9 @@ describe("DashboardPage — erro com nova tentativa", () => {
       },
       cancelAppointment: async () => {},
       createAppointmentSeries: async () => ({ occurrences: [] }),
+      recordAttendance: async () => {
+        throw new Error("não usado");
+      },
     };
 
     renderDashboard({ agendaAdapter: failingAgenda });

@@ -132,6 +132,22 @@ describe("HttpAgendaAdapter — criar/remarcar/cancelar", () => {
   });
 });
 
+describe("HttpAgendaAdapter — registrar desfecho (PSI-036)", () => {
+  it("recordAttendance faz PUT /appointments/{id}/attendance com o AttendanceRecord e devolve a consulta atualizada", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(jsonResponse({ ...SAMPLE_APPOINTMENT, status: "remarcada" }));
+    const adapter = new HttpAgendaAdapter({ baseUrl: "https://api.psiops.com.br", fetchFn });
+
+    const payload = { attendance: "remarcada" as const, administrativeNotes: "Remarcou por viagem." };
+    const updated = await adapter.recordAttendance(SAMPLE_APPOINTMENT.id, payload);
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      `https://api.psiops.com.br/appointments/${SAMPLE_APPOINTMENT.id}/attendance`,
+      expect.objectContaining({ method: "PUT", body: JSON.stringify(payload) }),
+    );
+    expect(updated.status).toBe("remarcada");
+  });
+});
+
 describe("HttpAgendaAdapter — série recorrente semanal", () => {
   it("createAppointmentSeries chama createAppointment uma vez por ocorrência e reporta conflitos parciais", async () => {
     const fetchFn = vi

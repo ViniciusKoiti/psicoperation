@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentCreateRequest } from "@psiops/contracts";
+import type { Appointment, AppointmentCreateRequest, AttendanceRecord } from "@psiops/contracts";
 
 import type { AppointmentsReadAdapter } from "./AppointmentsReadAdapter";
 import type { WeeklySeriesBounds } from "./recurrence";
@@ -115,4 +115,30 @@ export interface AgendaAdapter extends AppointmentsReadAdapter {
    * a série.
    */
   createAppointmentSeries(input: CreateAppointmentSeriesInput): Promise<CreateAppointmentSeriesResult>;
+
+  /**
+   * `PUT /appointments/{id}/attendance` (PSI-036): registra o desfecho
+   * ADMINISTRATIVO de uma consulta — presença (`compareceu`), falta
+   * (`faltou`) ou remarcação (`remarcada`) — mais uma anotação
+   * administrativa curta opcional (`AttendanceRecord.administrativeNotes`,
+   * NUNCA conteúdo clínico — restrição inviolável, CLAUDE.md). Chamar de
+   * novo para a MESMA consulta EDITA o registro existente (mesmo endpoint
+   * idempotente do contrato); `MockAgendaAdapter` preserva o timestamp de
+   * criação e marca o de atualização nesse caso (ver
+   * `AppointmentHistoryEntry.attendanceCreatedAt`/`attendanceUpdatedAt`).
+   *
+   * Reconciliação do enum de status (risco antecipado pelo manifesto):
+   * `AppointmentStatus` (contrato) não tem um valor "faltou" — só
+   * `agendada | realizada | cancelada | remarcada`. Presença OU falta
+   * atualizam `Appointment.status` para `"realizada"` (o horário ocorreu,
+   * independente do comparecimento; a presença/falta em si vive só em
+   * `AttendanceRecord.attendance`) — convenção já usada pelo seed de
+   * `MockAgendaAdapter` desde a PSI-034/035. Remarcação atualiza o status
+   * para `"remarcada"`.
+   *
+   * Devolve a consulta atualizada — é o retorno do contrato
+   * (`Appointment`, não `AttendanceRecord`). Lança `AgendaAdapterError` com
+   * `status: 404` quando a consulta não existe (`isAgendaNotFoundError`).
+   */
+  recordAttendance(appointmentId: string, payload: AttendanceRecord): Promise<Appointment>;
 }

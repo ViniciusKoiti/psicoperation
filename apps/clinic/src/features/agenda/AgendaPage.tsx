@@ -28,6 +28,7 @@ import {
   toLocalDateInputValue,
   weekDays,
 } from "./agenda";
+import { type AttendanceRecordSubmitValues, AttendanceRecordModal } from "./AttendanceRecordModal";
 import { CancelAppointmentModal } from "./CancelAppointmentModal";
 import { type NewAppointmentSubmit, NewAppointmentModal, type PatientOption } from "./NewAppointmentModal";
 import { RescheduleAppointmentModal, type RescheduleAppointmentValues } from "./RescheduleAppointmentModal";
@@ -62,6 +63,15 @@ type LoadState = "loading" | "loaded" | "error";
  * validação e o submit), o catch trata `isAgendaConflictError` e tenta
  * localizar a consulta conflitante de novo para exibir os mesmos detalhes —
  * client-side e pós-409 caem no mesmo código de exibição.
+ *
+ * Registro de desfecho (PSI-036): cada consulta ativa ganha um botão
+ * "Registrar desfecho" que abre `AttendanceRecordModal` — presença/falta
+ * chama `AgendaAdapter.recordAttendance` diretamente; remarcação fecha esse
+ * modal e reaproveita o MESMO `RescheduleAppointmentModal`/fluxo acima
+ * (`openRescheduleModal`/`handleRescheduleSubmit`), só vinculando a
+ * anotação administrativa depois que a remarcação é confirmada
+ * (`pendingAttendanceLink`/`pendingAttendanceNote`) — nenhuma lógica de
+ * remarcação é duplicada.
  */
 export function AgendaPage({
   adapter = defaultAgendaAdapter,
@@ -86,10 +96,19 @@ export function AgendaPage({
   const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
   const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  // Quando a remarcação foi aberta a PARTIR do registro de desfecho (PSI-036,
+  // "remarcada"), em vez do botão "Remarcar" direto: liga a submissão da
+  // remarcação a um `recordAttendance` subsequente, vinculando a anotação.
+  const [pendingAttendanceLink, setPendingAttendanceLink] = useState(false);
+  const [pendingAttendanceNote, setPendingAttendanceNote] = useState<string | undefined>(undefined);
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const [attendanceTarget, setAttendanceTarget] = useState<Appointment | null>(null);
+  const [attendanceSubmitting, setAttendanceSubmitting] = useState(false);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
   const range = useMemo(() => {
     if (viewMode === "dia") {
@@ -250,6 +269,8 @@ export function AgendaPage({
 
   function openRescheduleModal(appointment: Appointment) {
     setRescheduleError(null);
+    setPendingAttendanceLink(false);
+    setPendingAttendanceNote(undefined);
     setRescheduleTarget(appointment);
   }
 
@@ -266,12 +287,64 @@ export function AgendaPage({
         return;
       }
       await adapter.rescheduleAppointment(rescheduleTarget.id, values);
+      // Registro de desfecho "remarcada" (PSI-036): a remarcação em si passa
+      // pelo MESMO fluxo da PSI-035 acima; aqui só se vincula a anotação
+      // administrativa lançada no modal de registro, depois de confirmado o
+      // novo horário — nunca antes, para não gravar presença de uma
+      // remarcação que falhou por conflito.
+      if (pendingAttendanceLink) {
+        await adapter.recordAttendance(rescheduleTarget.id, {
+          attendance: "remarcada",
+          ...(pendingAttendanceNote ? { administrativeNotes: pendingAttendanceNote } : {}),
+        });
+      }
       setRescheduleTarget(null);
+      setPendingAttendanceLink(false);
+      setPendingAttendanceNote(undefined);
       reloadAppointments();
     } catch (error) {
       setRescheduleError(await describeSubmitError(error, values.startsAt, values.durationMinutes));
     } finally {
       setRescheduleSubmitting(false);
+    }
+  }
+
+  function openAttendanceModal(appointment: Appointment) {
+    setAttendanceError(null);
+    setAttendanceTarget(appointment);
+  }
+
+  async function handleAttendanceSubmit(values: AttendanceRecordSubmitValues) {
+    if (!attendanceTarget) return;
+
+    if (values.kind === "reschedule") {
+      // "Registrar remarcação conduz ao fluxo de remarcação da PSI-035,
+      // mantendo o vínculo da anotação" (critério de aceite): fecha este
+      // modal e abre o MESMO `RescheduleAppointmentModal`/fluxo da PSI-035,
+      // guardando a anotação para vincular depois que a remarcação for
+      // confirmada (ver `handleRescheduleSubmit`).
+      const target = attendanceTarget;
+      setAttendanceTarget(null);
+      setPendingAttendanceLink(true);
+      setPendingAttendanceNote(values.administrativeNotes);
+      setRescheduleError(null);
+      setRescheduleTarget(target);
+      return;
+    }
+
+    setAttendanceError(null);
+    setAttendanceSubmitting(true);
+    try {
+      await adapter.recordAttendance(attendanceTarget.id, {
+        attendance: values.attendance,
+        ...(values.administrativeNotes ? { administrativeNotes: values.administrativeNotes } : {}),
+      });
+      setAttendanceTarget(null);
+      reloadAppointments();
+    } catch {
+      setAttendanceError("Não foi possível registrar o desfecho agora. Tente novamente.");
+    } finally {
+      setAttendanceSubmitting(false);
     }
   }
 
@@ -370,6 +443,7 @@ export function AgendaPage({
           patientLabel={patientLabel}
           onReschedule={openRescheduleModal}
           onCancel={openCancelModal}
+          onRecordAttendance={openAttendanceModal}
         />
       )}
 
@@ -379,6 +453,7 @@ export function AgendaPage({
           patientLabel={patientLabel}
           onReschedule={openRescheduleModal}
           onCancel={openCancelModal}
+          onRecordAttendance={openAttendanceModal}
         />
       )}
 
@@ -415,6 +490,17 @@ export function AgendaPage({
         submitting={cancelSubmitting}
         formError={cancelError}
       />
+
+      <AttendanceRecordModal
+        opened={attendanceTarget !== null}
+        appointment={attendanceTarget}
+        patientName={attendanceTarget ? patientLabel(attendanceTarget.patientId) : undefined}
+        allowPresence={attendanceTarget ? Date.parse(attendanceTarget.startsAt) <= today().getTime() : false}
+        onSubmit={handleAttendanceSubmit}
+        onClose={() => setAttendanceTarget(null)}
+        submitting={attendanceSubmitting}
+        formError={attendanceError}
+      />
     </Stack>
   );
 }
@@ -428,10 +514,15 @@ interface AppointmentActionsProps {
   patientLabel: (patientId: string) => string;
   onReschedule: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
+  onRecordAttendance: (appointment: Appointment) => void;
 }
 
-function AppointmentRow({ appointment, patientLabel, onReschedule, onCancel }: AppointmentActionsProps) {
+function AppointmentRow({ appointment, patientLabel, onReschedule, onCancel, onRecordAttendance }: AppointmentActionsProps) {
   const canManage = appointment.status === "agendada";
+  // Registrar desfecho (PSI-036): disponível para qualquer consulta ainda
+  // ativa — cancelada não tem desfecho a registrar (nunca ocorreu, e a
+  // decisão já está tomada).
+  const canRecordAttendance = appointment.status !== "cancelada";
   return (
     <Paper withBorder p="xs" radius="sm" data-testid="agenda-appointment">
       <Group justify="space-between" wrap="wrap" gap="xs">
@@ -443,16 +534,23 @@ function AppointmentRow({ appointment, patientLabel, onReschedule, onCancel }: A
             {APPOINTMENT_STATUS_LABEL[appointment.status]}
           </Badge>
         </Stack>
-        {canManage && (
-          <Group gap={4}>
-            <Button variant="subtle" size="compact-xs" onClick={() => onReschedule(appointment)}>
-              Remarcar
+        <Group gap={4}>
+          {canRecordAttendance && (
+            <Button variant="subtle" size="compact-xs" onClick={() => onRecordAttendance(appointment)}>
+              Registrar desfecho
             </Button>
-            <Button variant="subtle" color="red" size="compact-xs" onClick={() => onCancel(appointment)}>
-              Cancelar
-            </Button>
-          </Group>
-        )}
+          )}
+          {canManage && (
+            <>
+              <Button variant="subtle" size="compact-xs" onClick={() => onReschedule(appointment)}>
+                Remarcar
+              </Button>
+              <Button variant="subtle" color="red" size="compact-xs" onClick={() => onCancel(appointment)}>
+                Cancelar
+              </Button>
+            </>
+          )}
+        </Group>
       </Group>
     </Paper>
   );
@@ -465,9 +563,10 @@ interface WeekViewProps {
   patientLabel: (patientId: string) => string;
   onReschedule: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
+  onRecordAttendance: (appointment: Appointment) => void;
 }
 
-function WeekView({ weekStart, appointments, today, patientLabel, onReschedule, onCancel }: WeekViewProps) {
+function WeekView({ weekStart, appointments, today, patientLabel, onReschedule, onCancel, onRecordAttendance }: WeekViewProps) {
   const groups = groupAppointmentsByDay(appointments);
   const days = weekDays(weekStart);
 
@@ -501,6 +600,7 @@ function WeekView({ weekStart, appointments, today, patientLabel, onReschedule, 
                     patientLabel={patientLabel}
                     onReschedule={onReschedule}
                     onCancel={onCancel}
+                    onRecordAttendance={onRecordAttendance}
                   />
                 ))}
               </Stack>
@@ -517,9 +617,10 @@ interface DayViewProps {
   patientLabel: (patientId: string) => string;
   onReschedule: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
+  onRecordAttendance: (appointment: Appointment) => void;
 }
 
-function DayView({ appointments, patientLabel, onReschedule, onCancel }: DayViewProps) {
+function DayView({ appointments, patientLabel, onReschedule, onCancel, onRecordAttendance }: DayViewProps) {
   const sorted = [...appointments].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   return (
     <Stack gap="xs" data-testid="agenda-day-view">
@@ -530,6 +631,7 @@ function DayView({ appointments, patientLabel, onReschedule, onCancel }: DayView
           patientLabel={patientLabel}
           onReschedule={onReschedule}
           onCancel={onCancel}
+          onRecordAttendance={onRecordAttendance}
         />
       ))}
     </Stack>

@@ -3,6 +3,7 @@ import type {
   AppointmentCreateRequest,
   AppointmentPage,
   AppointmentUpdateRequest,
+  AttendanceRecord,
   Problem,
 } from "@psiops/contracts";
 
@@ -55,6 +56,13 @@ export interface HttpAgendaAdapterOptions {
  *    `status: 409`, usando o `detail`/`title` do `Problem` devolvido — ver
  *    `AGENDA_CONFLICT_MESSAGE` (`./AgendaAdapterError.ts`) para a
  *    explicação de como isso garante paridade com `MockAgendaAdapter`.
+ * 4. `recordAttendance` (PSI-036) chama `PUT /appointments/{id}/attendance`
+ *    tipado 1:1 pelo contrato (`AttendanceRecord` → `Appointment`) — sem
+ *    tradução adicional. `attendanceCreatedAt`/`attendanceUpdatedAt` de
+ *    `AppointmentHistoryEntry` continuam sempre `undefined` aqui pelo mesmo
+ *    motivo da ressalva 2: o contrato não expõe leitura de metadado de
+ *    presença, então esta classe não tem como reconstruir "quando o
+ *    registro foi criado/editado" a partir de um `GET` que não existe.
  *
  * Mesma ressalva de `HttpPatientsAdapter`/`HttpAuthAdapter`: esta tarefa
  * entrega a implementação e sua tipagem, mas não a exercita ponta a ponta
@@ -105,6 +113,10 @@ export class HttpAgendaAdapter implements AgendaAdapter {
 
   async createAppointmentSeries(input: CreateAppointmentSeriesInput): Promise<CreateAppointmentSeriesResult> {
     return createAppointmentSeriesWith((payload) => this.createAppointment(payload), input);
+  }
+
+  async recordAttendance(appointmentId: string, payload: AttendanceRecord): Promise<Appointment> {
+    return this.putJson<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}/attendance`, payload);
   }
 
   // --- Internos ---
