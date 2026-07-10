@@ -41,7 +41,13 @@ export class HttpTasksAdapter implements TasksAdapter {
 
   constructor(options: HttpTasksAdapterOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
-    this.fetchFn = options.fetchFn ?? globalThis.fetch;
+    // `globalThis.fetch` sozinho (sem bind) lança "Illegal invocation" em
+    // navegadores reais quando chamado como `this.fetchFn(...)` mais abaixo
+    // (perde o receiver `window` que o fetch nativo exige) — só não aparecia
+    // nos testes existentes porque todos injetam `fetchFn`, nunca exercitando
+    // este default contra um `fetch` de verdade (achado ao rodar a suíte E2E
+    // contra o navegador real, PSI-044).
+    this.fetchFn = options.fetchFn ?? globalThis.fetch.bind(globalThis);
     this.getAccessToken = options.getAccessToken ?? (() => undefined);
   }
 

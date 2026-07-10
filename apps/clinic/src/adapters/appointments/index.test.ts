@@ -55,3 +55,41 @@ describe("HttpAgendaAdapter vs MockAgendaAdapter", () => {
     expect(new HttpAgendaAdapter({ baseUrl: "https://x" })).not.toBeInstanceOf(MockAgendaAdapter);
   });
 });
+
+describe("agendaAdapter em modo http usa a ponte de access token (PSI-044)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it("envia Authorization: Bearer <token> lido da ponte de src/adapters/auth", async () => {
+    vi.stubEnv("PROD", true);
+    vi.stubEnv("VITE_AGENDA_ADAPTER", "");
+
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ items: [], meta: { page: 0, size: 20, totalItems: 0, totalPages: 0 } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    // Mesma ressalva de `src/adapters/patients/index.test.ts`: precisa da
+    // MESMA instância de módulo de `accessTokenBridge` que "./index" usa.
+    vi.resetModules();
+    const { setBridgedAccessToken } = await import("../auth/accessTokenBridge");
+    setBridgedAccessToken("token-da-sessao");
+
+    // Não comparamos com `instanceof HttpAgendaAdapter` aqui pelo mesmo
+    // motivo documentado em `src/adapters/patients/index.test.ts`.
+    const { agendaAdapter } = await import("./index");
+
+    await agendaAdapter.listAppointments({ from: "2026-07-01T00:00:00Z", to: "2026-07-02T00:00:00Z" });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer token-da-sessao");
+  });
+});

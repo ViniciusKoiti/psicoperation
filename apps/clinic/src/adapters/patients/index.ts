@@ -1,3 +1,4 @@
+import { getBridgedAccessToken } from "../auth/accessTokenBridge";
 import { HttpPatientsAdapter } from "./HttpPatientsAdapter";
 import { MockPatientsAdapter } from "./MockPatientsAdapter";
 
@@ -36,10 +37,22 @@ export function resolvePatientsAdapterKind(): PatientsAdapterKind {
 }
 
 function createPatientsAdapter(): PatientsAdapter {
-  const kind = resolvePatientsAdapterKind();
+  // "Achatado" de propósito (não chama `resolvePatientsAdapterKind`) — ver
+  // a explicação em `src/adapters/auth/index.ts` (`createAuthAdapter`,
+  // PSI-044): só assim o minificador de produção consegue eliminar
+  // `MockPatientsAdapter` do bundle quando não há override.
+  const explicitRaw = import.meta.env.VITE_PATIENTS_ADAPTER;
+  const explicit = explicitRaw === "mock" || explicitRaw === "http" ? explicitRaw : undefined;
+  const kind = explicit ?? (import.meta.env.PROD ? "http" : "mock");
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
-    return new HttpPatientsAdapter({ baseUrl });
+    // `getAccessToken` lê a ponte de `src/adapters/auth/accessTokenBridge.ts`
+    // (PSI-044): reflete o access token do login/registro/renovação mais
+    // recente feito através de `authAdapter` (`src/adapters/auth/index.ts`,
+    // o mesmo adapter que `SessionProvider` usa) — ver a doc daquele módulo
+    // para o porquê desta indireção (evita tocar `src/session/**`, fora do
+    // escopo permitido aqui).
+    return new HttpPatientsAdapter({ baseUrl, getAccessToken: getBridgedAccessToken });
   }
   return new MockPatientsAdapter();
 }

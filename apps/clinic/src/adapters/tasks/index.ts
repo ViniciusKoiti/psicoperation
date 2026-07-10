@@ -39,7 +39,13 @@ export function resolveTasksAdapterKind(): TasksAdapterKind {
 }
 
 function createTasksAdapter(): TasksAdapter {
-  const kind = resolveTasksAdapterKind();
+  // "Achatado" de propósito (não chama `resolveTasksAdapterKind`) — ver a
+  // explicação em `src/adapters/auth/index.ts` (`createAuthAdapter`,
+  // PSI-044): só assim o minificador de produção consegue eliminar
+  // `MockTasksAdapter` do bundle quando não há override.
+  const explicitRaw = import.meta.env.VITE_TASKS_ADAPTER;
+  const explicit = explicitRaw === "mock" || explicitRaw === "http" ? explicitRaw : undefined;
+  const kind = explicit ?? (import.meta.env.PROD ? "http" : "mock");
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
     return new HttpTasksAdapter({ baseUrl });
