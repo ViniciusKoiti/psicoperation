@@ -5,6 +5,8 @@ import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { OnboardingPage } from "../features/onboarding/OnboardingPage";
+import { PatientFormPage } from "../features/patients/PatientFormPage";
+import { PatientsListPage } from "../features/patients/PatientsListPage";
 import { AuthGuard } from "./AuthGuard";
 
 /**
@@ -15,6 +17,11 @@ import { AuthGuard } from "./AuthGuard";
  * navegação (sidebar/topbar), no mesmo espírito de `/login`/`/registrar`.
  * `RegisterPage` navega para cá logo após criar a conta; a própria página
  * redireciona ao dashboard quando o onboarding já está concluído.
+ *
+ * `/pacientes` (PSI-033): lista de pacientes com o shell padrão. Cadastro e
+ * edição usam o mesmo componente (`PatientFormPage`) em `/pacientes/novo` e
+ * `/pacientes/:patientId/editar`, também dentro do shell (diferente do
+ * onboarding: aqui é uma feature de domínio recorrente, não um wizard único).
  */
 export function AppRoutes() {
   return (
@@ -25,6 +32,9 @@ export function AppRoutes() {
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route element={<ProtectedLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="/pacientes" element={<PatientsListPage />} />
+          <Route path="/pacientes/novo" element={<PatientFormPage />} />
+          <Route path="/pacientes/:patientId/editar" element={<PatientFormPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

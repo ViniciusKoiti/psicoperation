@@ -15,3 +15,15 @@ if (typeof window.matchMedia !== "function") {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// jsdom não implementa ResizeObserver; componentes Mantine com indicador
+// flutuante (ex.: `SegmentedControl`, usado na lista de pacientes — PSI-033)
+// o utilizam para medir o elemento ativo. Stub mínimo, sem observação real.
+if (typeof globalThis.ResizeObserver !== "function") {
+  class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+}
