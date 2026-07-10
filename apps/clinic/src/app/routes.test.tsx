@@ -106,4 +106,14 @@ describe("AppRoutes", () => {
 
     await screen.findByTestId("finance-page");
   });
+
+  it("mostra a tela de configurações dentro do shell em /configuracoes (PSI-039), com link na sidebar", async () => {
+    renderAt("/configuracoes", "authenticated");
+
+    const sidebar = screen.getByTestId("app-sidebar");
+    expect(sidebar).toHaveTextContent("Configurações");
+
+    expect(screen.getByRole("heading", { name: "Configurações" })).toBeInTheDocument();
+    await screen.findByTestId("settings-section-perfil");
+  });
 });

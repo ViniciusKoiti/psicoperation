@@ -8,13 +8,14 @@ interface NavItem {
 
 /**
  * Itens de navegação da sidebar. "Pacientes" chega na PSI-033, "Agenda" na
- * PSI-035; features de domínio futuras (mensalidades, cobranças) acrescentam
- * entradas aqui quando forem implementadas.
+ * PSI-035; "Configurações" (PSI-039, última feature do app clinic) fecha o
+ * escopo — página permanente para revisar/editar o que o onboarding definiu.
  */
 const NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", to: "/" },
   { label: "Agenda", to: "/agenda" },
   { label: "Pacientes", to: "/pacientes" },
+  { label: "Configurações", to: "/configuracoes" },
 ];
 
 /** Lista de navegação da sidebar, usada pelo shell de layout das rotas protegidas. */
