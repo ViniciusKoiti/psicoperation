@@ -23,10 +23,14 @@ qualquer máquina** (PRNG próprio — mulberry32 + FNV-1a — só aritmética i
 de 32 bits, sem dependência externa). Isso dá testes reprodutíveis e snapshots
 estáveis.
 
-Entidades cobertas hoje (as que existem nos contratos): `User`, `Lead` e
-`LeadCreateRequest`. Os dados respeitam os formatos da spec: UUID v4, e-mail
-válido, WhatsApp brasileiro E.164 (`+55DD9XXXXXXXX`, DDD sem zero) e instantes
-ISO 8601 em UTC.
+Entidades cobertas: domínio completo do MVP — `User`, `Lead`, `Patient`,
+`Appointment`, `Charge`, `Task` e `Reminder` (mais os respectivos payloads de
+criação, ex. `PatientCreateRequest`). Os dados respeitam os formatos da spec:
+UUID v4, e-mail válido, WhatsApp brasileiro E.164 (`+55DD9XXXXXXXX`, DDD sem
+zero), instantes ISO 8601 em UTC, datas civis `YYYY-MM-DD` e valores
+monetários em centavos inteiros BRL. Nenhum builder gera dado clínico —
+pacientes/consultas só carregam campos administrativos e de cobrança, como os
+próprios contratos exigem.
 
 ### Builders avulsos
 
@@ -143,10 +147,10 @@ it("valida formatos dos contratos", () => {
 
 ## Escopo e evolução
 
-- Cobre **somente** as entidades existentes nos contratos hoje (`User`,
-  `Lead`). Os builders do domínio clínico/financeiro (pacientes, mensalidades,
-  registros administrativos de consulta) serão adicionados aqui quando os
-  contratos correspondentes chegarem (PSI-020).
+- Cobre o domínio completo do MVP (ver "Entidades cobertas" acima). Registros
+  administrativos de consulta (`AttendanceRecord`, PSI-025) e configurações
+  (`Settings`) ainda não têm builder dedicado — adicionar aqui se/quando um
+  consumidor (app ou E2E) precisar.
 - Fora de escopo: utilitários para Java (JUnit/Testcontainers) e Flutter, e
   mocks de rede nível HTTP (ex.: MSW).
 

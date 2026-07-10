@@ -58,6 +58,50 @@ state-stored do Axon chegam com as features.
 - `LeadRepositoryTest` — persiste/lê um lead e mapeia para o DTO de contrato
   `com.psiops.contracts.model.Lead` (prova o consumo do gen/java).
 
+## Dados de demonstração (perfil `demo`)
+
+`com.psiops.api.demo.DemoDataSeeder` (PSI-046) é um `ApplicationRunner`
+ativo **somente** com o perfil Spring `demo` — nenhum outro perfil (incluindo
+o default usado em dev/produção) semeia dado algum:
+
+```bash
+SPRING_PROFILES_ACTIVE=demo ./mvnw spring-boot:run
+```
+
+Cria, usando os MESMOS casos de uso (`*Service`) expostos via HTTP — nunca
+`INSERT` cru contornando regras de domínio: 1 psicóloga demo (credenciais
+abaixo), ~8 pacientes fictícios sem qualquer dado clínico (apenas nome,
+WhatsApp/e-mail, valor de mensalidade e dia de vencimento), agenda de 2
+semanas em torno do dia em que a API sobe, mensalidades nos três status do
+contrato (`em_dia`, `pendente`, `atrasada`), e tarefas/lembretes de exemplo.
+
+- **Idempotente**: reiniciar a API no perfil `demo` contra o mesmo banco não
+  duplica nada — cada tipo de entidade é conferido e completado
+  independentemente antes de criar (não apenas "a psicóloga demo já existe,
+  então paro"), então uma reexecução após uma falha parcial também não deixa
+  duplicata nem buraco.
+- **Determinístico em relação à data de execução**: a agenda e os
+  vencimentos de mensalidade são calculados a partir de um `Clock` injetado
+  (nunca `LocalDate.now()`/`OffsetDateTime.now()` direto) — ver
+  `com.psiops.api.demo.DemoDatePlanner`, testado isoladamente com relógio
+  fixo em `DemoDatePlannerTest`.
+- Cobertura de integração (Testcontainers) em
+  `com.psiops.api.demo.DemoDataSeederDemoProfileIntegrationTest` (ativação,
+  idempotência, ausência de dado clínico, credenciais funcionais) e
+  `DemoDataSeederOtherProfilesIntegrationTest` (nada é semeado fora do
+  perfil `demo`).
+
+Credenciais (fixas, públicas, exclusivas deste perfil local — nunca usar em
+produção):
+
+| Campo | Valor |
+| --- | --- |
+| E-mail | `demo@psiops.com.br` |
+| Senha | `PsiopsDemo123!` |
+
+Ver também [`docs/setup.md`](../../docs/setup.md) e
+[`docs/release-checklist.md`](../../docs/release-checklist.md).
+
 > Nota de ambiente (WSL2 + Docker recente): se o Testcontainers reclamar
 > `client version 1.32 is too old`, exporte `DOCKER_HOST=unix:///var/run/docker.sock`
 > e rode com `./mvnw verify -DargLine="-Dapi.version=1.43"`. É um contorno
