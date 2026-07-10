@@ -20,6 +20,8 @@ class HomeScreen extends StatefulWidget {
     this.onOpenDashboard,
     this.onOpenAgenda,
     this.onOpenPatients,
+    this.onOpenFinance,
+    this.onOpenSettings,
   });
 
   final ProfileRepository repository;
@@ -36,6 +38,12 @@ class HomeScreen extends StatefulWidget {
 
   /// Abre a lista de pacientes (PSI-042). `null` esconde o atalho.
   final VoidCallback? onOpenPatients;
+
+  /// Abre o financeiro do mês (PSI-043). `null` esconde o atalho.
+  final VoidCallback? onOpenFinance;
+
+  /// Abre as configurações (PSI-043). `null` esconde o atalho.
+  final VoidCallback? onOpenSettings;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -106,7 +114,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     if (widget.onOpenDashboard != null ||
                         widget.onOpenAgenda != null ||
-                        widget.onOpenPatients != null) ...[
+                        widget.onOpenPatients != null ||
+                        widget.onOpenFinance != null ||
+                        widget.onOpenSettings != null) ...[
                       const SizedBox(height: 32),
                       if (widget.onOpenDashboard != null)
                         FilledButton.icon(
@@ -131,6 +141,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           onPressed: widget.onOpenPatients,
                           icon: const Icon(Icons.people_outline),
                           label: const Text('Pacientes'),
+                        ),
+                      ],
+                      if (widget.onOpenFinance != null) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          key: const Key('home-nav-finance-button'),
+                          onPressed: widget.onOpenFinance,
+                          icon: const Icon(Icons.payments_outlined),
+                          label: const Text('Financeiro'),
+                        ),
+                      ],
+                      if (widget.onOpenSettings != null) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          key: const Key('home-nav-settings-button'),
+                          onPressed: widget.onOpenSettings,
+                          icon: const Icon(Icons.settings_outlined),
+                          label: const Text('Configurações'),
                         ),
                       ],
                     ],
