@@ -50,7 +50,13 @@ export function resolveSettingsAdapterKind(): SettingsAdapterKind {
 }
 
 function createSettingsAdapter(): SettingsAdapter {
-  const kind = resolveSettingsAdapterKind();
+  // "Achatado" de propósito (não chama `resolveSettingsAdapterKind`) — ver
+  // a explicação em `src/adapters/auth/index.ts` (`createAuthAdapter`,
+  // PSI-044): só assim o minificador de produção consegue eliminar
+  // `MockSettingsAdapter` do bundle quando não há override.
+  const explicitRaw = import.meta.env.VITE_SETTINGS_ADAPTER;
+  const explicit = explicitRaw === "mock" || explicitRaw === "http" ? explicitRaw : undefined;
+  const kind = explicit ?? (import.meta.env.PROD ? "http" : "mock");
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
     return new HttpSettingsAdapter({ baseUrl });

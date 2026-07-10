@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { getBridgedAccessToken, resetAccessTokenBridge } from "./accessTokenBridge";
 import { HttpAuthAdapter } from "./HttpAuthAdapter";
-import { MockAuthAdapter } from "./MockAuthAdapter";
 import { resolveAuthAdapterKind } from "./index";
+import { MockAuthAdapter, SEED_USER_CREDENTIALS } from "./MockAuthAdapter";
 
 /**
  * `./index.ts` é o único ponto de composição da escolha mock/http (ver
@@ -52,9 +53,26 @@ describe("resolveAuthAdapterKind", () => {
 });
 
 describe("authAdapter (composição eager no import)", () => {
-  it("expõe o adapter resolvido a partir do ambiente de teste (mock por padrão em test/dev)", async () => {
+  afterEach(() => {
+    resetAccessTokenBridge();
+  });
+
+  it("expõe um adapter funcional a partir do ambiente de teste (mock por padrão em test/dev)", async () => {
     const { authAdapter } = await import("./index");
-    expect(authAdapter).toBeInstanceOf(MockAuthAdapter);
+
+    // `authAdapter` é decorado por `withAccessTokenBridge` (PSI-044): não é
+    // mais uma instância direta de `MockAuthAdapter`/`HttpAuthAdapter` — o
+    // comportamento (delega para o mock em test/dev) é o que importa aqui.
+    const response = await authAdapter.login(SEED_USER_CREDENTIALS);
+    expect(response.user.email).toBe(SEED_USER_CREDENTIALS.email);
+  });
+
+  it("grava o access token do login na ponte usada pelos adapters HTTP de domínio (PSI-044)", async () => {
+    const { authAdapter } = await import("./index");
+
+    const response = await authAdapter.login(SEED_USER_CREDENTIALS);
+
+    expect(getBridgedAccessToken()).toBe(response.tokens.accessToken);
   });
 });
 

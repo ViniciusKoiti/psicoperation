@@ -1,10 +1,13 @@
 import { HttpAuthAdapter } from "./HttpAuthAdapter";
 import { MockAuthAdapter } from "./MockAuthAdapter";
+import { withAccessTokenBridge } from "./withAccessTokenBridge";
 
 export type { AuthAdapter } from "./AuthAdapter";
 export { AuthError, isUnauthorizedError } from "./AuthError";
 export { HttpAuthAdapter } from "./HttpAuthAdapter";
 export { MockAuthAdapter, SEED_USER_CREDENTIALS } from "./MockAuthAdapter";
+export { getBridgedAccessToken } from "./accessTokenBridge";
+export { withAccessTokenBridge } from "./withAccessTokenBridge";
 
 import type { AuthAdapter } from "./AuthAdapter";
 
@@ -36,7 +39,20 @@ export function resolveAuthAdapterKind(): AuthAdapterKind {
 }
 
 function createAuthAdapter(): AuthAdapter {
-  const kind = resolveAuthAdapterKind();
+  // Decisão "achatada" de propósito (não chama `resolveAuthAdapterKind`):
+  // só assim o minificador do build de produção (esbuild via Vite)
+  // consegue provar, dentro desta única função, que o branch
+  // `MockAuthAdapter` é morto quando não há override e
+  // `import.meta.env.PROD` é `true`, e removê-lo do bundle. A indireção
+  // via função auxiliar IMPEDE essa eliminação — confirmado empiricamente:
+  // o bundle de produção continha `MockAuthAdapter` inteiro (classe e
+  // credenciais semente) antes desta mudança. Ver a checagem anti-mock
+  // (PSI-044, `apps/clinic/e2e/check-no-mock-in-bundle.mjs`).
+  // `resolveAuthAdapterKind` continua exportada e testada isoladamente com
+  // o MESMO comportamento — só não é mais chamada aqui.
+  const explicitRaw = import.meta.env.VITE_AUTH_ADAPTER;
+  const explicit = explicitRaw === "mock" || explicitRaw === "http" ? explicitRaw : undefined;
+  const kind = explicit ?? (import.meta.env.PROD ? "http" : "mock");
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
     return new HttpAuthAdapter({ baseUrl });
@@ -44,5 +60,13 @@ function createAuthAdapter(): AuthAdapter {
   return new MockAuthAdapter();
 }
 
-/** Instância única do adapter de autenticação, consumida por `SessionProvider`. */
-export const authAdapter: AuthAdapter = createAuthAdapter();
+/**
+ * Instância única do adapter de autenticação, consumida por
+ * `SessionProvider`. Decorada por `withAccessTokenBridge` (PSI-044): cada
+ * login/registro/renovação bem-sucedidos aqui também grava o access token
+ * emitido na ponte de `./accessTokenBridge.ts`, que os adapters HTTP de
+ * domínio (`src/adapters/patients`, `src/adapters/appointments`, ...) leem
+ * para autenticar suas próprias chamadas — ver a doc de
+ * `accessTokenBridge.ts` para o porquê dessa indireção.
+ */
+export const authAdapter: AuthAdapter = withAccessTokenBridge(createAuthAdapter());

@@ -48,7 +48,13 @@ export function resolveChargesAdapterKind(): ChargesAdapterKind {
 }
 
 function createChargesAdapter(): ChargesAdapter {
-  const kind = resolveChargesAdapterKind();
+  // "Achatado" de propósito (não chama `resolveChargesAdapterKind`) — ver a
+  // explicação em `src/adapters/auth/index.ts` (`createAuthAdapter`,
+  // PSI-044): só assim o minificador de produção consegue eliminar
+  // `MockChargesAdapter` do bundle quando não há override.
+  const explicitRaw = import.meta.env.VITE_CHARGES_ADAPTER;
+  const explicit = explicitRaw === "mock" || explicitRaw === "http" ? explicitRaw : undefined;
+  const kind = explicit ?? (import.meta.env.PROD ? "http" : "mock");
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
     return new HttpChargesAdapter({ baseUrl });

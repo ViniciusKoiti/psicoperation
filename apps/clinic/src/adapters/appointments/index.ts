@@ -1,3 +1,4 @@
+import { getBridgedAccessToken } from "../auth/accessTokenBridge";
 import { HttpAgendaAdapter } from "./HttpAgendaAdapter";
 import { MockAgendaAdapter } from "./MockAgendaAdapter";
 
@@ -60,10 +61,18 @@ export function resolveAgendaAdapterKind(): AgendaAdapterKind {
 }
 
 function createAgendaAdapter(): AgendaAdapter {
-  const kind = resolveAgendaAdapterKind();
+  // "Achatado" de propósito (não chama `resolveAgendaAdapterKind`) — ver a
+  // explicação em `src/adapters/auth/index.ts` (`createAuthAdapter`,
+  // PSI-044): só assim o minificador de produção consegue eliminar
+  // `MockAgendaAdapter` do bundle quando não há override.
+  const explicitRaw = import.meta.env.VITE_AGENDA_ADAPTER;
+  const explicit = explicitRaw === "mock" || explicitRaw === "http" ? explicitRaw : undefined;
+  const kind = explicit ?? (import.meta.env.PROD ? "http" : "mock");
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
-    return new HttpAgendaAdapter({ baseUrl });
+    // Mesma ponte de `src/adapters/patients/index.ts` (PSI-044) — ver a doc
+    // de `src/adapters/auth/accessTokenBridge.ts`.
+    return new HttpAgendaAdapter({ baseUrl, getAccessToken: getBridgedAccessToken });
   }
   return new MockAgendaAdapter();
 }
