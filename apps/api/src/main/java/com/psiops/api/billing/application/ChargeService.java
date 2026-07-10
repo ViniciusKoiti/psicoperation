@@ -284,6 +284,37 @@ public class ChargeService {
     }
   }
 
+  /**
+   * Varredura diária agendada (PSI-029, ver {@code
+   * com.psiops.api.notification.billing.OverdueChargeScanScheduler}):
+   * detecta cobranças {@code pendente} vencidas de TODAS as usuárias
+   * (diferente de {@link #detectOverdueForUser}, que escopa a uma única
+   * usuária autenticada durante uma operação HTTP) e dispara o MESMO
+   * comando ({@link MarkChargeOverdueCommand}) para cada uma.
+   *
+   * <p><strong>Nenhuma regra de negócio nova</strong>: a regra "vencida e
+   * sem pagamento vira atrasada" já existe e é aplicada pelo agregado ({@link
+   * ChargeEntity#handle(MarkChargeOverdueCommand)}) desde a PSI-026; este
+   * método apenas amplia a SUPERFÍCIE que dispara essa mesma regra, de
+   * "toda operação HTTP do módulo financeiro" para "também uma vez ao dia,
+   * independentemente de a usuária acessar o sistema" — sem duplicar nem
+   * alterar a decisão em si (o acceptance criteria do manifesto PSI-029 pede
+   * que a verificação diária "transicione/emita conforme a regra do módulo
+   * financeiro", nunca reimplementada aqui). Idempotente pela mesma garantia
+   * do agregado: uma cobrança já {@code ATRASADA} nunca é retornada por
+   * {@link ChargeRepository#findByStatusAndDueDateBefore}, então nunca gera
+   * um segundo evento {@code cobranca.atrasada} para a mesma cobrança.
+   */
+  @Transactional
+  public void detectOverdueForAllUsers() {
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    List<ChargeEntity> overdueCandidates = chargeRepository.findByStatusAndDueDateBefore(ChargeStatus.PENDENTE, today);
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+    for (ChargeEntity candidate : overdueCandidates) {
+      commandGateway.sendAndWait(new MarkChargeOverdueCommand(candidate.getId(), now));
+    }
+  }
+
   private ChargeEntity findOwned(UUID userId, UUID chargeId) {
     return chargeRepository.findByIdAndUserId(chargeId, userId).orElseThrow(() -> new ChargeNotFoundException(chargeId));
   }

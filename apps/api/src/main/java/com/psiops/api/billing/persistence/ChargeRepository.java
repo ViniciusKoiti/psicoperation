@@ -39,6 +39,17 @@ public interface ChargeRepository extends JpaRepository<ChargeEntity, UUID> {
   List<ChargeEntity> findByUserIdAndStatusAndDueDateBefore(UUID userId, ChargeStatus status, LocalDate asOf);
 
   /**
+   * Cobranças {@code pendente} vencidas de TODAS as usuárias, sem escopo de
+   * tenant (PSI-029) - usado exclusivamente pela varredura diária agendada
+   * ({@code com.psiops.api.notification.billing.OverdueChargeScanScheduler}),
+   * que precisa varrer a base inteira (não há usuária autenticada num job
+   * agendado). Mesma query de {@link
+   * #findByUserIdAndStatusAndDueDateBefore(UUID, ChargeStatus, LocalDate)},
+   * sem o filtro de {@code userId}. Nunca usado por um controller HTTP.
+   */
+  List<ChargeEntity> findByStatusAndDueDateBefore(ChargeStatus status, LocalDate asOf);
+
+  /**
    * Listagem paginada escopada a {@code userId}, com filtros opcionais
    * (nulos = sem filtro) por paciente, competência e status — usada por
    * {@code GET /charges} (contrato PSI-020).

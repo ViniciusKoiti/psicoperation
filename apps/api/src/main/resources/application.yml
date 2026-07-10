@@ -24,12 +24,41 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  # SMTP para a entrega de e-mail dos lembretes/cobranças atrasadas (PSI-029,
+  # ver com.psiops.api.notification.email). Defaults de DEV apontam para o
+  # Mailpit do docker compose (PSI-011, mesmas variáveis do .env.example:
+  # MAILPIT_HOST/MAILPIT_SMTP_PORT); em produção, sobrescrever via env com um
+  # provedor SMTP real (fora de escopo desta tarefa — ver out_of_scope do
+  # manifesto PSI-029). Nenhum segredo hardcoded: Mailpit em dev não exige
+  # autenticação, por isso auth/starttls ficam desligados por default.
+  mail:
+    host: ${MAILPIT_HOST:localhost}
+    port: ${MAILPIT_SMTP_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 management:
   endpoints:
     web:
       exposure:
         # Apenas health nesta fase (sem endpoints de negócio).
         include: health
+  health:
+    # O contribuidor de saúde de e-mail (spring-boot-starter-mail) testaria
+    # uma conexão SMTP real a cada checagem de /health - frágil e lento para
+    # uma dependência apenas assíncrona/best-effort (PSI-029). Também evita
+    # quebrar o contexto em testes que substituem o JavaMailSender por um
+    # mock (@MockBean não registra um JavaMailSenderImpl real, e o
+    # contribuidor de saúde do Actuator falha ao montar sem nenhum).
+    mail:
+      enabled: false
   endpoint:
     health:
       probes:
@@ -75,6 +104,27 @@ psiops:
       monthly-rate-percent: 1.0
       fine-percent: 2.0
 
+  # Camada assíncrona de lembretes e e-mail (PSI-029, ver
+  # com.psiops.api.notification). Nenhum segredo hardcoded: o remetente é só
+  # um endereço de exibição, não uma credencial.
+  notification:
+    email:
+      from: "PsiOps <no-reply@psiops.local>"
+      retry:
+        # Backoff exponencial para falhas transitórias de SMTP: tentativa 1
+        # imediata, espera 200ms antes da 2ª, 400ms antes da 3ª (multiplier
+        # 2.0). Falha definitiva após max-attempts é só registrada em log
+        # (ver com.psiops.api.notification.email.RetryingEmailSender) — nunca
+        # trava o processador "email-delivery".
+        max-attempts: 3
+        initial-backoff: 200ms
+        multiplier: 2.0
+    # Varredura diária de cobranças vencidas (ver
+    # com.psiops.api.notification.billing.OverdueChargeScanScheduler) — fora
+    # do horário comercial típico de uma psicóloga solo brasileira.
+    overdue-scan:
+      cron: "0 0 3 * * *"
+
 # Fundação Axon (PSI-011, ver com.psiops.api.axon.config). Sem Axon Server:
 # o connector já é excluído no pom.xml, e a flag abaixo reforça que a
 # autoconfiguração do Axon não deve tentar abrir uma conexão de rede — com
@@ -101,3 +151,22 @@ axon:
       # "tracking" (default do framework) caso precisem de replay/paralelismo.
       axonsample:
         mode: subscribing
+      # PSI-029: agendamento/cancelamento de deadlines (com.psiops.api.
+      # notification.reminder.ReminderDeadlinePolicy e com.psiops.api.
+      # notification.appointment.AppointmentReminderPolicy). "subscribing"
+      # pelo mesmo motivo do axonsample — chamar o DeadlineManager é rápido e
+      # sem I/O externo, então rodar síncrono com a publicação do evento é
+      # seguro e determinístico em teste.
+      reminder-deadlines:
+        mode: subscribing
+      appointment-reminders:
+        mode: subscribing
+      # PSI-029: entrega de e-mail (com.psiops.api.notification.reminder.
+      # ReminderEmailHandler e com.psiops.api.notification.billing.
+      # ChargeOverdueEmailHandler). "tracking" (thread própria, o default do
+      # framework, declarado aqui só para documentar a decisão) isola retries
+      # de SMTP — que podem bloquear por vários segundos (backoff exponencial)
+      # — do restante do sistema: nunca represam o agendamento de deadlines
+      # nem requisições HTTP (risco explícito do manifesto PSI-029).
+      email-delivery:
+        mode: tracking
