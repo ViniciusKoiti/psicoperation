@@ -7,11 +7,14 @@ interface NavItem {
 }
 
 /**
- * Itens de navegação da sidebar. Só existe uma feature placeholder
- * (dashboard) nesta tarefa; features de domínio (pacientes, mensalidades,
- * cobranças) acrescentam entradas aqui quando forem implementadas.
+ * Itens de navegação da sidebar. "Pacientes" chega na PSI-033; features de
+ * domínio futuras (mensalidades, cobranças) acrescentam entradas aqui quando
+ * forem implementadas.
  */
-const NAV_ITEMS: readonly NavItem[] = [{ label: "Dashboard", to: "/" }];
+const NAV_ITEMS: readonly NavItem[] = [
+  { label: "Dashboard", to: "/" },
+  { label: "Pacientes", to: "/pacientes" },
+];
 
 /** Lista de navegação da sidebar, usada pelo shell de layout das rotas protegidas. */
 export function Sidebar() {
@@ -25,7 +28,7 @@ export function Sidebar() {
           component={Link}
           to={item.to}
           label={item.label}
-          active={pathname === item.to}
+          active={item.to === "/" ? pathname === item.to : pathname.startsWith(item.to)}
         />
       ))}
     </Stack>
