@@ -1,57 +1,57 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { HttpChargesReadAdapter } from "./HttpChargesReadAdapter";
-import { MockChargesReadAdapter } from "./MockChargesReadAdapter";
-import { resolveChargesReadAdapterKind } from "./index";
+import { HttpChargesAdapter } from "./HttpChargesAdapter";
+import { MockChargesAdapter } from "./MockChargesAdapter";
+import { resolveChargesAdapterKind } from "./index";
 
 /**
  * `./index.ts` é o único ponto de composição da escolha mock/http (mesmo
  * padrão de `src/adapters/patients/index.test.ts`, PSI-033).
  */
-describe("resolveChargesReadAdapterKind", () => {
+describe("resolveChargesAdapterKind", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
   it("usa mock quando não há override e o build não é de produção", () => {
     vi.stubEnv("PROD", false);
-    vi.stubEnv("VITE_CHARGES_READ_ADAPTER", "");
+    vi.stubEnv("VITE_CHARGES_ADAPTER", "");
 
-    expect(resolveChargesReadAdapterKind()).toBe("mock");
+    expect(resolveChargesAdapterKind()).toBe("mock");
   });
 
   it("usa http por padrão em build de produção, mesmo sem override", () => {
     vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_CHARGES_READ_ADAPTER", "");
+    vi.stubEnv("VITE_CHARGES_ADAPTER", "");
 
-    expect(resolveChargesReadAdapterKind()).toBe("http");
+    expect(resolveChargesAdapterKind()).toBe("http");
   });
 
-  it("respeita VITE_CHARGES_READ_ADAPTER=http mesmo fora de produção", () => {
+  it("respeita VITE_CHARGES_ADAPTER=http mesmo fora de produção", () => {
     vi.stubEnv("PROD", false);
-    vi.stubEnv("VITE_CHARGES_READ_ADAPTER", "http");
+    vi.stubEnv("VITE_CHARGES_ADAPTER", "http");
 
-    expect(resolveChargesReadAdapterKind()).toBe("http");
+    expect(resolveChargesAdapterKind()).toBe("http");
   });
 
-  it("respeita VITE_CHARGES_READ_ADAPTER=mock mesmo em produção", () => {
+  it("respeita VITE_CHARGES_ADAPTER=mock mesmo em produção", () => {
     vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_CHARGES_READ_ADAPTER", "mock");
+    vi.stubEnv("VITE_CHARGES_ADAPTER", "mock");
 
-    expect(resolveChargesReadAdapterKind()).toBe("mock");
+    expect(resolveChargesAdapterKind()).toBe("mock");
   });
 });
 
-describe("chargesReadAdapter (composição eager no import)", () => {
+describe("chargesAdapter (composição eager no import)", () => {
   it("expõe o adapter resolvido a partir do ambiente de teste (mock por padrão em test/dev)", async () => {
-    const { chargesReadAdapter } = await import("./index");
-    expect(chargesReadAdapter).toBeInstanceOf(MockChargesReadAdapter);
+    const { chargesAdapter } = await import("./index");
+    expect(chargesAdapter).toBeInstanceOf(MockChargesAdapter);
   });
 });
 
-describe("HttpChargesReadAdapter vs MockChargesReadAdapter", () => {
+describe("HttpChargesAdapter vs MockChargesAdapter", () => {
   it("são implementações distintas selecionáveis pelo mesmo ponto de composição", () => {
-    expect(new MockChargesReadAdapter()).not.toBeInstanceOf(HttpChargesReadAdapter);
-    expect(new HttpChargesReadAdapter({ baseUrl: "https://x" })).not.toBeInstanceOf(MockChargesReadAdapter);
+    expect(new MockChargesAdapter()).not.toBeInstanceOf(HttpChargesAdapter);
+    expect(new HttpChargesAdapter({ baseUrl: "https://x" })).not.toBeInstanceOf(MockChargesAdapter);
   });
 });

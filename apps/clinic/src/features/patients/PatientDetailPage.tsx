@@ -8,7 +8,7 @@ import {
   type AppointmentHistoryEntry,
   type AppointmentsReadAdapter,
 } from "../../adapters/appointments";
-import { chargesReadAdapter as defaultChargesAdapter, type ChargesReadAdapter } from "../../adapters/charges";
+import { chargesAdapter as defaultChargesAdapter, type ChargesReadAdapter } from "../../adapters/charges";
 import { isPatientNotFoundError, patientsAdapter as defaultPatientsAdapter, type PatientsAdapter } from "../../adapters/patients";
 import { EmptyState } from "../../components/EmptyState";
 import { formatCentsAsBRL } from "./money";

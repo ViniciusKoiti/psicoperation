@@ -5,7 +5,7 @@ import { AgendaPage } from "../features/agenda/AgendaPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
-import { FinancePlaceholderPage } from "../features/finance/FinancePlaceholderPage";
+import { FinancePage } from "../features/finance/FinancePage";
 import { OnboardingPage } from "../features/onboarding/OnboardingPage";
 import { PatientDetailPage } from "../features/patients/PatientDetailPage";
 import { PatientFormPage } from "../features/patients/PatientFormPage";
@@ -35,10 +35,12 @@ import { AuthGuard } from "./AuthGuard";
  * shell padrão.
  *
  * `/` (PSI-032): dashboard — visão do dia (próximas consultas, pendências
- * financeiras, tarefas, atalhos). `/financeiro` é um placeholder desta
- * mesma tarefa, só para o atalho "Financeiro" do dashboard ter uma rota real
- * até a tela completa de financeiro existir (PSI-037) — mesmo espírito de
- * `/onboarding` antes da PSI-031.
+ * financeiras, tarefas, atalhos). `/financeiro` (PSI-037): núcleo
+ * financeiro — mensalidades do mês agrupadas por situação, geração
+ * idempotente a partir dos pacientes ativos, marcar como paga (com
+ * desfazer) e calculadora de juros simples — SUBSTITUI o placeholder que a
+ * PSI-032 havia deixado só para o atalho "Financeiro" do dashboard ter uma
+ * rota real.
  */
 export function AppRoutes() {
   return (
@@ -54,7 +56,7 @@ export function AppRoutes() {
           <Route path="/pacientes/novo" element={<PatientFormPage />} />
           <Route path="/pacientes/:patientId/editar" element={<PatientFormPage />} />
           <Route path="/pacientes/:patientId" element={<PatientDetailPage />} />
-          <Route path="/financeiro" element={<FinancePlaceholderPage />} />
+          <Route path="/financeiro" element={<FinancePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

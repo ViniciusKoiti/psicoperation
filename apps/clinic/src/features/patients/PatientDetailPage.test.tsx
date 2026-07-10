@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { type AppointmentsReadAdapter, MockAgendaAdapter } from "../../adapters/appointments";
-import { MockChargesReadAdapter } from "../../adapters/charges";
+import { MockChargesAdapter } from "../../adapters/charges";
 import { MockPatientsAdapter } from "../../adapters/patients";
 import { PatientDetailPage } from "./PatientDetailPage";
 import { PatientFormPage } from "./PatientFormPage";
@@ -53,14 +53,14 @@ function charge(overrides: Partial<Charge>): Charge {
 interface RenderOptions {
   patientsAdapter: MockPatientsAdapter;
   appointmentsAdapter?: AppointmentsReadAdapter;
-  chargesAdapter?: MockChargesReadAdapter;
+  chargesAdapter?: MockChargesAdapter;
   path?: string;
 }
 
 function renderDetail({
   patientsAdapter,
   appointmentsAdapter = new MockAgendaAdapter([]),
-  chargesAdapter = new MockChargesReadAdapter({}),
+  chargesAdapter = new MockChargesAdapter({}),
   path = "/pacientes/1",
 }: RenderOptions) {
   return render(
@@ -98,7 +98,7 @@ describe("PatientDetailPage", () => {
         attendance: { attendance: "faltou", administrativeNotes: "Faltou sem aviso prévio." },
       },
     ]);
-    const chargesAdapter = new MockChargesReadAdapter({ "1": [charge({ id: "c1", status: "em_dia" })] });
+    const chargesAdapter = new MockChargesAdapter({ "1": [charge({ id: "c1", status: "em_dia" })] });
 
     renderDetail({ patientsAdapter, appointmentsAdapter, chargesAdapter });
 
@@ -126,7 +126,7 @@ describe("PatientDetailPage", () => {
 
   it("agrupa mensalidades por status (em dia, pendente, atrasada)", async () => {
     const patientsAdapter = new MockPatientsAdapter([patient()]);
-    const chargesAdapter = new MockChargesReadAdapter({
+    const chargesAdapter = new MockChargesAdapter({
       "1": [
         charge({ id: "c1", status: "em_dia", amount: 10000 }),
         charge({ id: "c2", status: "em_dia", amount: 15000 }),
