@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { type AgendaAdapter, MockAgendaAdapter } from "../../adapters/appointments";
 import { type ChargesReadAdapter, MockChargesAdapter } from "../../adapters/charges";
 import { MockPatientsAdapter, type PatientsAdapter } from "../../adapters/patients";
-import { type TasksReadAdapter, MockTasksReadAdapter } from "../../adapters/tasks";
+import { type TasksReadAdapter, MockTasksAdapter } from "../../adapters/tasks";
 import { DashboardPage, type DashboardPageProps } from "./DashboardPage";
 
 // "Hoje" fixo injetado em todos os testes — nenhum teste depende do relógio real.
@@ -81,7 +81,7 @@ function renderDashboard(options: RenderOptions = {}) {
           agendaAdapter={options.agendaAdapter ?? new MockAgendaAdapter([])}
           patientsAdapter={options.patientsAdapter ?? new MockPatientsAdapter(PATIENTS)}
           chargesReadAdapter={options.chargesReadAdapter ?? new MockChargesAdapter({})}
-          tasksReadAdapter={options.tasksReadAdapter ?? new MockTasksReadAdapter([])}
+          tasksReadAdapter={options.tasksReadAdapter ?? new MockTasksAdapter([])}
           today={options.today ?? TODAY}
         />
       </MemoryRouter>
@@ -194,7 +194,7 @@ describe("DashboardPage — pendências financeiras", () => {
 
 describe("DashboardPage — tarefas do dia", () => {
   it("mostra tarefas vencendo hoje e atrasadas, com indicação visual de atraso, excluindo futuras e concluídas", async () => {
-    const tasksReadAdapter = new MockTasksReadAdapter([
+    const tasksReadAdapter = new MockTasksAdapter([
       task({ id: "atrasada", title: "Enviar recibo", dueDate: "2026-07-05" }),
       task({ id: "hoje", title: "Confirmar consulta", dueDate: "2026-07-10" }),
       task({ id: "futura", title: "Revisar agenda", dueDate: "2026-07-20" }),

@@ -26,25 +26,32 @@ export interface ListTasksParams {
  * PSI-034): uma interface de leitura mínima, criada por uma tarefa que
  * precisa de dados de um domínio cuja tela completa ainda não existe.
  *
- * PROJETADA PARA SER ESTENDIDA PELA PSI-038 — o que esta interface
- * deliberadamente NÃO cobre, e fica para a tela completa de tarefas decidir
- * como adicionar (extensão desta interface, ou uma nova ao lado dela no
- * mesmo módulo `src/adapters/tasks/**`):
- * - criação (`POST /tasks`), edição/conclusão (`PUT /tasks/{taskId}`,
- *   `completedAt` presente conclui, ausente reabre) e remoção
- *   (`DELETE /tasks/{taskId}`) — todas já expostas pelo contrato
- *   (`operations["createTask"|"updateTask"|"deleteTask"]`) mas fora do
- *   escopo deste dashboard, que só lê;
- * - paginação REAL (`HttpTasksReadAdapter` busca só a primeira página, larga
- *   o bastante — mesma ressalva de `HttpChargesReadAdapter`).
+ * ESTENDIDA PELA PSI-038 (ver `TasksAdapter`, neste mesmo módulo): a tela
+ * completa de tarefas (criação, edição de título/vencimento, conclusão e
+ * reabertura) virou uma interface própria que ESTENDE esta aqui, em vez de
+ * coexistir com ela — mesma reconciliação que `AgendaAdapter` fez sobre
+ * `AppointmentsReadAdapter` (PSI-035) e `ChargesAdapter` sobre
+ * `ChargesReadAdapter` (PSI-037). `MockTasksAdapter`/`HttpTasksAdapter`
+ * (PSI-038) SUBSTITUEM `MockTasksReadAdapter`/`HttpTasksReadAdapter`
+ * (PSI-032) como única implementação de dados de tarefas do app;
+ * `DashboardPage` (que só lê) continua tipado por `TasksReadAdapter`, sem
+ * nenhuma mudança de contrato para essa tela — só a troca de instância
+ * (`tasksAdapter`, exportado por `./index.ts`).
+ *
+ * Esta interface deliberadamente NÃO cobre remoção
+ * (`DELETE /tasks/{taskId}`, `operations["deleteTask"]`) — fora do escopo de
+ * aceite da PSI-038 (só criação, edição, conclusão/reabertura) — nem
+ * paginação REAL (`HttpTasksAdapter` busca só a primeira página, larga o
+ * bastante — mesma ressalva de `HttpChargesAdapter`).
  *
  * O filtro "vencimento hoje ou atrasada" e a ordenação para exibição são
  * responsabilidade da camada de apresentação (`selectDueTasks`/`isTaskOverdue`
- * em `src/features/dashboard/dashboard.ts`), não deste adapter — mesmo
- * padrão de `AppointmentsReadAdapter`/`ChargesReadAdapter`.
+ * em `src/features/dashboard/dashboard.ts`; `separateTasksByStatus`/
+ * `isTaskOverdue` em `src/features/tasks/tasks.ts` para a tela completa),
+ * não deste adapter — mesmo padrão de `AppointmentsReadAdapter`/`ChargesReadAdapter`.
  *
- * Implementações: `MockTasksReadAdapter` (estado em memória, padrão em
- * desenvolvimento e testes) e `HttpTasksReadAdapter` (tipada pelo contrato).
+ * Implementações: `MockTasksAdapter` (estado em memória, padrão em
+ * desenvolvimento e testes) e `HttpTasksAdapter` (tipada pelo contrato).
  * Ponto de composição único (seleção mock/http por variável de ambiente) em
  * `./index.ts`, mesmo padrão dos demais adapters.
  */
