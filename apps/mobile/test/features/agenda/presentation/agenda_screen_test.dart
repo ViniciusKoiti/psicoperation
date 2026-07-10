@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:psiops_mobile/features/agenda/data/in_memory_appointment_adapter.dart';
-import 'package:psiops_mobile/features/agenda/data/patient_lookup_adapter.dart';
 import 'package:psiops_mobile/features/agenda/presentation/agenda_screen.dart';
+import 'package:psiops_mobile/features/patients/data/patients_adapter.dart';
 
 // segunda-feira fixa: alinha com o seed do InMemoryAppointmentAdapter (uma
 // consulta às 09:00 e outra às 15:30 no dia, mais uma recorrente às 11:00).
@@ -25,7 +25,7 @@ void main() {
   Widget buildAgenda() => _wrap(
     AgendaScreen(
       appointmentAdapter: InMemoryAppointmentAdapter(now: fixedNow),
-      patientLookupAdapter: InMemoryPatientLookupAdapter(now: fixedNow),
+      patientsAdapter: InMemoryPatientsAdapter(now: fixedNow),
       now: fixedNow,
     ),
   );

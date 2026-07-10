@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:psiops_contracts/api.dart';
 
 import '../../../app/formatting.dart';
+import '../../patients/data/patients_adapter.dart';
 import '../data/appointment_adapter.dart';
 import '../data/conflict_detector.dart';
-import '../data/patient_lookup_adapter.dart';
 
 /// Modo de exibição da agenda: dia único ou semana inteira.
 enum AgendaViewMode { day, week }
@@ -14,9 +14,12 @@ enum AgendaLoadStatus { loading, ready, error }
 
 /// Estado (separado da apresentação) da feature Agenda.
 ///
-/// Depende de [AppointmentAdapter] e [PatientLookupAdapter] por injeção — o
+/// Depende de [AppointmentAdapter] e [PatientsAdapter] por injeção — o
 /// ponto de composição (`app/app.dart`) decide qual adapter (mock ou real)
-/// fornecer, seguindo o padrão de PSI-040.
+/// fornecer, seguindo o padrão de PSI-040. Usa apenas
+/// `PatientsAdapter.listPatients()` (todos os pacientes, ativos e
+/// arquivados) para resolver nomes — o CRUD completo de pacientes é a
+/// feature `patients` (PSI-042).
 ///
 /// A janela de dados carregada por [load] é ampla (de 7 dias atrás a ~4
 /// meses à frente do instante corrente) para que a navegação entre
@@ -29,7 +32,7 @@ class AgendaController extends ChangeNotifier {
       _focusedDay = dateOnly((now ?? DateTime.now)());
 
   final AppointmentAdapter _appointments;
-  final PatientLookupAdapter _patients;
+  final PatientsAdapter _patients;
   final DateTime Function() _now;
   static const _detector = AppointmentConflictDetector();
 

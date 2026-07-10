@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:psiops_contracts/api.dart';
 
 import '../../../app/formatting.dart';
+import '../../patients/data/patients_adapter.dart';
 import '../data/appointment_adapter.dart';
-import '../data/patient_lookup_adapter.dart';
 import '../state/agenda_controller.dart';
 import 'widgets/appointment_form_sheet.dart';
 
@@ -18,12 +18,12 @@ class AgendaScreen extends StatefulWidget {
   const AgendaScreen({
     super.key,
     required this.appointmentAdapter,
-    required this.patientLookupAdapter,
+    required this.patientsAdapter,
     this.now,
   });
 
   final AppointmentAdapter appointmentAdapter;
-  final PatientLookupAdapter patientLookupAdapter;
+  final PatientsAdapter patientsAdapter;
 
   /// Relógio injetável — usado apenas em testes para alinhar "hoje" com o
   /// instante de referência usado pelos adapters mock (produção usa
@@ -37,7 +37,7 @@ class AgendaScreen extends StatefulWidget {
 class _AgendaScreenState extends State<AgendaScreen> {
   late final AgendaController _controller = AgendaController(
     widget.appointmentAdapter,
-    widget.patientLookupAdapter,
+    widget.patientsAdapter,
     now: widget.now,
   );
 
@@ -51,7 +51,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Future<void> _loadPatients() async {
-    final patients = await widget.patientLookupAdapter.listPatients();
+    final patients = await widget.patientsAdapter.listPatients();
     if (!mounted) return;
     setState(() => _patients = patients);
   }

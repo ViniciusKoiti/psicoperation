@@ -1,5 +1,5 @@
-// Formatação pt-BR e utilidades de data/hora usadas pelo dashboard e pela
-// agenda.
+// Formatação pt-BR e utilidades de data/hora usadas pelo dashboard, pela
+// agenda e pela feature de pacientes.
 //
 // Datas e horários trafegam em ISO 8601 nas bordas dos adapters (modelos
 // gerados de `packages/contracts/gen/dart`); estas funções entram apenas na
@@ -106,4 +106,55 @@ String chargeStatusLabel(ChargeStatus status) {
   if (status == ChargeStatus.pendente) return 'Pendente';
   if (status == ChargeStatus.atrasada) return 'Atrasada';
   return status.value;
+}
+
+/// Rótulo pt-BR de [PatientStatus] para exibição na UI.
+String patientStatusLabel(PatientStatus status) {
+  if (status == PatientStatus.ativo) return 'Ativo';
+  if (status == PatientStatus.inativo) return 'Arquivado';
+  return status.value;
+}
+
+/// Rótulo pt-BR de [AttendanceStatus] (registro administrativo de presença —
+/// NUNCA dado clínico) para exibição na UI.
+String attendanceStatusLabel(AttendanceStatus status) {
+  if (status == AttendanceStatus.compareceu) return 'Compareceu';
+  if (status == AttendanceStatus.faltou) return 'Faltou';
+  if (status == AttendanceStatus.remarcada) return 'Remarcada';
+  return status.value;
+}
+
+/// Converte uma entrada de texto pt-BR (ex.: `"150,00"`, `"150"`,
+/// `"1.234,56"`) em centavos inteiros. Retorna `null` se [input] não puder
+/// ser interpretado como um valor monetário válido — usado pela validação do
+/// formulário de paciente (mensagens de erro em pt-BR ficam a cargo do
+/// chamador). Nunca passa por `double`: o resultado é sempre um inteiro em
+/// centavos (regra invariável do CLAUDE.md).
+int? parseCentsFromBRLInput(String input) {
+  final trimmed = input.trim();
+  if (trimmed.isEmpty) return null;
+  final cleaned = trimmed.replaceAll('.', '');
+  final parts = cleaned.split(',');
+  if (parts.isEmpty || parts.length > 2) return null;
+
+  final reaisPart = parts[0];
+  if (reaisPart.isEmpty || !RegExp(r'^\d+$').hasMatch(reaisPart)) return null;
+
+  var centavosPart = parts.length == 2 ? parts[1] : '00';
+  if (!RegExp(r'^\d{1,2}$').hasMatch(centavosPart)) return null;
+  if (centavosPart.length == 1) centavosPart = '${centavosPart}0';
+
+  final reais = int.parse(reaisPart);
+  final centavos = int.parse(centavosPart);
+  return reais * 100 + centavos;
+}
+
+/// Formata centavos como texto editável pt-BR sem o prefixo `R$` (ex.:
+/// `15000` → `"150,00"`) — usado para preencher o campo de valor da
+/// mensalidade ao editar um paciente existente. Contraparte de
+/// [parseCentsFromBRLInput].
+String centsToBRLInput(int cents) {
+  final reais = cents ~/ 100;
+  final centavos = cents % 100;
+  return '$reais,${centavos.toString().padLeft(2, '0')}';
 }
