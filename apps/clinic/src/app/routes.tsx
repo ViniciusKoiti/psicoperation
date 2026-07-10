@@ -10,6 +10,7 @@ import { OnboardingPage } from "../features/onboarding/OnboardingPage";
 import { PatientDetailPage } from "../features/patients/PatientDetailPage";
 import { PatientFormPage } from "../features/patients/PatientFormPage";
 import { PatientsListPage } from "../features/patients/PatientsListPage";
+import { SettingsPage } from "../features/settings/SettingsPage";
 import { AuthGuard } from "./AuthGuard";
 
 /**
@@ -41,6 +42,13 @@ import { AuthGuard } from "./AuthGuard";
  * desfazer) e calculadora de juros simples — SUBSTITUI o placeholder que a
  * PSI-032 havia deixado só para o atalho "Financeiro" do dashboard ter uma
  * rota real.
+ *
+ * `/configuracoes` (PSI-039, última feature do app clinic): página
+ * permanente com o mesmo shell padrão, em seções independentes, para
+ * revisar e editar o que o onboarding definiu (perfil, valor padrão de
+ * sessão, atendimento, lembretes) e encerrar a sessão. Diferente de
+ * `/onboarding`, fica DENTRO do `ProtectedLayout` — é uma tela de domínio
+ * recorrente, não um wizard de configuração inicial.
  */
 export function AppRoutes() {
   return (
@@ -57,6 +65,7 @@ export function AppRoutes() {
           <Route path="/pacientes/:patientId/editar" element={<PatientFormPage />} />
           <Route path="/pacientes/:patientId" element={<PatientDetailPage />} />
           <Route path="/financeiro" element={<FinancePage />} />
+          <Route path="/configuracoes" element={<SettingsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
