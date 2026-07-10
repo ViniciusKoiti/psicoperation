@@ -1,6 +1,6 @@
-import type { ChargePage, Problem } from "@psiops/contracts";
+import type { Charge, ChargePage, Problem } from "@psiops/contracts";
 
-import type { ChargesReadAdapter } from "./ChargesReadAdapter";
+import type { ChargesReadAdapter, ListChargesParams } from "./ChargesReadAdapter";
 import { ChargesReadAdapterError } from "./ChargesReadAdapterError";
 
 /**
@@ -50,6 +50,18 @@ export class HttpChargesReadAdapter implements ChargesReadAdapter {
 
   async listChargesByPatient(patientId: string) {
     const query = new URLSearchParams({ patientId, page: "0", size: String(HTTP_CHARGES_READ_PAGE_SIZE) });
+
+    const response = await this.fetchFn(`${this.baseUrl}/charges?${query.toString()}`, {
+      method: "GET",
+      headers: this.authHeaders(),
+    });
+    const page = await this.parseResponse<ChargePage>(response);
+    return page.items;
+  }
+
+  async listCharges(params: ListChargesParams = {}): Promise<Charge[]> {
+    const query = new URLSearchParams({ page: "0", size: String(HTTP_CHARGES_READ_PAGE_SIZE) });
+    if (params.status) query.set("status", params.status);
 
     const response = await this.fetchFn(`${this.baseUrl}/charges?${query.toString()}`, {
       method: "GET",
