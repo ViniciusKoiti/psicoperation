@@ -1,6 +1,9 @@
 package com.psiops.api.reminder.persistence;
 
+import com.psiops.api.reminder.domain.command.CancelReminderCommand;
 import com.psiops.api.reminder.domain.command.ScheduleReminderCommand;
+import com.psiops.api.reminder.domain.event.ReminderCancelledEvent;
+import com.psiops.api.reminder.domain.event.ReminderDueDetectedEvent;
 import com.psiops.api.reminder.domain.event.ReminderScheduledEvent;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +14,7 @@ import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.axonframework.commandhandling.CommandHandler;
+import org.axonframework.deadline.annotation.DeadlineHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
@@ -42,6 +46,21 @@ import org.axonframework.spring.stereotype.Aggregate;
 @Table(name = "reminders")
 @Aggregate(repository = "reminderAggregateRepository")
 public class ReminderEntity {
+
+  /**
+   * Nome do deadline agendado no {@code DeadlineManager} para este lembrete
+   * (PSI-029). O agendamento/cancelamento real NÃO acontece neste agregado
+   * (mesma justificativa documentada em {@code
+   * com.psiops.api.axonsample.domain.SampleTaskAggregate}: injetar {@code
+   * DeadlineManager} como parâmetro de handler conflita com o {@code
+   * FixtureResourceParameterResolverFactory} de {@code axon-test}) - quem
+   * chama {@code DeadlineManager.schedule(...)}/{@code
+   * cancelAllWithinScope(...)} é {@code com.psiops.api.notification.
+   * reminder.ReminderDeadlinePolicy}, reagindo a {@link ReminderScheduledEvent}
+   * e {@link ReminderCancelledEvent}. O {@code @DeadlineHandler} abaixo é
+   * quem efetivamente recebe e reage ao disparo.
+   */
+  public static final String REMINDER_DUE_DEADLINE_NAME = "reminderDue";
 
   @Id
   @AggregateIdentifier
@@ -199,5 +218,57 @@ public class ReminderEntity {
     this.appointmentId = event.appointmentId();
     this.chargeId = event.chargeId();
     this.createdAt = event.createdAt();
+  }
+
+  // ---------------------------------------------------------------------
+  // Cancelamento e deadline (PSI-029). Ver javadoc da classe e de {@code
+  // REMINDER_DUE_DEADLINE_NAME}: o agendamento/cancelamento real no
+  // DeadlineManager acontece fora deste agregado.
+  // ---------------------------------------------------------------------
+
+  /**
+   * Cancela o lembrete se ainda estiver {@code AGENDADO}. Idempotente: se já
+   * tiver sido enviado, falhado ou cancelado anteriormente, não aplica evento
+   * novo (garante que {@link ReminderCancelledEvent} nunca duplique para o
+   * mesmo lembrete, mesmo padrão de {@code
+   * ChargeEntity#handle(MarkChargeOverdueCommand)}).
+   */
+  @CommandHandler
+  public void handle(CancelReminderCommand command) {
+    if (status != ReminderStatus.AGENDADO) {
+      return;
+    }
+    AggregateLifecycle.apply(new ReminderCancelledEvent(id, command.cancelledAt()));
+  }
+
+  @EventSourcingHandler
+  public void on(ReminderCancelledEvent event) {
+    this.status = ReminderStatus.CANCELADO;
+  }
+
+  /**
+   * Disparo do deadline agendado (ver {@link #REMINDER_DUE_DEADLINE_NAME}).
+   * Idempotente: só aplica o fato se o lembrete ainda estiver {@code
+   * AGENDADO} — se já tiver sido cancelado (consulta remarcada/cancelada)
+   * entre o agendamento e o disparo, o deadline é ignorado.
+   *
+   * <p>Não muda o estado para {@code ENVIADO} aqui — ver javadoc de {@link
+   * ReminderDueDetectedEvent} sobre essa responsabilidade ser exclusiva do
+   * handler de e-mail, após a entrega de fato (ou falha definitiva).
+   */
+  @DeadlineHandler(deadlineName = REMINDER_DUE_DEADLINE_NAME)
+  public void onReminderDue() {
+    if (status != ReminderStatus.AGENDADO) {
+      return;
+    }
+    AggregateLifecycle.apply(
+        new ReminderDueDetectedEvent(
+            id, userId, channel, subject, body, scheduledFor, patientId, appointmentId, chargeId,
+            OffsetDateTime.now(java.time.ZoneOffset.UTC)));
+  }
+
+  @EventSourcingHandler
+  public void on(ReminderDueDetectedEvent event) {
+    // Nenhuma mudança de estado: ver javadoc de ReminderDueDetectedEvent.
   }
 }

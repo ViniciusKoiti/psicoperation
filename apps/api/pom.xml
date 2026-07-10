@@ -90,6 +90,14 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
+    <!-- JavaMailSender para a entrega de e-mail dos lembretes/cobranças
+         atrasadas (PSI-029, ver com.psiops.api.notification.email). SMTP
+         apontado para o Mailpit em dev (spring.mail.* em application.yml),
+         externalizável via env em produção. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
     <!-- Habilita @Valid nos DTOs de contrato (RegisterRequest/LoginRequest/
          RefreshTokenRequest já trazem as anotações jakarta.validation). -->
     <dependency>

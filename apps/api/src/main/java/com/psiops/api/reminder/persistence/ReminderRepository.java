@@ -25,6 +25,28 @@ public interface ReminderRepository extends JpaRepository<ReminderEntity, UUID> 
   Optional<ReminderEntity> findByIdAndUserId(UUID id, UUID userId);
 
   /**
+   * Todos os lembretes de TODAS as usuárias num dado status, sem escopo de
+   * tenant (PSI-029) — usado exclusivamente pela reidratação de deadlines no
+   * startup ({@code com.psiops.api.notification.reminder.
+   * ReminderDeadlineRehydrationRunner}), que precisa varrer a base inteira
+   * (o {@code SimpleDeadlineManager} não sobrevive a restart), não a base de
+   * uma única usuária autenticada. Nunca usado por um controller HTTP.
+   */
+  List<ReminderEntity> findByStatus(ReminderStatus status);
+
+  /**
+   * Lembretes vinculados a uma consulta específica num dado status, sem
+   * escopo de tenant (PSI-029) — usado exclusivamente por {@code
+   * com.psiops.api.notification.appointment.AppointmentReminderPolicy} para
+   * localizar (e cancelar) os lembretes de véspera/dia de uma consulta
+   * remarcada/cancelada; o {@code appointmentId} já é, por si, escopado a
+   * uma única usuária (nunca compartilhado entre tenants), então a ausência
+   * de {@code userId} aqui não abre brecha multi-tenant. Nunca usado por um
+   * controller HTTP.
+   */
+  List<ReminderEntity> findByAppointmentIdAndStatus(UUID appointmentId, ReminderStatus status);
+
+  /**
    * Listagem paginada escopada a {@code userId}, com filtros opcionais
    * (nulos = sem filtro) por paciente e status — usada por {@code GET
    * /reminders} (contrato PSI-020). Mesmo padrão de {@code
