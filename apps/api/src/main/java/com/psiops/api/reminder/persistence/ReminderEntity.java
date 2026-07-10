@@ -1,5 +1,7 @@
 package com.psiops.api.reminder.persistence;
 
+import com.psiops.api.reminder.domain.command.ScheduleReminderCommand;
+import com.psiops.api.reminder.domain.event.ReminderScheduledEvent;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,6 +10,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import org.axonframework.commandhandling.CommandHandler;
+import org.axonframework.eventsourcing.EventSourcingHandler;
+import org.axonframework.modelling.command.AggregateIdentifier;
+import org.axonframework.modelling.command.AggregateLifecycle;
+import org.axonframework.spring.stereotype.Aggregate;
 
 /**
  * Lembrete agendado/enviado pela psicóloga a um paciente — tabela {@code
@@ -17,12 +24,27 @@ import java.util.UUID;
  * vínculos ({@code patientId}/{@code appointmentId}/{@code chargeId}) são
  * todos opcionais e independentes. Multi-tenant estrito: toda linha carrega
  * {@code userId} da psicóloga dona do lembrete.
+ *
+ * <p><strong>Agregado Axon state-stored (PSI-027)</strong>: mesmo padrão de
+ * {@code com.psiops.api.appointment.persistence.AppointmentEntity} (PSI-024)
+ * e {@code com.psiops.api.billing.persistence.ChargeEntity} (PSI-026) — esta
+ * classe é, simultaneamente, a entidade JPA de persistência e o agregado
+ * Axon (repositório {@code GenericJpaRepository} explícito, ver {@link
+ * com.psiops.api.reminder.config.ReminderAggregateRepositoryConfig}). O
+ * {@code @CommandHandler} só aplica o evento de agendamento — validações que
+ * dependem de outros repositórios (posse do vínculo opcional, momento no
+ * futuro) são responsabilidade do caso de uso ({@code ReminderService}),
+ * antes de despachar o comando (ver javadoc de {@code
+ * ScheduleReminderCommand} sobre o limite desta tarefa: nenhum {@code
+ * DeadlineManager} é acionado aqui — isso é exclusivo da PSI-029).
  */
 @Entity
 @Table(name = "reminders")
+@Aggregate(repository = "reminderAggregateRepository")
 public class ReminderEntity {
 
   @Id
+  @AggregateIdentifier
   @Column(nullable = false, updatable = false)
   private UUID id;
 
@@ -138,5 +160,44 @@ public class ReminderEntity {
 
   public OffsetDateTime getCreatedAt() {
     return createdAt;
+  }
+
+  // ---------------------------------------------------------------------
+  // Comando e evento Axon (PSI-027). Ver javadoc da classe e de {@code
+  // ScheduleReminderCommand}: o @CommandHandler só aplica o fato de
+  // agendamento; posse do vínculo opcional e validade do momento futuro são
+  // checadas pelo caso de uso antes de despachar o comando.
+  // ---------------------------------------------------------------------
+
+  @CommandHandler
+  public ReminderEntity(ScheduleReminderCommand command) {
+    AggregateLifecycle.apply(
+        new ReminderScheduledEvent(
+            command.reminderId(),
+            command.userId(),
+            command.channel(),
+            command.subject(),
+            command.body(),
+            command.scheduledFor(),
+            command.patientId(),
+            command.appointmentId(),
+            command.chargeId(),
+            command.createdAt()));
+  }
+
+  @EventSourcingHandler
+  public void on(ReminderScheduledEvent event) {
+    this.id = event.reminderId();
+    this.userId = event.userId();
+    this.channel = event.channel();
+    this.subject = event.subject();
+    this.body = event.body();
+    this.scheduledFor = event.scheduledFor();
+    this.sentAt = null;
+    this.status = ReminderStatus.AGENDADO;
+    this.patientId = event.patientId();
+    this.appointmentId = event.appointmentId();
+    this.chargeId = event.chargeId();
+    this.createdAt = event.createdAt();
   }
 }

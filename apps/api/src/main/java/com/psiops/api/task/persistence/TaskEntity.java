@@ -80,4 +80,23 @@ public class TaskEntity {
   public OffsetDateTime getCreatedAt() {
     return createdAt;
   }
+
+  // Mutadores usados pelo caso de uso de atualização/conclusão (PSI-027). A
+  // entidade permanece carregada dentro de uma transação (ver
+  // com.psiops.api.task.application.TaskService); o dirty-checking do
+  // Hibernate persiste as alterações no commit. Mesmo padrão de {@code
+  // com.psiops.api.patient.persistence.PatientEntity} (CRUD sem Axon: uma
+  // tarefa não é um agregado state-stored, ao contrário do lembrete).
+
+  public void setTitle(String title) {
+    this.title = title;
+  }
+
+  public void setDueDate(LocalDate dueDate) {
+    this.dueDate = dueDate;
+  }
+
+  public void setCompletedAt(OffsetDateTime completedAt) {
+    this.completedAt = completedAt;
+  }
 }
