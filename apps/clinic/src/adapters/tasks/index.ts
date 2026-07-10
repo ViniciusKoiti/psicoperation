@@ -1,47 +1,56 @@
-import { HttpTasksReadAdapter } from "./HttpTasksReadAdapter";
-import { MockTasksReadAdapter } from "./MockTasksReadAdapter";
+import { HttpTasksAdapter } from "./HttpTasksAdapter";
+import { MockTasksAdapter } from "./MockTasksAdapter";
 
 export type { ListTasksParams, TasksReadAdapter } from "./TasksReadAdapter";
-export { TasksReadAdapterError } from "./TasksReadAdapterError";
-export { MockTasksReadAdapter } from "./MockTasksReadAdapter";
-export { HTTP_TASKS_READ_PAGE_SIZE, HttpTasksReadAdapter } from "./HttpTasksReadAdapter";
+export type { TasksAdapter } from "./TasksAdapter";
+export { isTaskNotFoundError, TasksAdapterError } from "./TasksAdapterError";
+export { MockTasksAdapter, type MockTasksAdapterOptions } from "./MockTasksAdapter";
+export { HTTP_TASKS_PAGE_SIZE, HttpTasksAdapter } from "./HttpTasksAdapter";
 
-import type { TasksReadAdapter } from "./TasksReadAdapter";
+import type { TasksAdapter } from "./TasksAdapter";
 
-type TasksReadAdapterKind = "mock" | "http";
+type TasksAdapterKind = "mock" | "http";
 
-function readExplicitKind(): TasksReadAdapterKind | undefined {
-  const raw = import.meta.env.VITE_TASKS_READ_ADAPTER;
+function readExplicitKind(): TasksAdapterKind | undefined {
+  const raw = import.meta.env.VITE_TASKS_ADAPTER;
   return raw === "mock" || raw === "http" ? raw : undefined;
 }
 
 /**
- * Resolve qual `TasksReadAdapter` usar. Único ponto de decisão do app para
- * este adapter — mesmo padrão de `src/adapters/charges/index.ts` (PSI-034) e
- * `src/adapters/appointments/index.ts` (PSI-035):
+ * Resolve qual `TasksAdapter` usar. Único ponto de decisão do app para este
+ * adapter — mesmo padrão de `src/adapters/charges/index.ts` (PSI-037):
  *
- * - `VITE_TASKS_READ_ADAPTER=mock` ou `=http` força a escolha.
+ * - `VITE_TASKS_ADAPTER=mock` ou `=http` força a escolha.
  * - Sem variável definida: build de produção (`import.meta.env.PROD`) usa
- *   `HttpTasksReadAdapter`; qualquer outro modo (dev/test) usa
- *   `MockTasksReadAdapter`.
+ *   `HttpTasksAdapter`; qualquer outro modo (dev/test) usa `MockTasksAdapter`.
  *
- * Produção só ativa o mock se alguém setar `VITE_TASKS_READ_ADAPTER=mock`
+ * Produção só ativa o mock se alguém setar `VITE_TASKS_ADAPTER=mock`
  * explicitamente — nunca por padrão (ADR 0006).
+ *
+ * Substitui `VITE_TASKS_READ_ADAPTER` (PSI-032): a variável de ambiente muda
+ * de nome porque este adapter deixou de ser só-leitura — ver a
+ * reconciliação documentada em `TasksReadAdapter.ts` (mesmo padrão de
+ * `VITE_CHARGES_ADAPTER`, PSI-037).
  */
-export function resolveTasksReadAdapterKind(): TasksReadAdapterKind {
+export function resolveTasksAdapterKind(): TasksAdapterKind {
   const explicit = readExplicitKind();
   if (explicit) return explicit;
   return import.meta.env.PROD ? "http" : "mock";
 }
 
-function createTasksReadAdapter(): TasksReadAdapter {
-  const kind = resolveTasksReadAdapterKind();
+function createTasksAdapter(): TasksAdapter {
+  const kind = resolveTasksAdapterKind();
   if (kind === "http") {
     const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
-    return new HttpTasksReadAdapter({ baseUrl });
+    return new HttpTasksAdapter({ baseUrl });
   }
-  return new MockTasksReadAdapter();
+  return new MockTasksAdapter();
 }
 
-/** Instância única do adapter de leitura de tarefas, consumida pelas features. */
-export const tasksReadAdapter: TasksReadAdapter = createTasksReadAdapter();
+/**
+ * Instância única do adapter de tarefas, consumida pelas features (substitui
+ * `tasksReadAdapter` da PSI-032 — `DashboardPage` passou a consumir esta
+ * instância através do mesmo tipo `TasksReadAdapter`, sem mudança de
+ * contrato para essa tela).
+ */
+export const tasksAdapter: TasksAdapter = createTasksAdapter();
