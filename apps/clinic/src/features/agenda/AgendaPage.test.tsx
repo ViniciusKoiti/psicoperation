@@ -72,6 +72,9 @@ function makeAlwaysConflictingAdapter(): AgendaAdapter {
     },
     cancelAppointment: async () => {},
     createAppointmentSeries: async () => ({ occurrences: [] }),
+    recordAttendance: async () => {
+      throw new AgendaAdapterError(AGENDA_CONFLICT_MESSAGE, 409);
+    },
   };
 }
 
@@ -299,6 +302,113 @@ describe("AgendaPage — remarcar consulta", () => {
     const error = await screen.findByTestId("reschedule-appointment-error");
     expect(error).toHaveTextContent("Camila Souza");
     expect(rescheduleSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("AgendaPage — registrar desfecho (PSI-036)", () => {
+  it("registra presença ('compareceu') com anotação administrativa e atualiza o status para 'realizada'", async () => {
+    // Consulta na semana ANTERIOR à de referência (TODAY = 2026-07-13) — já
+    // ocorreu, então presença/falta ficam habilitadas no modal.
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", patientId: PATIENT_A_ID, startsAt: "2026-07-06T10:00:00Z" }) },
+    ]);
+    const recordSpy = vi.spyOn(adapter, "recordAttendance");
+    renderAgenda(adapter);
+    await screen.findByText("Nenhuma consulta neste período");
+    fireEvent.click(screen.getByRole("button", { name: "Período anterior" }));
+    await screen.findByTestId("agenda-week-view");
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar desfecho" }));
+    const form = await screen.findByTestId("attendance-record-form");
+    expect(within(form).getByRole("radio", { name: "Compareceu" })).toBeChecked();
+    fireEvent.change(within(form).getByLabelText("Anotação administrativa (opcional)", { exact: false }), {
+      target: { value: "Pagamento combinado para o dia 10." },
+    });
+    fireEvent.click(within(form).getByRole("button", { name: "Registrar" }));
+
+    await waitFor(() =>
+      expect(recordSpy).toHaveBeenCalledWith("apt-1", {
+        attendance: "compareceu",
+        administrativeNotes: "Pagamento combinado para o dia 10.",
+      }),
+    );
+    await waitFor(() => expect(screen.queryByTestId("attendance-record-form")).not.toBeInTheDocument());
+    expect(await screen.findByText("Realizada")).toBeInTheDocument();
+  });
+
+  it("registra falta sem anotação (opcional) e atualiza o status para 'realizada'", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", patientId: PATIENT_A_ID, startsAt: "2026-07-06T10:00:00Z" }) },
+    ]);
+    const recordSpy = vi.spyOn(adapter, "recordAttendance");
+    renderAgenda(adapter);
+    await screen.findByText("Nenhuma consulta neste período");
+    fireEvent.click(screen.getByRole("button", { name: "Período anterior" }));
+    await screen.findByTestId("agenda-week-view");
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar desfecho" }));
+    const form = await screen.findByTestId("attendance-record-form");
+    fireEvent.click(within(form).getByRole("radio", { name: "Faltou" }));
+    fireEvent.click(within(form).getByRole("button", { name: "Registrar" }));
+
+    await waitFor(() => expect(recordSpy).toHaveBeenCalledWith("apt-1", { attendance: "faltou", administrativeNotes: undefined }));
+    expect(await screen.findByText("Realizada")).toBeInTheDocument();
+  });
+
+  it("consulta futura: presença/falta ficam desabilitadas, só remarcação é permitida", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", patientId: PATIENT_A_ID, startsAt: "2026-07-20T10:00:00Z" }) },
+    ]);
+    renderAgenda(adapter);
+    await screen.findByText("Nenhuma consulta neste período");
+    fireEvent.click(screen.getByRole("button", { name: "Próximo período" }));
+    await screen.findByTestId("agenda-week-view");
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar desfecho" }));
+    const form = await screen.findByTestId("attendance-record-form");
+    expect(within(form).getByRole("radio", { name: "Compareceu" })).toBeDisabled();
+    expect(within(form).getByRole("radio", { name: "Faltou" })).toBeDisabled();
+    expect(within(form).getByRole("radio", { name: "Remarcar consulta" })).toBeChecked();
+    expect(screen.getByTestId("attendance-future-notice")).toBeInTheDocument();
+  });
+
+  it("registrar remarcação conduz ao MESMO fluxo de remarcação da PSI-035, vinculando a anotação", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", patientId: PATIENT_A_ID, startsAt: "2026-07-13T10:00:00Z", durationMinutes: 50 }) },
+    ]);
+    const rescheduleSpy = vi.spyOn(adapter, "rescheduleAppointment");
+    const recordSpy = vi.spyOn(adapter, "recordAttendance");
+    renderAgenda(adapter);
+    await screen.findByTestId("agenda-week-view");
+
+    fireEvent.click(screen.getByRole("button", { name: "Registrar desfecho" }));
+    const attendanceForm = await screen.findByTestId("attendance-record-form");
+    fireEvent.click(within(attendanceForm).getByRole("radio", { name: "Remarcar consulta" }));
+    fireEvent.change(within(attendanceForm).getByLabelText("Anotação administrativa (opcional)", { exact: false }), {
+      target: { value: "Remarcou por viagem de trabalho." },
+    });
+    fireEvent.click(within(attendanceForm).getByRole("button", { name: "Continuar para remarcação" }));
+
+    // Fecha o modal de registro e abre o MESMO `RescheduleAppointmentModal`/fluxo da PSI-035.
+    await waitFor(() => expect(screen.queryByTestId("attendance-record-form")).not.toBeInTheDocument());
+    const rescheduleForm = await screen.findByTestId("reschedule-appointment-form");
+    fireEvent.change(within(rescheduleForm).getByLabelText("Novo horário", { exact: false }), { target: { value: "15:00" } });
+    fireEvent.click(within(rescheduleForm).getByRole("button", { name: "Remarcar" }));
+
+    await waitFor(() =>
+      expect(rescheduleSpy).toHaveBeenCalledWith("apt-1", {
+        startsAt: expect.stringContaining("2026-07-13"),
+        durationMinutes: 50,
+      }),
+    );
+    await waitFor(() =>
+      expect(recordSpy).toHaveBeenCalledWith("apt-1", {
+        attendance: "remarcada",
+        administrativeNotes: "Remarcou por viagem de trabalho.",
+      }),
+    );
+    await waitFor(() => expect(screen.queryByTestId("reschedule-appointment-form")).not.toBeInTheDocument());
+    expect(await screen.findByText("Remarcada")).toBeInTheDocument();
   });
 });
 

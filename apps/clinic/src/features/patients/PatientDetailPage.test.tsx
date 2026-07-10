@@ -5,7 +5,7 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { type AppointmentsReadAdapter, MockAgendaAdapter } from "../../adapters/appointments";
+import { type AgendaAdapter, type AppointmentsReadAdapter, MockAgendaAdapter } from "../../adapters/appointments";
 import { MockChargesAdapter } from "../../adapters/charges";
 import { MockPatientsAdapter } from "../../adapters/patients";
 import { PatientDetailPage } from "./PatientDetailPage";
@@ -53,14 +53,27 @@ function charge(overrides: Partial<Charge>): Charge {
 interface RenderOptions {
   patientsAdapter: MockPatientsAdapter;
   appointmentsAdapter?: AppointmentsReadAdapter;
+  /**
+   * Adapter de ESCRITA de registros administrativos (PSI-036). Nos testes
+   * que exercitam registrar/editar desfecho, passar a MESMA instância de
+   * `appointmentsAdapter` (um `MockAgendaAdapter`) — em produção as duas
+   * props resolvem para a mesma instância (`agendaAdapter`), então
+   * escrita e leitura sempre veem o mesmo estado; testes que não passam
+   * nada aqui recebem uma instância vazia independente, inofensiva porque
+   * não é exercitada.
+   */
+  agendaAdapter?: AgendaAdapter;
   chargesAdapter?: MockChargesAdapter;
+  today?: () => Date;
   path?: string;
 }
 
 function renderDetail({
   patientsAdapter,
   appointmentsAdapter = new MockAgendaAdapter([]),
+  agendaAdapter = new MockAgendaAdapter([]),
   chargesAdapter = new MockChargesAdapter({}),
+  today,
   path = "/pacientes/1",
 }: RenderOptions) {
   return render(
@@ -73,7 +86,9 @@ function renderDetail({
               <PatientDetailPage
                 patientsAdapter={patientsAdapter}
                 appointmentsAdapter={appointmentsAdapter}
+                agendaAdapter={agendaAdapter}
                 chargesAdapter={chargesAdapter}
+                today={today}
               />
             }
           />
@@ -232,5 +247,139 @@ describe("PatientDetailPage", () => {
 
     fireEvent.click(screen.getByRole("link", { name: "Voltar para a lista" }));
     await screen.findByTestId("patients-list-stub");
+  });
+});
+
+// "Hoje" injetado nos testes de registro de desfecho abaixo — consultas com
+// `startsAt` antes disso contam como "já ocorridas" (presença/falta
+// habilitadas); depois, só remarcação (assumption do manifesto PSI-036).
+const TODAY = () => new Date("2026-07-09T00:00:00Z");
+
+describe("PatientDetailPage — registrar desfecho (PSI-036)", () => {
+  it("registrar desfecho a partir do Histórico de consultas cria o registro e ele aparece imediatamente em Registros administrativos", async () => {
+    const patientsAdapter = new MockPatientsAdapter([patient()]);
+    const agenda = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", startsAt: "2026-06-01T14:00:00Z", status: "agendada" }) },
+    ]);
+
+    renderDetail({ patientsAdapter, appointmentsAdapter: agenda, agendaAdapter: agenda, today: TODAY });
+    await screen.findByRole("heading", { name: "Marina Alves" });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Histórico de consultas" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Registrar desfecho" }));
+
+    const form = await screen.findByTestId("attendance-record-form");
+    fireEvent.change(within(form).getByLabelText("Anotação administrativa (opcional)", { exact: false }), {
+      target: { value: "Pagamento combinado para o dia 10." },
+    });
+    fireEvent.click(within(form).getByRole("button", { name: "Registrar" }));
+
+    await waitFor(() => expect(screen.queryByTestId("attendance-record-form")).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("tab", { name: "Registros administrativos" }));
+    const recordsTable = await screen.findByTestId("administrative-records-table");
+    expect(within(recordsTable).getByText("Compareceu")).toBeInTheDocument();
+    expect(within(recordsTable).getByText("Pagamento combinado para o dia 10.")).toBeInTheDocument();
+
+    // O status da consulta também foi atualizado (histórico da PSI-034 reflete imediatamente).
+    fireEvent.click(screen.getByRole("tab", { name: "Histórico de consultas" }));
+    const appointmentsTable = await screen.findByTestId("appointments-table");
+    expect(within(appointmentsTable).getByText("Realizada")).toBeInTheDocument();
+  });
+
+  it("editar registro existente atualiza presença/anotação sem perder o vínculo com a consulta", async () => {
+    const patientsAdapter = new MockPatientsAdapter([patient()]);
+    const agenda = new MockAgendaAdapter([
+      {
+        appointment: appointment({ id: "apt-1", startsAt: "2026-06-01T14:00:00Z", status: "realizada" }),
+        attendance: { attendance: "compareceu", recordedAt: "2026-06-01T15:00:00Z" },
+      },
+    ]);
+
+    renderDetail({ patientsAdapter, appointmentsAdapter: agenda, agendaAdapter: agenda, today: TODAY });
+    await screen.findByRole("heading", { name: "Marina Alves" });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Registros administrativos" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Editar registro" }));
+
+    const form = await screen.findByTestId("attendance-record-form");
+    // Pré-preenchido com o registro existente.
+    expect(within(form).getByRole("radio", { name: "Compareceu" })).toBeChecked();
+    fireEvent.click(within(form).getByRole("radio", { name: "Faltou" }));
+    fireEvent.change(within(form).getByLabelText("Anotação administrativa (opcional)", { exact: false }), {
+      target: { value: "Correção: faltou sem aviso." },
+    });
+    fireEvent.click(within(form).getByRole("button", { name: "Registrar" }));
+
+    await waitFor(() => expect(screen.queryByTestId("attendance-record-form")).not.toBeInTheDocument());
+
+    const recordsTable = screen.getByTestId("administrative-records-table");
+    expect(await within(recordsTable).findByText("Faltou")).toBeInTheDocument();
+    expect(within(recordsTable).getByText("Correção: faltou sem aviso.")).toBeInTheDocument();
+    // Continua sendo o registro da MESMA consulta — só uma linha na tabela.
+    expect(within(recordsTable).getAllByRole("row")).toHaveLength(2); // cabeçalho + 1 registro
+  });
+
+  it("registrar remarcação a partir do histórico do paciente encaminha ao fluxo de remarcação da PSI-035, vinculando a anotação", async () => {
+    const patientsAdapter = new MockPatientsAdapter([patient()]);
+    const agenda = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", startsAt: "2026-06-01T14:00:00Z", status: "agendada" }) },
+    ]);
+
+    renderDetail({ patientsAdapter, appointmentsAdapter: agenda, agendaAdapter: agenda, today: TODAY });
+    await screen.findByRole("heading", { name: "Marina Alves" });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Histórico de consultas" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Registrar desfecho" }));
+
+    const attendanceForm = await screen.findByTestId("attendance-record-form");
+    fireEvent.click(within(attendanceForm).getByRole("radio", { name: "Remarcar consulta" }));
+    fireEvent.change(within(attendanceForm).getByLabelText("Anotação administrativa (opcional)", { exact: false }), {
+      target: { value: "Remarcou por viagem de trabalho." },
+    });
+    fireEvent.click(within(attendanceForm).getByRole("button", { name: "Continuar para remarcação" }));
+
+    const rescheduleForm = await screen.findByTestId("reschedule-appointment-form");
+    fireEvent.change(within(rescheduleForm).getByLabelText("Nova data", { exact: false }), { target: { value: "2026-06-08" } });
+    fireEvent.click(within(rescheduleForm).getByRole("button", { name: "Remarcar" }));
+
+    await waitFor(() => expect(screen.queryByTestId("reschedule-appointment-form")).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("tab", { name: "Registros administrativos" }));
+    const recordsTable = await screen.findByTestId("administrative-records-table");
+    expect(within(recordsTable).getByText("Remarcada")).toBeInTheDocument();
+    expect(within(recordsTable).getByText("Remarcou por viagem de trabalho.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Histórico de consultas" }));
+    const appointmentsTable = await screen.findByTestId("appointments-table");
+    expect(within(appointmentsTable).getByText("Remarcada")).toBeInTheDocument();
+  });
+
+  it("o formulário de registro não tem nenhum campo clínico e rotula a anotação como administrativa", async () => {
+    const patientsAdapter = new MockPatientsAdapter([patient()]);
+    const agenda = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", startsAt: "2026-06-01T14:00:00Z", status: "agendada" }) },
+    ]);
+
+    renderDetail({ patientsAdapter, appointmentsAdapter: agenda, agendaAdapter: agenda, today: TODAY });
+    await screen.findByRole("heading", { name: "Marina Alves" });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Histórico de consultas" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Registrar desfecho" }));
+
+    const form = await screen.findByTestId("attendance-record-form");
+    // Rótulo explícito de "administrativa" + texto auxiliar anti-conteúdo-clínico.
+    expect(within(form).getByText("Anotação administrativa (opcional)")).toBeInTheDocument();
+    expect(
+      within(form).getByText(/Não inclua conteúdo clínico, diagnóstico ou evolução do paciente/),
+    ).toBeInTheDocument();
+
+    // Nenhum campo/rótulo de natureza clínica.
+    for (const clinicalTerm of ["Diagnóstico", "Evolução", "Queixa", "Prontuário", "Conduta clínica", "Hipótese"]) {
+      expect(within(form).queryByText(clinicalTerm)).not.toBeInTheDocument();
+    }
+    // Só há três campos de entrada no formulário: os três radios de desfecho e a anotação.
+    expect(within(form).getAllByRole("radio")).toHaveLength(3);
+    expect(within(form).getAllByRole("textbox")).toHaveLength(1);
   });
 });

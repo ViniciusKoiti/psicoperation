@@ -23,6 +23,25 @@ export interface AppointmentHistoryEntry {
    * CLAUDE.md).
    */
   attendance?: AttendanceRecord;
+  /**
+   * Instante ISO 8601 em que este registro administrativo foi CRIADO pela
+   * primeira vez — preservado em edições subsequentes (critério de aceite
+   * da PSI-036: "edição preserva o timestamp de criação"). Metadado de
+   * COMPOSIÇÃO local, não parte do contrato: `AttendanceRecord` não modela
+   * criação/atualização separadamente, só `recordedAt`. Rastreado apenas
+   * por `MockAgendaAdapter` (estado em memória); `HttpAgendaAdapter` não
+   * tem como preenchê-lo — o contrato não expõe leitura de metadado de
+   * presença (mesma ressalva 2 de `HttpAgendaAdapter`) — então vem sempre
+   * `undefined` nesse caso. Ressalva aceita e documentada: esta tarefa não
+   * exercita HTTP ponta a ponta (PSI-044).
+   */
+  attendanceCreatedAt?: string;
+  /**
+   * Instante ISO 8601 da última edição do registro administrativo (igual a
+   * `attendanceCreatedAt` na criação, atualizado a cada edição). Mesma
+   * ressalva de rastreio de `attendanceCreatedAt` acima.
+   */
+  attendanceUpdatedAt?: string;
 }
 
 /**
@@ -46,9 +65,12 @@ export interface AppointmentHistoryEntry {
  * instância por trás dela mudou (`agendaAdapter`, PSI-035, em vez de
  * `appointmentsReadAdapter`, PSI-034).
  *
- * Presença administrativa (`PUT /appointments/{id}/attendance`, escrita,
- * PSI-036) continua fora desta interface e da PSI-035: no mock, o "registro
- * administrativo" já vem pronto no seed; no HTTP, hoje NÃO HÁ endpoint de
+ * Presença administrativa em ESCRITA (`PUT /appointments/{id}/attendance`)
+ * é PSI-036: ver `AgendaAdapter.recordAttendance`, que estende esta
+ * interface com o método de escrita em vez de duplicar `AppointmentsReadAdapter`
+ * — a leitura (`attendance` em `AppointmentHistoryEntry`) continua daqui, só
+ * a escrita é nova. No mock, o "registro administrativo" já vem pronto no
+ * seed OU é lançado por `recordAttendance`; no HTTP, hoje NÃO HÁ endpoint de
  * leitura de presença no contrato (só `PUT`, sem `GET`) — ver a ressalva
  * detalhada em `HttpAgendaAdapter` e o open_question do PR da PSI-034.
  *

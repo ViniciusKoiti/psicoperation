@@ -15,6 +15,9 @@ import { createAppointmentSeriesWith } from "./createAppointmentSeries";
 interface SeedEntry {
   appointment: Appointment;
   attendance?: AttendanceRecord;
+  /** Metadados locais de criação/edição do registro administrativo (PSI-036) — ver doc de `AppointmentHistoryEntry`. */
+  attendanceCreatedAt?: string;
+  attendanceUpdatedAt?: string;
 }
 
 // IDs compartilhados com o seed de `MockPatientsAdapter`
@@ -193,7 +196,12 @@ export class MockAgendaAdapter implements AgendaAdapter {
   async listAppointmentsByPatient(patientId: string): Promise<AppointmentHistoryEntry[]> {
     const entries = this.entries
       .filter((entry) => entry.appointment.patientId === patientId)
-      .map((entry) => ({ appointment: entry.appointment, attendance: entry.attendance }));
+      .map((entry) => ({
+        appointment: entry.appointment,
+        attendance: entry.attendance,
+        attendanceCreatedAt: entry.attendanceCreatedAt,
+        attendanceUpdatedAt: entry.attendanceUpdatedAt,
+      }));
     return structuredClone(entries);
   }
 
@@ -271,5 +279,38 @@ export class MockAgendaAdapter implements AgendaAdapter {
 
   async createAppointmentSeries(input: CreateAppointmentSeriesInput): Promise<CreateAppointmentSeriesResult> {
     return createAppointmentSeriesWith((payload) => this.createAppointment(payload), input);
+  }
+
+  /**
+   * `PUT /appointments/{id}/attendance` (PSI-036). Cria o registro na
+   * primeira chamada para uma consulta; chamadas seguintes EDITAM o mesmo
+   * registro — preservando `attendanceCreatedAt` (usa o `recordedAt`
+   * original do seed quando presente, senão o instante da própria criação)
+   * e atualizando `attendanceUpdatedAt` para agora, ambos ISO 8601 (critério
+   * de aceite: "edição preserva o timestamp de criação e atualiza o de
+   * modificação"). Atualiza `Appointment.status` conforme a reconciliação
+   * documentada em `AgendaAdapter.recordAttendance`.
+   */
+  async recordAttendance(appointmentId: string, payload: AttendanceRecord): Promise<Appointment> {
+    const index = this.entries.findIndex((entry) => entry.appointment.id === appointmentId);
+    const entry = this.entries[index];
+    if (index === -1 || !entry) {
+      throw new AgendaAdapterError("Consulta não encontrada.", 404);
+    }
+
+    const now = new Date(this.clock()).toISOString();
+    const attendance: AttendanceRecord = { ...payload, recordedAt: payload.recordedAt ?? now };
+    const nextStatus: Appointment["status"] = attendance.attendance === "remarcada" ? "remarcada" : "realizada";
+    const createdAt = entry.attendanceCreatedAt ?? entry.attendance?.recordedAt ?? now;
+
+    const updatedAppointment: Appointment = { ...entry.appointment, status: nextStatus };
+    this.entries[index] = {
+      ...entry,
+      appointment: updatedAppointment,
+      attendance,
+      attendanceCreatedAt: createdAt,
+      attendanceUpdatedAt: now,
+    };
+    return structuredClone(updatedAppointment);
   }
 }

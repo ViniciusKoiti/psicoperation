@@ -154,6 +154,86 @@ describe("MockAgendaAdapter — cancelar consulta", () => {
   });
 });
 
+describe("MockAgendaAdapter — registrar desfecho (PSI-036)", () => {
+  it("presença ('compareceu') atualiza o status da consulta para 'realizada'", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", status: "agendada" }) },
+    ]);
+
+    const updated = await adapter.recordAttendance("apt-1", { attendance: "compareceu" });
+
+    expect(updated.status).toBe("realizada");
+  });
+
+  it("falta ('faltou') também atualiza o status da consulta para 'realizada' (a consulta ocorreu, mesmo sem comparecimento)", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", status: "agendada" }) },
+    ]);
+
+    const updated = await adapter.recordAttendance("apt-1", { attendance: "faltou", administrativeNotes: "Faltou sem aviso." });
+
+    expect(updated.status).toBe("realizada");
+  });
+
+  it("remarcação atualiza o status da consulta para 'remarcada'", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", status: "agendada" }) },
+    ]);
+
+    const updated = await adapter.recordAttendance("apt-1", {
+      attendance: "remarcada",
+      administrativeNotes: "Remarcou por viagem.",
+    });
+
+    expect(updated.status).toBe("remarcada");
+  });
+
+  it("o registro aparece imediatamente no histórico do paciente após o registro", async () => {
+    const adapter = new MockAgendaAdapter([
+      { appointment: appointment({ id: "apt-1", patientId: "p1", status: "agendada" }) },
+    ]);
+
+    await adapter.recordAttendance("apt-1", { attendance: "compareceu", administrativeNotes: "Pagamento em dia." });
+
+    const [entry] = await adapter.listAppointmentsByPatient("p1");
+    expect(entry?.attendance).toEqual({ attendance: "compareceu", administrativeNotes: "Pagamento em dia.", recordedAt: expect.any(String) });
+  });
+
+  it("edição preserva o timestamp de criação e atualiza o de modificação, ambos ISO 8601", async () => {
+    let now = Date.parse("2026-07-13T15:00:00Z");
+    const adapter = new MockAgendaAdapter([{ appointment: appointment({ id: "apt-1", patientId: "p1" }) }], {
+      clock: () => now,
+    });
+
+    await adapter.recordAttendance("apt-1", { attendance: "faltou" });
+    const [afterCreate] = await adapter.listAppointmentsByPatient("p1");
+    const createdAt = afterCreate?.attendanceCreatedAt;
+    expect(createdAt).toBe("2026-07-13T15:00:00.000Z");
+    expect(afterCreate?.attendanceUpdatedAt).toBe(createdAt);
+
+    // Edita o mesmo registro mais tarde — a data de criação não muda, só a de atualização.
+    now = Date.parse("2026-07-14T09:30:00Z");
+    await adapter.recordAttendance("apt-1", { attendance: "compareceu", administrativeNotes: "Corrigido: compareceu." });
+
+    const [afterEdit] = await adapter.listAppointmentsByPatient("p1");
+    expect(afterEdit?.attendance).toEqual({
+      attendance: "compareceu",
+      administrativeNotes: "Corrigido: compareceu.",
+      recordedAt: "2026-07-14T09:30:00.000Z",
+    });
+    expect(afterEdit?.attendanceCreatedAt).toBe(createdAt);
+    expect(afterEdit?.attendanceUpdatedAt).toBe("2026-07-14T09:30:00.000Z");
+    expect(afterEdit?.attendanceUpdatedAt).not.toBe(afterEdit?.attendanceCreatedAt);
+  });
+
+  it("lança 404 ao registrar desfecho de uma consulta inexistente", async () => {
+    const adapter = new MockAgendaAdapter([]);
+    await expect(adapter.recordAttendance("inexistente", { attendance: "compareceu" })).rejects.toSatisfy(
+      isAgendaNotFoundError,
+    );
+  });
+});
+
 describe("MockAgendaAdapter — série recorrente semanal", () => {
   it("cria todas as ocorrências quando não há conflito", async () => {
     const adapter = new MockAgendaAdapter([]);
