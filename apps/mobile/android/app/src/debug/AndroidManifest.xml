@@ -4,4 +4,13 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- PSI-045 (integração mobile): a suíte integration_test roda contra a
+         API local do docker compose, servida em HTTP puro (sem TLS) em
+         `localhost`/`10.0.2.2` — o Android bloqueia tráfego não cifrado por
+         padrão a partir do SDK 28. `usesCleartextTraffic` só existe nesta
+         variante DEBUG (nunca na `main`/release, ver
+         `android/app/src/main/AndroidManifest.xml`), então builds de
+         produção continuam exigindo HTTPS normalmente. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

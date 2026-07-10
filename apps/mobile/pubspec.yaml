@@ -30,6 +30,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  # Suíte end-to-end contra a API real (PSI-045, integração mobile) — pacote
+  # do próprio SDK do Flutter, sem dependência de rede externa nova. Vive em
+  # integration_test/ (fora do `flutter test` padrão, que usa só mocks — ver
+  # apps/mobile/README.md para como rodá-la).
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:psiops_contracts/api.dart';
 
 import '../../../app/api_config.dart';
+import '../../../app/http_adapter_support.dart';
 import 'auth_adapter.dart';
 
 /// Client HTTP real do `AuthAdapter`, tipado pelos modelos Dart gerados de
@@ -10,9 +11,10 @@ import 'auth_adapter.dart';
 /// `LoginRequest`, `RegisterRequest`, `RefreshTokenRequest`, `Problem`) —
 /// nunca redefine DTOs de API localmente (ADR 0008, regra 8 do CLAUDE.md).
 ///
-/// Implementado e compilável, mas **não exercitado contra a API real** nesta
-/// tarefa (PSI-040) — a integração real (endpoint de produção, tratamento
-/// fino de erros de rede, etc.) acontece na PSI-045.
+/// Exercitado contra a API real na integração mobile (PSI-045): falhas de
+/// conectividade (`ApiException`, ver `http_adapter_support.dart`) e
+/// respostas em formato inesperado são mapeadas para
+/// [AuthAdapterException] com mensagem pt-BR, nunca propagadas cruas.
 ///
 /// Usa `ApiClient.invokeAPI` (também gerado, de `packages/contracts`) em vez
 /// de importar `package:http` diretamente no app: `http` já chega como
@@ -27,17 +29,23 @@ final class HttpAuthAdapter implements AuthAdapter {
 
   @override
   Future<AuthResponse> login(String email, String password) async {
-    final response = await _client.invokeAPI(
-      '/auth/login',
-      'POST',
-      const [],
-      LoginRequest(email: email, password: password),
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/auth/login',
+        'POST',
+        const [],
+        LoginRequest(email: email, password: password),
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => AuthAdapterException(message),
     );
     if (response.statusCode == 200) {
-      return AuthResponse.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => AuthResponse.fromJson(_decode(response.body))!,
+        (message) => AuthAdapterException(message),
+      );
     }
     if (response.statusCode == 401) {
       throw InvalidCredentialsException(
@@ -56,17 +64,23 @@ final class HttpAuthAdapter implements AuthAdapter {
     String email,
     String password,
   ) async {
-    final response = await _client.invokeAPI(
-      '/auth/register',
-      'POST',
-      const [],
-      RegisterRequest(name: name, email: email, password: password),
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/auth/register',
+        'POST',
+        const [],
+        RegisterRequest(name: name, email: email, password: password),
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => AuthAdapterException(message),
     );
     if (response.statusCode == 201) {
-      return AuthResponse.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => AuthResponse.fromJson(_decode(response.body))!,
+        (message) => AuthAdapterException(message),
+      );
     }
     if (response.statusCode == 409) {
       throw EmailAlreadyRegisteredException(
@@ -81,17 +95,23 @@ final class HttpAuthAdapter implements AuthAdapter {
 
   @override
   Future<TokenPair> refresh(String refreshToken) async {
-    final response = await _client.invokeAPI(
-      '/auth/refresh',
-      'POST',
-      const [],
-      RefreshTokenRequest(refreshToken: refreshToken),
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/auth/refresh',
+        'POST',
+        const [],
+        RefreshTokenRequest(refreshToken: refreshToken),
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => RefreshFailedException(message),
     );
     if (response.statusCode == 200) {
-      return TokenPair.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => TokenPair.fromJson(_decode(response.body))!,
+        (message) => RefreshFailedException(message),
+      );
     }
     throw RefreshFailedException(
       _problemMessage(response.body) ??
