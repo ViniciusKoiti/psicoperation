@@ -29,6 +29,13 @@ class _EmptyAppointmentAdapter implements AppointmentAdapter {
 class _EmptyChargeAdapter implements ChargeAdapter {
   @override
   Future<List<Charge>> listCharges() async => [];
+
+  @override
+  Future<Charge> createCharge(CreateChargeRequest request) => throw UnimplementedError();
+
+  @override
+  Future<Charge> registerPayment(String chargeId, RegisterPaymentRequest request) =>
+      throw UnimplementedError();
 }
 
 class _EmptyTaskAdapter implements TaskAdapter {
