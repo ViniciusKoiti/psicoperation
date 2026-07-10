@@ -55,6 +55,12 @@ psiops:
         # Tentativas de login permitidas por janela, por chave (IP + e-mail).
         capacity: 5
         window: 1m
+      leads:
+        # Submissões do formulário público de lista de espera permitidas por
+        # janela, por chave (IP remoto) — ver com.psiops.api.lead.application.
+        # LeadRateLimiter.
+        capacity: 5
+        window: 1m
 
   # Módulo financeiro de mensalidades (PSI-026, ver com.psiops.api.billing).
   billing:
