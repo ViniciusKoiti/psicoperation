@@ -1,5 +1,6 @@
 import {
   Alert,
+  Anchor,
   Button,
   Center,
   Group,
@@ -15,7 +16,7 @@ import {
 import { useDebouncedValue } from "@mantine/hooks";
 import type { Patient, PatientStatus } from "@psiops/contracts";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { DEFAULT_PATIENTS_PAGE_SIZE, patientsAdapter as defaultPatientsAdapter, type PatientsAdapter } from "../../adapters/patients";
 import { EmptyState } from "../../components/EmptyState";
@@ -48,12 +49,21 @@ interface PageMetaSummary {
  *
  * Estados tratados: carregando (skeleton), vazio sem pacientes, vazio por
  * busca sem resultados, e erro com ação de tentar novamente.
+ *
+ * Busca, aba e página ficam espelhadas na URL (`useSearchParams`) — isso é o
+ * que permite ao detalhe do paciente (PSI-034, `/pacientes/:id`) "voltar
+ * para a lista" preservando o que a usuária tinha filtrado: o nome do
+ * paciente na tabela vira um link para o detalhe que carrega a URL atual da
+ * lista em `location.state.back`.
  */
 export function PatientsListPage({ adapter = defaultPatientsAdapter, searchDebounceMs = 300 }: PatientsListPageProps) {
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [debouncedSearch] = useDebouncedValue(search, searchDebounceMs);
-  const [status, setStatus] = useState<PatientStatus>("ativo");
-  const [page, setPage] = useState(0);
+  const [status, setStatus] = useState<PatientStatus>(() =>
+    searchParams.get("status") === "inativo" ? "inativo" : "ativo",
+  );
+  const [page, setPage] = useState(() => Math.max(0, Number.parseInt(searchParams.get("page") ?? "0", 10) || 0));
   const [state, setState] = useState<LoadState>("loading");
   const [items, setItems] = useState<Patient[]>([]);
   const [meta, setMeta] = useState<PageMetaSummary | null>(null);
@@ -66,6 +76,14 @@ export function PatientsListPage({ adapter = defaultPatientsAdapter, searchDebou
   useEffect(() => {
     setPage(0);
   }, [debouncedSearch, status]);
+
+  // Espelha busca/aba/página na URL (substitui a entrada de histórico, não
+  // cria uma nova a cada tecla) — ver docstring da função.
+  useEffect(() => {
+    const next: Record<string, string> = { status, page: String(page) };
+    if (debouncedSearch) next.q = debouncedSearch;
+    setSearchParams(next, { replace: true });
+  }, [debouncedSearch, status, page, setSearchParams]);
 
   useEffect(() => {
     let active = true;
@@ -217,7 +235,15 @@ export function PatientsListPage({ adapter = defaultPatientsAdapter, searchDebou
             <Table.Tbody>
               {items.map((patient) => (
                 <Table.Tr key={patient.id}>
-                  <Table.Td>{patient.name}</Table.Td>
+                  <Table.Td>
+                    <Anchor
+                      component={Link}
+                      to={`/pacientes/${patient.id}`}
+                      state={{ back: searchParams.toString() ? `/pacientes?${searchParams.toString()}` : "/pacientes" }}
+                    >
+                      {patient.name}
+                    </Anchor>
+                  </Table.Td>
                   <Table.Td>{patient.whatsapp ?? "—"}</Table.Td>
                   <Table.Td>{formatCentsAsBRL(patient.monthlyFee)}</Table.Td>
                   <Table.Td>Dia {patient.billingDay}</Table.Td>

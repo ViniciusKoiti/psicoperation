@@ -1,6 +1,6 @@
 import { MantineProvider } from "@mantine/core";
 import { psiopsTheme } from "@psiops/ui/mantine";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
@@ -63,5 +63,35 @@ describe("AppRoutes", () => {
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
 
     await screen.findByText("Marina Alves");
+  });
+
+  it("navega da lista de pacientes (PSI-033) para o detalhe (PSI-034) e volta preservando a busca", async () => {
+    // Monta já com a busca aplicada na URL (equivalente a uma usuária que já
+    // filtrou e deixou o debounce assentar) — evita testar a corrida entre o
+    // debounce da busca e a sincronização da URL, que já tem cobertura própria
+    // em `PatientsListPage.test.tsx`; aqui o foco é a preservação ao navegar.
+    renderAt("/pacientes?q=Marina&status=ativo&page=0", "authenticated");
+
+    await screen.findByText("Marina Alves");
+    expect(screen.queryByText("Camila Souza")).not.toBeInTheDocument();
+    expect((screen.getByLabelText("Buscar paciente por nome") as HTMLInputElement).value).toBe("Marina");
+
+    fireEvent.click(screen.getByRole("link", { name: "Marina Alves" }));
+
+    expect(await screen.findByRole("heading", { name: "Marina Alves" })).toBeInTheDocument();
+    expect(screen.getByText("Detalhe do paciente")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "Voltar para a lista" }));
+
+    await screen.findByText("Marina Alves");
+    expect(screen.queryByText("Camila Souza")).not.toBeInTheDocument();
+    expect((screen.getByLabelText("Buscar paciente por nome") as HTMLInputElement).value).toBe("Marina");
+  });
+
+  it("mostra 'paciente não encontrado' ao acessar diretamente um id de paciente inexistente", async () => {
+    renderAt("/pacientes/id-inexistente", "authenticated");
+
+    await screen.findByTestId("patient-detail-not-found");
+    expect(screen.getByRole("heading", { name: "Paciente não encontrado" })).toBeInTheDocument();
   });
 });

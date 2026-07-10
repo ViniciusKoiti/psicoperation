@@ -5,6 +5,7 @@ import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { OnboardingPage } from "../features/onboarding/OnboardingPage";
+import { PatientDetailPage } from "../features/patients/PatientDetailPage";
 import { PatientFormPage } from "../features/patients/PatientFormPage";
 import { PatientsListPage } from "../features/patients/PatientsListPage";
 import { AuthGuard } from "./AuthGuard";
@@ -22,6 +23,10 @@ import { AuthGuard } from "./AuthGuard";
  * edição usam o mesmo componente (`PatientFormPage`) em `/pacientes/novo` e
  * `/pacientes/:patientId/editar`, também dentro do shell (diferente do
  * onboarding: aqui é uma feature de domínio recorrente, não um wizard único).
+ * `/pacientes/:patientId` (PSI-034): detalhe do paciente, acessado a partir
+ * da lista — a edição continua em `/pacientes/:patientId/editar`, reutilizada
+ * pelo detalhe via link (não há conflito de rota: react-router prioriza o
+ * segmento estático "editar" sobre `:patientId` sozinho).
  */
 export function AppRoutes() {
   return (
@@ -35,6 +40,7 @@ export function AppRoutes() {
           <Route path="/pacientes" element={<PatientsListPage />} />
           <Route path="/pacientes/novo" element={<PatientFormPage />} />
           <Route path="/pacientes/:patientId/editar" element={<PatientFormPage />} />
+          <Route path="/pacientes/:patientId" element={<PatientDetailPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
