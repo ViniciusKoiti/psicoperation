@@ -26,6 +26,15 @@ O workspace pnpm/Turborepo orquestra **somente o lado JavaScript/TypeScript**:
 participar do workspace — são invocados diretamente via Maven wrapper e Flutter
 CLI. Pacotes TS estendem `tsconfig.base.json` (strict).
 
+## Setup do zero (todos os ecossistemas)
+
+Guia único, verificado na prática, cobrindo Node+pnpm, JDK 21+Maven, Flutter
+e a infraestrutura local (Docker Compose) — incluindo como subir a API com
+dados de demonstração (perfil `demo`):
+[`docs/setup.md`](docs/setup.md). Checklist de release do MVP (três
+ecossistemas verdes + smoke test do perfil demo) em
+[`docs/release-checklist.md`](docs/release-checklist.md).
+
 ## Estrutura
 
 | Caminho | Conteúdo |
@@ -41,6 +50,8 @@ CLI. Pacotes TS estendem `tsconfig.base.json` (strict).
 
 ## Documentos de partida
 
+- [Setup do zero](docs/setup.md)
+- [Checklist de release do MVP](docs/release-checklist.md)
 - [Escopo do MVP](docs/product/scope.md)
 - [Glossário do domínio](docs/product/domain-glossary.md)
 - [Contexto do sistema](docs/architecture/system-context.md)
