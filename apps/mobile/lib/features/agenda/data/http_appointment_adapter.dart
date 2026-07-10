@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:psiops_contracts/api.dart';
 
 import '../../../app/api_config.dart';
+import '../../../app/http_adapter_support.dart';
 import 'appointment_adapter.dart';
 
 /// Client HTTP real do [AppointmentAdapter], tipado pelos modelos Dart
@@ -10,12 +11,13 @@ import 'appointment_adapter.dart';
 /// `AppointmentCreateRequest`, `AppointmentUpdateRequest`, `Problem`) — nunca
 /// redefine DTOs de API localmente (ADR 0008, regra 8 do CLAUDE.md).
 ///
-/// Implementado e compilável, mas **não exercitado contra a API real** nesta
-/// tarefa (PSI-041) — a integração real acontece na PSI-045. O 409 de
+/// Exercitado contra a API real na integração mobile (PSI-045). O 409 de
 /// conflito de horário documentado no contrato é traduzido para
 /// [AppointmentConflictException], a mesma exceção lançada pelo
 /// `InMemoryAppointmentAdapter` — o restante do app não precisa saber qual
-/// implementação está em uso.
+/// implementação está em uso. Falhas de conectividade e respostas em formato
+/// inesperado são mapeadas para [AppointmentAdapterException] (mensagem
+/// pt-BR), nunca propagadas cruas — ver `http_adapter_support.dart`.
 final class HttpAppointmentAdapter implements AppointmentAdapter {
   HttpAppointmentAdapter({ApiClient? apiClient})
     : _client = apiClient ?? ApiClient(basePath: ApiConfig.baseUrl);
@@ -24,7 +26,8 @@ final class HttpAppointmentAdapter implements AppointmentAdapter {
 
   /// Tamanho de página grande o suficiente para a janela diária/semanal da
   /// agenda numa única chamada — a paginação de verdade (para históricos
-  /// maiores) é assunto da integração real (PSI-045).
+  /// maiores) fica para uma iteração futura, quando o volume de consultas
+  /// justificar.
   static const int _pageSize = 100;
 
   @override
@@ -32,22 +35,27 @@ final class HttpAppointmentAdapter implements AppointmentAdapter {
     required DateTime from,
     required DateTime to,
   }) async {
-    final response = await _client.invokeAPI(
-      '/appointments',
-      'GET',
-      [
-        QueryParam('from', _dateOnly(from)),
-        QueryParam('to', _dateOnly(to)),
-        QueryParam('size', '$_pageSize'),
-      ],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/appointments',
+        'GET',
+        [
+          QueryParam('from', _dateOnly(from)),
+          QueryParam('to', _dateOnly(to)),
+          QueryParam('size', '$_pageSize'),
+        ],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => AppointmentAdapterException(message),
     );
     if (response.statusCode == 200) {
-      final page = AppointmentPage.fromJson(_decode(response.body));
-      return page?.items ?? const [];
+      return parseOrThrow(
+        () => AppointmentPage.fromJson(_decode(response.body))?.items ?? const [],
+        (message) => AppointmentAdapterException(message),
+      );
     }
     throw AppointmentAdapterException(
       _problemMessage(response.body) ??
@@ -57,17 +65,23 @@ final class HttpAppointmentAdapter implements AppointmentAdapter {
 
   @override
   Future<Appointment> createAppointment(AppointmentCreateRequest request) async {
-    final response = await _client.invokeAPI(
-      '/appointments',
-      'POST',
-      const [],
-      request,
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/appointments',
+        'POST',
+        const [],
+        request,
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => AppointmentAdapterException(message),
     );
     if (response.statusCode == 201) {
-      return Appointment.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Appointment.fromJson(_decode(response.body))!,
+        (message) => AppointmentAdapterException(message),
+      );
     }
     if (response.statusCode == 409) {
       throw AppointmentConflictException(
@@ -86,17 +100,23 @@ final class HttpAppointmentAdapter implements AppointmentAdapter {
     String appointmentId,
     AppointmentUpdateRequest request,
   ) async {
-    final response = await _client.invokeAPI(
-      '/appointments/$appointmentId',
-      'PUT',
-      const [],
-      request,
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/appointments/$appointmentId',
+        'PUT',
+        const [],
+        request,
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => AppointmentAdapterException(message),
     );
     if (response.statusCode == 200) {
-      return Appointment.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Appointment.fromJson(_decode(response.body))!,
+        (message) => AppointmentAdapterException(message),
+      );
     }
     if (response.statusCode == 404) {
       throw AppointmentNotFoundException(
@@ -117,14 +137,17 @@ final class HttpAppointmentAdapter implements AppointmentAdapter {
 
   @override
   Future<void> cancelAppointment(String appointmentId) async {
-    final response = await _client.invokeAPI(
-      '/appointments/$appointmentId',
-      'DELETE',
-      const [],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/appointments/$appointmentId',
+        'DELETE',
+        const [],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => AppointmentAdapterException(message),
     );
     if (response.statusCode == 204) return;
     if (response.statusCode == 404) {

@@ -3,13 +3,16 @@ import 'dart:convert';
 import 'package:psiops_contracts/api.dart';
 
 import '../../../app/api_config.dart';
+import '../../../app/http_adapter_support.dart';
 import 'charge_adapter.dart';
 
 /// Client HTTP real do [ChargeAdapter] (`GET /charges`), tipado por
 /// [ChargePage]/[Charge] gerados de `packages/contracts/gen/dart`.
 ///
-/// Implementado e compilável, mas não exercitado contra a API real nesta
-/// tarefa (PSI-041) — integração real é PSI-045.
+/// Exercitado contra a API real na integração mobile (PSI-045). Falhas de
+/// conectividade e respostas em formato inesperado são mapeadas para
+/// [ChargeAdapterException] (mensagem pt-BR), nunca propagadas cruas — ver
+/// `http_adapter_support.dart`.
 final class HttpChargeAdapter implements ChargeAdapter {
   HttpChargeAdapter({ApiClient? apiClient})
     : _client = apiClient ?? ApiClient(basePath: ApiConfig.baseUrl);
@@ -20,20 +23,27 @@ final class HttpChargeAdapter implements ChargeAdapter {
 
   @override
   Future<List<Charge>> listCharges() async {
-    final response = await _client.invokeAPI(
-      '/charges',
-      'GET',
-      [QueryParam('size', '$_pageSize')],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/charges',
+        'GET',
+        [QueryParam('size', '$_pageSize')],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => ChargeAdapterException(message),
     );
     if (response.statusCode == 200) {
-      final page = ChargePage.fromJson(
-        response.body.isEmpty ? null : jsonDecode(response.body),
+      return parseOrThrow(
+        () =>
+            ChargePage.fromJson(
+              response.body.isEmpty ? null : jsonDecode(response.body),
+            )?.items ??
+            const [],
+        (message) => ChargeAdapterException(message),
       );
-      return page?.items ?? const [];
     }
     throw ChargeAdapterException(
       'Não foi possível carregar as cobranças (HTTP ${response.statusCode}).',
@@ -42,17 +52,23 @@ final class HttpChargeAdapter implements ChargeAdapter {
 
   @override
   Future<Charge> createCharge(CreateChargeRequest request) async {
-    final response = await _client.invokeAPI(
-      '/charges',
-      'POST',
-      const [],
-      request,
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/charges',
+        'POST',
+        const [],
+        request,
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => ChargeAdapterException(message),
     );
     if (response.statusCode == 201) {
-      return Charge.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Charge.fromJson(_decode(response.body))!,
+        (message) => ChargeAdapterException(message),
+      );
     }
     if (response.statusCode == 409) {
       throw ChargeAlreadyExistsException(
@@ -68,17 +84,23 @@ final class HttpChargeAdapter implements ChargeAdapter {
 
   @override
   Future<Charge> registerPayment(String chargeId, RegisterPaymentRequest request) async {
-    final response = await _client.invokeAPI(
-      '/charges/$chargeId/payment',
-      'POST',
-      const [],
-      request,
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/charges/$chargeId/payment',
+        'POST',
+        const [],
+        request,
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => ChargeAdapterException(message),
     );
     if (response.statusCode == 200) {
-      return Charge.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Charge.fromJson(_decode(response.body))!,
+        (message) => ChargeAdapterException(message),
+      );
     }
     if (response.statusCode == 404) {
       throw ChargeNotFoundException(

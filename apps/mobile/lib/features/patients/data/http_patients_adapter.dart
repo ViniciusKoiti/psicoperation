@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:psiops_contracts/api.dart';
 
 import '../../../app/api_config.dart';
+import '../../../app/http_adapter_support.dart';
 import 'patients_adapter.dart';
 
 /// Client HTTP real do [PatientsAdapter], tipado pelos modelos Dart gerados
@@ -10,8 +11,10 @@ import 'patients_adapter.dart';
 /// `PatientCreateRequest`, `PatientUpdateRequest`, `Problem`) — nunca
 /// redefine DTOs de API localmente (ADR 0008, regra 8 do CLAUDE.md).
 ///
-/// Implementado e compilável, mas **não exercitado contra a API real** nesta
-/// tarefa (PSI-042) — a integração real acontece na PSI-045.
+/// Exercitado contra a API real na integração mobile (PSI-045). Falhas de
+/// conectividade e respostas em formato inesperado são mapeadas para
+/// [PatientsAdapterException] (mensagem pt-BR), nunca propagadas cruas — ver
+/// `http_adapter_support.dart`.
 final class HttpPatientsAdapter implements PatientsAdapter {
   HttpPatientsAdapter({ApiClient? apiClient})
     : _client = apiClient ?? ApiClient(basePath: ApiConfig.baseUrl);
@@ -22,18 +25,23 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<List<Patient>> listPatients() async {
-    final response = await _client.invokeAPI(
-      '/patients',
-      'GET',
-      [QueryParam('size', '$_pageSize')],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/patients',
+        'GET',
+        [QueryParam('size', '$_pageSize')],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => PatientsAdapterException(message),
     );
     if (response.statusCode == 200) {
-      final page = PatientPage.fromJson(_decode(response.body));
-      return page?.items ?? const [];
+      return parseOrThrow(
+        () => PatientPage.fromJson(_decode(response.body))?.items ?? const [],
+        (message) => PatientsAdapterException(message),
+      );
     }
     throw PatientsAdapterException(
       _problemMessage(response.body) ??
@@ -43,18 +51,23 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<List<Patient>> listPatientsByStatus(PatientStatus status) async {
-    final response = await _client.invokeAPI(
-      '/patients',
-      'GET',
-      [QueryParam('status', status.value), QueryParam('size', '$_pageSize')],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/patients',
+        'GET',
+        [QueryParam('status', status.value), QueryParam('size', '$_pageSize')],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => PatientsAdapterException(message),
     );
     if (response.statusCode == 200) {
-      final page = PatientPage.fromJson(_decode(response.body));
-      return page?.items ?? const [];
+      return parseOrThrow(
+        () => PatientPage.fromJson(_decode(response.body))?.items ?? const [],
+        (message) => PatientsAdapterException(message),
+      );
     }
     throw PatientsAdapterException(
       _problemMessage(response.body) ??
@@ -64,17 +77,23 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<Patient> getPatient(String id) async {
-    final response = await _client.invokeAPI(
-      '/patients/$id',
-      'GET',
-      const [],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/patients/$id',
+        'GET',
+        const [],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => PatientsAdapterException(message),
     );
     if (response.statusCode == 200) {
-      return Patient.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Patient.fromJson(_decode(response.body))!,
+        (message) => PatientsAdapterException(message),
+      );
     }
     if (response.statusCode == 404) {
       throw PatientNotFoundException(
@@ -89,17 +108,23 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<Patient> createPatient(PatientCreateRequest request) async {
-    final response = await _client.invokeAPI(
-      '/patients',
-      'POST',
-      const [],
-      request,
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/patients',
+        'POST',
+        const [],
+        request,
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => PatientsAdapterException(message),
     );
     if (response.statusCode == 201) {
-      return Patient.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Patient.fromJson(_decode(response.body))!,
+        (message) => PatientsAdapterException(message),
+      );
     }
     throw PatientsAdapterException(
       _problemMessage(response.body) ??
@@ -109,17 +134,23 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<Patient> updatePatient(String id, PatientUpdateRequest request) async {
-    final response = await _client.invokeAPI(
-      '/patients/$id',
-      'PUT',
-      const [],
-      request,
-      const {},
-      const {},
-      'application/json',
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/patients/$id',
+        'PUT',
+        const [],
+        request,
+        const {},
+        const {},
+        'application/json',
+      ),
+      (message) => PatientsAdapterException(message),
     );
     if (response.statusCode == 200) {
-      return Patient.fromJson(_decode(response.body))!;
+      return parseOrThrow(
+        () => Patient.fromJson(_decode(response.body))!,
+        (message) => PatientsAdapterException(message),
+      );
     }
     if (response.statusCode == 404) {
       throw PatientNotFoundException(
@@ -134,14 +165,17 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<void> archivePatient(String id) async {
-    final response = await _client.invokeAPI(
-      '/patients/$id',
-      'DELETE',
-      const [],
-      null,
-      const {},
-      const {},
-      null,
+    final response = await guardApiCall(
+      () => _client.invokeAPI(
+        '/patients/$id',
+        'DELETE',
+        const [],
+        null,
+        const {},
+        const {},
+        null,
+      ),
+      (message) => PatientsAdapterException(message),
     );
     if (response.statusCode == 204) return;
     if (response.statusCode == 404) {
@@ -157,13 +191,14 @@ final class HttpPatientsAdapter implements PatientsAdapter {
 
   @override
   Future<List<AttendanceRecord>> listAdministrativeRecords(String patientId) async {
-    // Gap de contrato conhecido (ver documentação de
-    // `PatientsAdapter.listAdministrativeRecords` e open_questions do
-    // manifesto PSI-042): a spec OpenAPI atual não expõe um endpoint de
-    // leitura em lote do histórico de `AttendanceRecord` por paciente.
-    // Retorna vazio até o contrato modelar essa leitura — este client não é
-    // exercitado contra a API real nesta tarefa de qualquer forma
-    // (integração real é PSI-045).
+    // Gap de contrato conhecido, registrado para o orquestrador (ver
+    // documentação de `PatientsAdapter.listAdministrativeRecords` e
+    // open_questions do manifesto PSI-042): a spec OpenAPI atual não expõe
+    // um endpoint de leitura em lote do histórico de `AttendanceRecord` por
+    // paciente. Retorna vazio até o contrato modelar essa leitura — divergência
+    // confirmada ao ligar este adapter contra a API real na PSI-045 (o
+    // endpoint segue inexistente); corrigir exigiria mudança em
+    // `packages/contracts`, fora do escopo/allowed_paths desta tarefa.
     return const [];
   }
 

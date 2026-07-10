@@ -8,14 +8,14 @@
 ///
 /// Regra de segurança: o default é [AppEnvironment.dev] com **mocks em
 /// memória**, mas o `main.dart` de produção deve selecionar explicitamente
-/// [AppEnvironment.prod]; adapters reais (HTTP) só chegam na integração
-/// (fora do escopo deste scaffold).
+/// [AppEnvironment.prod]; os adapters reais (HTTP), ligados de verdade contra
+/// a API na PSI-045, são os únicos usados neste ambiente.
 enum AppEnvironment {
   /// Desenvolvimento: adapters em memória (mocks), sem rede.
   dev,
 
-  /// Produção: adapters reais (HTTP contra a API). Ainda não implementado
-  /// neste scaffold — ver PSI-045 (integração mobile).
+  /// Produção: adapters reais (HTTP contra a API), exercitados contra a API
+  /// real na integração mobile (PSI-045).
   prod;
 
   /// Lê o ambiente de `--dart-define=PSIOPS_ENV=prod|dev`.

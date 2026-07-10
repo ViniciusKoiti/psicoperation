@@ -19,12 +19,24 @@ abstract interface class ProfileRepository {
   Future<User> updateProfile(String name);
 }
 
+/// Erro genérico de acesso ao perfil (rede, servidor, resposta inesperada,
+/// ou operação sem suporte real — ver [HttpProfileRepository.updateProfile]).
+/// [message] é um texto pt-BR adequado para exibição direta na UI.
+class ProfileRepositoryException implements Exception {
+  const ProfileRepositoryException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'ProfileRepositoryException: $message';
+}
+
 /// Adapter em memória usado no ambiente [AppEnvironment.dev].
 ///
 /// Fornece um [User] fixo (mutável apenas via [updateProfile]), sem rede,
 /// para exercitar o pipeline de estado e UI no scaffold. O adapter real
-/// (HTTP contra a API) chega na integração mobile (PSI-045); este mock nunca
-/// deve ser selecionado em produção.
+/// (`HttpProfileRepository`, PSI-045) nunca deve ser trocado por este mock em
+/// produção — seleção em `app/app.dart`.
 final class InMemoryProfileRepository implements ProfileRepository {
   InMemoryProfileRepository();
 

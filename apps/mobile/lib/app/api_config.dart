@@ -7,12 +7,13 @@
 /// concretos são configurados por env, não na spec"). Aqui isso é resolvido
 /// via `--dart-define=PSIOPS_API_BASE_URL=<host>/api/v1`.
 ///
-/// Nesta tarefa (PSI-040) o client HTTP é implementado e compilável, mas não
-/// é exercitado contra a API real — a integração de verdade (endpoint real,
-/// certificados, etc.) acontece na PSI-045. O valor default abaixo é apenas
-/// um placeholder plausível para manter o app compilável sem exigir o
-/// `--dart-define` em builds de desenvolvimento/teste (que usam o adapter
-/// mock e nunca chegam a montar este client).
+/// Exercitado contra a API real na integração mobile (PSI-045), inclusive
+/// pela suíte `integration_test/` (ver `apps/mobile/README.md` para como
+/// apontar para a API local subida via docker compose + `./mvnw
+/// spring-boot:run`). O valor default abaixo é apenas um placeholder
+/// plausível para manter o app compilável sem exigir o `--dart-define` em
+/// builds de desenvolvimento/teste (que usam o adapter mock e nunca chegam a
+/// montar este client).
 abstract final class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'PSIOPS_API_BASE_URL',

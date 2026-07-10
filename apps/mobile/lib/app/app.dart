@@ -14,6 +14,7 @@ import '../features/dashboard/data/charge_adapter.dart';
 import '../features/dashboard/data/http_charge_adapter.dart';
 import '../features/dashboard/data/http_task_adapter.dart';
 import '../features/dashboard/data/task_adapter.dart';
+import '../features/home/data/http_profile_repository.dart';
 import '../features/home/data/profile_repository.dart';
 import '../features/patients/data/http_patients_adapter.dart';
 import '../features/patients/data/patients_adapter.dart';
@@ -71,9 +72,9 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
   }
 
   /// Seleciona o `AuthAdapter` por ambiente: mock em memória por padrão em
-  /// dev/test; client HTTP real (implementado e compilável, mas não
-  /// exercitado contra a API nesta tarefa — PSI-045) em produção. O mock
-  /// nunca é selecionável fora de [AppEnvironment.usesMocks].
+  /// dev/test; client HTTP real (exercitado contra a API real na integração
+  /// mobile, PSI-045) em produção. O mock nunca é selecionável fora de
+  /// [AppEnvironment.usesMocks].
   static AuthAdapter _authAdapterFor(AppEnvironment environment) {
     if (environment.usesMocks) {
       return InMemoryAuthAdapter();
@@ -81,23 +82,21 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
     return HttpAuthAdapter();
   }
 
+  /// Seleciona o `ProfileRepository` por ambiente, mesmo padrão de
+  /// [_authAdapterFor]. `HttpProfileRepository` (PSI-045) usa
+  /// `GET /auth/session` para resolver o perfil corrente — a spec OpenAPI
+  /// não modela um endpoint dedicado de perfil.
   static ProfileRepository _profileRepositoryFor(AppEnvironment environment) {
     if (environment.usesMocks) {
       return InMemoryProfileRepository();
     }
-    // Adapter real (HTTP contra a API) ainda não implementado neste scaffold
-    // — chega na integração mobile (PSI-045). Falhar explícito impede que o
-    // mock em memória vaze para um build de produção por engano.
-    throw UnimplementedError(
-      'Adapter real de perfil ainda não implementado (ver PSI-045). '
-      'Ambiente ${environment.name} não é suportado neste scaffold.',
-    );
+    return HttpProfileRepository();
   }
 
   /// Seleciona o `AppointmentAdapter` por ambiente (PSI-041, mesmo padrão de
   /// [_authAdapterFor]): mock em memória por padrão em dev/test; client HTTP
-  /// real (implementado e compilável, mas não exercitado contra a API nesta
-  /// tarefa — PSI-045) em produção.
+  /// real (exercitado contra a API real na integração mobile, PSI-045) em
+  /// produção.
   static AppointmentAdapter _appointmentAdapterFor(AppEnvironment environment) {
     if (environment.usesMocks) {
       return InMemoryAppointmentAdapter();
@@ -107,11 +106,10 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
 
   /// Seleciona o `PatientsAdapter` por ambiente (PSI-042, mesmo padrão de
   /// [_authAdapterFor]): mock em memória por padrão em dev/test; client HTTP
-  /// real (implementado e compilável, mas não exercitado contra a API nesta
-  /// tarefa — PSI-045) em produção. Substitui o antigo
-  /// `PatientLookupAdapter` (PSI-041, removido nesta tarefa) — o mesmo
-  /// adapter agora serve tanto a resolução de nomes (agenda/dashboard)
-  /// quanto o CRUD completo de pacientes.
+  /// real (exercitado contra a API real na integração mobile, PSI-045) em
+  /// produção. Substitui o antigo `PatientLookupAdapter` (PSI-041, removido
+  /// nesta tarefa) — o mesmo adapter agora serve tanto a resolução de nomes
+  /// (agenda/dashboard) quanto o CRUD completo de pacientes.
   static PatientsAdapter _patientsAdapterFor(AppEnvironment environment) {
     if (environment.usesMocks) {
       return InMemoryPatientsAdapter();
@@ -135,8 +133,8 @@ class _PsiOpsAppState extends State<PsiOpsApp> {
 
   /// Seleciona o `SettingsAdapter` por ambiente (PSI-043, mesmo padrão de
   /// [_authAdapterFor]): mock em memória por padrão em dev/test; client HTTP
-  /// real (implementado e compilável, mas não exercitado contra a API nesta
-  /// tarefa — PSI-045) em produção.
+  /// real (exercitado contra a API real na integração mobile, PSI-045) em
+  /// produção.
   static SettingsAdapter _settingsAdapterFor(AppEnvironment environment) {
     if (environment.usesMocks) {
       return InMemorySettingsAdapter();
